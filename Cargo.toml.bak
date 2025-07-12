@@ -1,0 +1,9 @@
+[package]
+name = "rust_video_fft"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kornia = "0.1.9"
+argh = "0.1"
+rustfft = "6.4.0"
