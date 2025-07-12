@@ -1,0 +1,103 @@
+* COMMENT SAMPLE
+#+begin_src nix :tangle ./shell.nix
+#+end_src
+
+* Main shell code
+
+** Main nix code
+
+*** Function inputs
+#+begin_src nix :tangle ./shell.nix
+  {pkgs ? import <nixpkgs> {}} :
+#+end_src
+
+*** Start convenience definitions
+
+**** begin
+#+begin_src nix :tangle ./shell.nix
+  let
+#+end_src
+
+***** Package list
+
+****** begin
+#+begin_src nix :tangle ./shell.nix
+  mylist = with pkgs; [
+#+end_src
+
+****** main
+
+******* generic packages
+#+begin_src nix :tangle ./shell.nix
+  bc
+  bison
+  blend2d
+  cargo
+  cargo-info
+  ffmpeg
+  ffmpeg.dev
+  fish
+  flex
+  fontconfig
+  fontconfig.dev
+  fontconfig.lib
+  gnumake
+  libelf
+  nasm
+  openssl
+  openssl.dev
+  pkg-config
+  python313Full
+  udev
+  zsh
+  zstd
+#+end_src
+
+****** end
+#+begin_src nix :tangle ./shell.nix
+  ] ;
+#+end_src
+
+**** end
+#+begin_src nix :tangle ./shell.nix
+  in
+#+end_src
+
+*** Function outputs for regular shell
+
+**** Header
+#+begin_src nix :tangle ./shell.nix
+  (pkgs.mkShell {
+#+end_src
+
+***** Name
+#+begin_src nix :tangle ./shell.nix
+  name = "good_rust_env";
+#+end_src
+
+***** Packages
+#+begin_src nix :tangle ./shell.nix
+  packages = mylist;
+#+end_src
+
+***** Main shell command
+#+begin_src nix :tangle ./shell.nix
+  runScript = "fish";
+#+end_src
+
+**** Trailer
+#+begin_src nix :tangle ./shell.nix
+  })
+#+end_src
+
+** COMMENT WORK SPACE
+#+begin_src emacs-lisp :results silent
+  (save-buffer)
+  (org-babel-tangle)
+  (async-shell-command "
+          find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
+          rm -vf -- './README.org~' './#shell.nix#' './shell.nix~'
+          git add './README.org'
+          git add './shell.nix'
+      " "log" "err")
+#+end_src

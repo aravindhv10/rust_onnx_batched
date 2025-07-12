@@ -1,9 +1,10 @@
 [package]
-name = "rust_video_fft"
+name = "onnxdeploy"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-kornia = "0.1.9"
-argh = "0.1"
-rustfft = "6.4.0"
+image = { version = "0.25.6", features = ["serde", "nasm"] }
+ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+ort = "1.16.3"
+raqote = "0.8.5"
