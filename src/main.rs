@@ -14,7 +14,10 @@ use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source
 
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
-fn main() {
+fn main() -> ort::Result<()> {
+
+    let MODEL_URL="/home/asd/MODEL_CHECKPOINTS/PATIENT_DETECTION/patient_detect-epoch=15-val_loss=0.02.onnx";
+
     let original_img = image::open(Path::new(
         "/home/asd/DATASET/image_dataset/both_arms_out/v36frame0048.jpg",
     ))
@@ -26,8 +29,22 @@ fn main() {
     let cropped_img = imageops::crop_imm(&original_img, x, y, size, size).to_image();
     let img = imageops::resize(&cropped_img, 448, 448, imageops::FilterType::CatmullRom);
 
-    img.save("./tmp.png").expect("save failed")
+    let mut input = Array::zeros((1, 448, 448, 3));
+
+    for (x, y, pixel) in img.enumerate_pixels(){
+            let [r, g, b, _] = pixel.0;
+            input[[0, y as usize, x as usize, 0]] = r;
+            input[[0, y as usize, x as usize, 1]] = g;
+            input[[0, y as usize, x as usize, 2]] = b;
+            // input[[0, y, x, 1]] = g;
+            // input[[0, y, x, 2]] = b;
+    }
+
+    let mut model = Session::builder()?.commit_from_file(MODEL_URL)?;
+
+    // img.save("./tmp.png").expect("save failed")
 
     // let img = original_img.resize_exact(448, 448, FilterType::CatmullRom);
     // read the image
+    Ok(())
 }
