@@ -4,7 +4,7 @@ use std::path::Path;
 
 use ort::{
     inputs,
-    session::{Session, SessionOutputs},
+    session::{Session, SessionOutputs, builder::GraphOptimizationLevel},
     value::TensorRef,
 };
 
@@ -14,12 +14,16 @@ use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source
 
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
-const MODEL_URL: &str = "/home/asd/MODEL_CHECKPOINTS/PATIENT_DETECTION/patient_detect-epoch=15-val_loss=0.02.onnx";
+const MODEL_URL: &str =
+    "/home/asd/MODEL_CHECKPOINTS/PATIENT_DETECTION/patient_detect-epoch=15-val_loss=0.02.onnx";
 
 const IMAGE_RESOLUTION: usize = 448;
 
-fn main() -> ort::Result<()> {
+struct infer_slave {
+    ses: Session
+}
 
+fn main() -> ort::Result<()> {
     let original_img = image::open(Path::new(
         "/home/asd/DATASET/image_dataset/both_arms_out/v36frame0048.jpg",
     ))
@@ -33,33 +37,37 @@ fn main() -> ort::Result<()> {
 
     let mut input = Array::zeros((2 as usize, IMAGE_RESOLUTION, IMAGE_RESOLUTION, 3 as usize));
 
-    for (x, y, pixel) in img.enumerate_pixels(){
-            let [r, g, b, _] = pixel.0;
-            input[[0, y as usize, x as usize, 0]] = r;
-            input[[0, y as usize, x as usize, 1]] = g;
-            input[[0, y as usize, x as usize, 2]] = b;
+    for (x, y, pixel) in img.enumerate_pixels() {
+        let [r, g, b, _] = pixel.0;
+        input[[0, y as usize, x as usize, 0]] = r;
+        input[[0, y as usize, x as usize, 1]] = g;
+        input[[0, y as usize, x as usize, 2]] = b;
 
-            input[[1, y as usize, x as usize, 0]] = r;
-            input[[1, y as usize, x as usize, 1]] = g;
-            input[[1, y as usize, x as usize, 2]] = b;
-            // input[[0, y, x, 1]] = g;
-            // input[[0, y, x, 2]] = b;
+        input[[1, y as usize, x as usize, 0]] = r;
+        input[[1, y as usize, x as usize, 1]] = g;
+        input[[1, y as usize, x as usize, 2]] = b;
+        // input[[0, y, x, 1]] = g;
+        // input[[0, y, x, 2]] = b;
     }
 
-    let mut model = Session::builder()?.commit_from_file(MODEL_URL)?;
-    let outputs: SessionOutputs = model.run(inputs!["input" => TensorRef::from_array_view(&input)?])?;
-    let output = outputs["output"].try_extract_array::<f32>()?.t().into_owned();
+    let mut model = Session::builder()?
+        .with_optimization_level(GraphOptimizationLevel::Level2)?
+        .commit_from_file(MODEL_URL)?;
+    let outputs: SessionOutputs =
+        model.run(inputs!["input" => TensorRef::from_array_view(&input)?])?;
+    let output = outputs["output"]
+        .try_extract_array::<f32>()?
+        .t()
+        .into_owned();
     println!("{:?}", output);
 
-    for row in output.axis_iter(Axis(1)){
+    for row in output.axis_iter(Axis(1)) {
         println!("{:?}", row);
-            
     }
 
     // println!("{}",output[[0, 0]]);
     // println!("{}",output[[0, 1]]);
     // println!("{}",output[[0, 2]]);
-    
 
     // img.save("./tmp.png").expect("save failed")
 
