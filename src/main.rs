@@ -9,8 +9,6 @@ use ort::{
 };
 
 use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source, StrokeStyle};
-// use show_image::{AsImageView, WindowOptions, event};
-// use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
@@ -19,9 +17,19 @@ const MODEL_URL: &str =
 
 const IMAGE_RESOLUTION: usize = 448;
 
-struct infer_slave {
-    ses: Session
-}
+// struct infer_slave {
+//     ses: Session
+// }
+
+// impl infer_slave {
+//     fn new(model_path: &str) -> Self {
+//         Self{
+//             ses : Session::builder()?
+//         .with_optimization_level(GraphOptimizationLevel::Level3)?
+//         .commit_from_file(model_path)?;
+//         }
+//     }
+// }
 
 fn main() -> ort::Result<()> {
     let original_img = image::open(Path::new(
@@ -51,7 +59,7 @@ fn main() -> ort::Result<()> {
     }
 
     let mut model = Session::builder()?
-        .with_optimization_level(GraphOptimizationLevel::Level2)?
+        .with_optimization_level(GraphOptimizationLevel::Level3)?
         .commit_from_file(MODEL_URL)?;
     let outputs: SessionOutputs =
         model.run(inputs!["input" => TensorRef::from_array_view(&input)?])?;
