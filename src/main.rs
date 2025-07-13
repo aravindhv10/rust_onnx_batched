@@ -24,6 +24,9 @@ fn main() {
     let x = (width - size) / 2;
     let y = (height - size) / 2;
     let cropped_img = imageops::crop_imm(&original_img, x, y, size, size).to_image();
+    let img = imageops::resize(&cropped_img, 448, 448, imageops::FilterType::CatmullRom);
+
+    img.save("./tmp.png").expect("save failed")
 
     // let img = original_img.resize_exact(448, 448, FilterType::CatmullRom);
     // read the image
