@@ -62,9 +62,9 @@ async fn infer(
     let mut input = Array::zeros((1, IMAGE_RESOLUTION as usize, IMAGE_RESOLUTION as usize, 3));
     for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
         let [r, g, b, _] = pixel.0;
-        input[[0, y as usize, x as usize, 0]] = r as f32;
-        input[[0, y as usize, x as usize, 1]] = g as f32;
-        input[[0, y as usize, x as usize, 2]] = b as f32;
+        input[[0, y as usize, x as usize, 0]] = r;
+        input[[0, y as usize, x as usize, 1]] = g;
+        input[[0, y as usize, x as usize, 2]] = b;
     }
 
     // Run the model
