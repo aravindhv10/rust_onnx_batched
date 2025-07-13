@@ -41,6 +41,7 @@ fn main() -> ort::Result<()> {
     }
 
     let mut model = Session::builder()?.commit_from_file(MODEL_URL)?;
+    let outputs: SessionOutputs = model.run(inputs!["input" => TensorRef::from_array_view(&input)?])?;
 
     // img.save("./tmp.png").expect("save failed")
 
