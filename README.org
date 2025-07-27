@@ -19,7 +19,7 @@
   actix-multipart = "0.6"
   image = { version = "0.25.6", features = ["serde", "nasm"] }
   ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
-  ort = { version = "2.0.0-rc.10", features = ["cuda"] }
+  ort = { version = "2.0", features = ["cuda", "cudnn"] }
   raqote = "0.8.5"
   serde = { version = "1.0", features = ["derive"] }
   futures-util = "0.3"
@@ -139,7 +139,15 @@
   (async-shell-command "
           # find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
           rm -vf -- './README.org~' './#shell.nix#' './shell.nix~'
+
+          git add './Cargo.toml'
           git add './README.org'
           git add './shell.nix'
+          git add './src/main.rs'
       " "log" "err")
+#+end_src
+
+#+begin_src sh :shebang #!/bin/sh :results output
+~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh;
+git push
 #+end_src

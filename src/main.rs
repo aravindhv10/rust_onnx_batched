@@ -6,6 +6,7 @@ use ndarray::{Array, Axis};
 
 use ort::{
     inputs,
+    execution_providers::CUDAExecutionProvider,
     session::{Session, SessionOutputs, builder::GraphOptimizationLevel},
     value::TensorRef,
 };
@@ -118,6 +119,8 @@ async fn main() -> std::io::Result<()> {
             .unwrap()
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .unwrap()
+            .with_execution_providers([CUDAExecutionProvider::default().build()])
+            .unwrap()
             .commit_from_file(MODEL_PATH)
             .unwrap(),
     ));
@@ -130,7 +133,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(model.clone()) // Share the model session with the handlers
             .route("/infer", web::post().to(infer))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("0.0.0.0", 8080))?
     .run()
     .await
 }
