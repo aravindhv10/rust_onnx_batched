@@ -2,6 +2,48 @@
 #+begin_src nix :tangle ./shell.nix
 #+end_src
 
+#+begin_src conf :tangle ./Cargo.toml
+#+end_src
+
+* Cargo.toml
+
+** with cuda
+#+begin_src conf :tangle ./Cargo.toml
+  [package]
+  name = "onnxdeploy"
+  version = "0.1.0"
+  edition = "2024"
+
+  [dependencies]
+  actix-web = "4"
+  actix-multipart = "0.6"
+  image = { version = "0.25.6", features = ["serde", "nasm"] }
+  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+  ort = { version = "2.0.0-rc.10", features = ["cuda"] }
+  raqote = "0.8.5"
+  serde = { version = "1.0", features = ["derive"] }
+  futures-util = "0.3"
+  org = "0.3.1"
+#+end_src
+
+** COMMENT No cuda
+#+begin_src conf :tangle ./Cargo.toml
+  [package]
+  name = "onnxdeploy"
+  version = "0.1.0"
+  edition = "2024"
+
+  [dependencies]
+  actix-web = "4"
+  actix-multipart = "0.6"
+  image = { version = "0.25.6", features = ["serde", "nasm"] }
+  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+  ort = "2.0.0-rc.10"
+  raqote = "0.8.5"
+  serde = { version = "1.0", features = ["derive"] }
+  futures-util = "0.3"
+#+end_src
+
 * Main shell code
 
 ** Main nix code
@@ -90,12 +132,12 @@
   })
 #+end_src
 
-** COMMENT WORK SPACE
+* COMMENT WORK SPACE
 #+begin_src emacs-lisp :results silent
   (save-buffer)
   (org-babel-tangle)
   (async-shell-command "
-          find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
+          # find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
           rm -vf -- './README.org~' './#shell.nix#' './shell.nix~'
           git add './README.org'
           git add './shell.nix'

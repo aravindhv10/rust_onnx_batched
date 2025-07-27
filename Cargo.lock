@@ -1754,6 +1754,7 @@ dependencies = [
  "futures-util",
  "image",
  "ndarray",
+ "org",
  "ort",
  "raqote",
  "serde",
@@ -1808,6 +1809,12 @@ name = "option-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+
+[[package]]
+name = "org"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfdf547b633735ad9d67353aba48b3e685ab5ffb3195aaa9a1b1d8613e11b98c"
 
 [[package]]
 name = "ort"
