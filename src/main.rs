@@ -20,11 +20,11 @@ const MODEL_PATH: &str = "./model.onnx";
 const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Serialize)]
-struct prediction_probabilities {
+struct prediction_probabilities <'a> {
     p1: f32,
     p2: f32,
     p3: f32,
-    mj: &str,
+    mj: &'a str,
 }
 
 #[derive(Serialize)]
