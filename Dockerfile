@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 as rustcuda
+FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rustcuda
 
 ENV HOME='/root'
 ENV DEBIAN_FRONTEND='noninteractive'
