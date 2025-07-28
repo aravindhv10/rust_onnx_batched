@@ -1,8 +1,23 @@
 * COMMENT SAMPLE
+
+** nix
 #+begin_src nix :tangle ./shell.nix
 #+end_src
 
+** Cargo
 #+begin_src conf :tangle ./Cargo.toml
+#+end_src
+
+** Dockerfile
+#+begin_src conf :tangle ./Dockerfile
+#+end_src
+
+** Script to build
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+#+end_src
+
+** Script to run
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
 #+end_src
 
 * Cargo.toml
@@ -51,7 +66,157 @@
 
 * Script to infer
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
-  curl -X POST "http://127.0.0.1:8080/infer" -F "image=@/home/login/image.png"
+  curl -X POST "http://127.0.0.1:8080/infer" -F "image=@./image.png"
+#+end_src
+
+* CUDA + RUST Docker image
+
+** Base image
+#+begin_src conf :tangle ./Dockerfile
+  FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 as rustcuda
+#+end_src
+
+** Basic configs
+#+begin_src conf :tangle ./Dockerfile
+  ENV HOME='/root'
+  ENV DEBIAN_FRONTEND='noninteractive'
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+  WORKDIR '/root'
+#+end_src
+
+** Important apt install stuff
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'aria2' \
+          'build-essential' \
+          'cmake' \
+          'curl' \
+          'git' \
+          'git-lfs' \
+          'libfontconfig-dev' \
+          'libssl-dev' \
+          'make' \
+          'nasm' \
+          'pkg-config' \
+          'wget' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+** Set up env for rust
+#+begin_src conf :tangle ./Dockerfile
+  ENV RUSTUP_HOME=/usr/local/rustup \
+      CARGO_HOME=/usr/local/cargo \
+      PATH=/usr/local/cargo/bin:$PATH \
+      RUST_VERSION=1.88.0
+#+end_src
+
+** Download and rust 
+#+begin_src conf :tangle ./Dockerfile
+  RUN set -eux; \
+      dpkgArch="$(dpkg --print-architecture)"; \
+      rustArch='x86_64-unknown-linux-gnu'; \
+      rustupSha256='20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c' ; \
+      url="https://static.rust-lang.org/rustup/archive/1.28.2/${rustArch}/rustup-init"; \
+      wget "$url"; \
+      echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
+      chmod +x rustup-init; \
+      ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host ${rustArch}; \
+      rm rustup-init; \
+      chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+      rustup --version; \
+      cargo --version; \
+      rustc --version;
+#+end_src
+
+* Image for ORT RUST
+
+** Base image
+#+begin_src conf :tangle ./Dockerfile
+  FROM rustcuda
+#+end_src
+
+** Important apt install stuff
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'aria2' \
+          'build-essential' \
+          'cmake' \
+          'curl' \
+          'ffmpeg' \
+          'fish' \
+          'git' \
+          'git-lfs' \
+          'ipython3' \
+          'libcairo2-dev' \
+          'libfontconfig-dev' \
+          'libssl-dev' \
+          'make' \
+          'nasm' \
+          'neovim' \
+          'ninja-build' \
+          'pkg-config' \
+          'python3-cairo-dev' \
+          'python3-dev' \
+          'python3-opencv' \
+          'python3-pip' \
+          'python3-setuptools' \
+          'unzip' \
+          'wget' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+** Expose a network port
+#+begin_src conf :tangle ./Dockerfile
+  EXPOSE 8888/tcp
+#+end_src
+
+* Script to build
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  cd "$('dirname' '--' "${0}")"
+  sudo -A docker build -t cudarust .
+#+end_src
+
+* Script to run
+
+** Prepare the main script from the template
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
+  A1="$(realpath "${1}")"
+  A2="$(realpath "${2}")"
+  cd "$('dirname' -- "${0}")"
+  cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
+  sh './host.docker_run_main.sh' "${A1}" "${A2}"
+#+end_src
+
+** Main template
+#+begin_src conf :tangle ./host.docker_run.txt
+  cd "$('dirname' -- "${0}")" ;
+  sudo -A
+  docker run
+  --tty
+  --interactive
+  --rm
+  --gpus 'all,"capabilities=compute,utility,video"'
+  --ipc host
+  --ulimit memlock=-1
+  --ulimit stack=67108864
+  --shm-size 107374182400
+  --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
+  -v "${1}:/data/input"
+  -v "${2}:/data/output"
+  -v "CACHE:/root/.cache"
+  -p '0.0.0.0:8080:8080/tcp'
+  cudarust
+  'fish' ;
 #+end_src
 
 * Main shell code
@@ -151,12 +316,17 @@
           rm -vf -- './README.org~' './#shell.nix#' './shell.nix~'
 
           git add './Cargo.toml'
+          git add './Dockerfile'
           git add './README.org'
+          git add './host.docker_build.sh'
+          git add './host.docker_run.sh'
+          git add './host.docker_run.txt'
           git add './shell.nix'
           git add './src/main.rs'
       " "log" "err")
 #+end_src
 
+* COMMENT Pushing
 #+begin_src sh :shebang #!/bin/sh :results output
 ~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh;
 git push
