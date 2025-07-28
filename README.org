@@ -61,6 +61,7 @@
 
 * Script to start server
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+  cd "$(dirname -- "${0}")"
   cargo run --release
 #+end_src
 
