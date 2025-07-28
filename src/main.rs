@@ -128,6 +128,13 @@ async fn infer(
         }
     }
 
+    return Ok(HttpResponse::Ok().json(prediction_probabilities {
+        p1: 0.0,
+        p2: 0.0,
+        p3: 1.0,
+        mj: "empty",
+    }));
+
     // Ok(HttpResponse::Ok().json(InferenceResponse { predictions }))
 }
 
