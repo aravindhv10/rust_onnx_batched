@@ -112,16 +112,16 @@ fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    ort::init()
-        .with_execution_providers([CUDAExecutionProvider::default().build()])
-        .commit()
-        .unwrap();
+    // ort::init()
+    //     .with_execution_providers([CUDAExecutionProvider::default().build()])
+    //     .commit()
+    //     .unwrap();
     // Initialize the ONNX session
     let model = web::Data::new(Mutex::new(
         Session::builder()
             .unwrap()
-            // .with_optimization_level(GraphOptimizationLevel::Level3)
-            // .unwrap()
+            .with_optimization_level(GraphOptimizationLevel::Level3)
+            .unwrap()
             .with_execution_providers([CUDAExecutionProvider::default().build()])
             .unwrap()
             .commit_from_file(MODEL_PATH)
