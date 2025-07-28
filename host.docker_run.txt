@@ -14,4 +14,5 @@ docker run
 -v "CACHE:/root/.cache"
 -p '0.0.0.0:8000:8000/tcp'
 cudarust
-'fish' ;
+'/data/input/start.sh' ;
+# 'fish' ;
