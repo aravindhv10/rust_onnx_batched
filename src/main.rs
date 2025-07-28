@@ -16,8 +16,7 @@ use std::io::Write;
 use std::sync::Mutex; // 1. Import Mutex
 
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
-const MODEL_PATH: &str =
-    "/home/asd/MODEL_CHECKPOINTS/PATIENT_DETECTION/patient_detect-epoch=15-val_loss=0.02.onnx";
+const MODEL_PATH: &str = "./model.onnx";
 const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Serialize)]
