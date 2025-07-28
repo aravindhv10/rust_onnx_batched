@@ -191,11 +191,10 @@
 
 ** Prepare the main script from the template
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
-  A1="$(realpath "${1}")"
-  A2="$(realpath "${2}")"
+  A1="$(realpath .)"
   cd "$('dirname' -- "${0}")"
   cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
-  sh './host.docker_run_main.sh' "${A1}" "${A2}"
+  sh './host.docker_run_main.sh' "${A1}"
 #+end_src
 
 ** Main template
@@ -213,7 +212,6 @@
   --shm-size 107374182400
   --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
   -v "${1}:/data/input"
-  -v "${2}:/data/output"
   -v "CACHE:/root/.cache"
   -p '0.0.0.0:8000:8000/tcp'
   cudarust
