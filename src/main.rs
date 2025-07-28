@@ -28,8 +28,8 @@ struct prediction_probabilities <'a> {
 }
 
 #[derive(Serialize)]
-struct InferenceResponse {
-    predictions: Vec<prediction_probabilities>,
+struct InferenceResponse<'a> {
+    predictions: Vec<prediction_probabilities<'a>>,
 }
 
 /// # **Handles the inference request.**
