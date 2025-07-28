@@ -66,8 +66,8 @@
 
 * Script to infer
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
-  curl -X POST "http://127.0.0.1:8080/infer" -F "image=@./image.png"
-  curl -X POST "http://127.0.0.1:8080/infer" -F "image=@./image.jpg"
+  curl -X POST "http://127.0.0.1:8000/infer" -F "image=@./image.png"
+  curl -X POST "http://127.0.0.1:8000/infer" -F "image=@./image.jpg"
 #+end_src
 
 * CUDA + RUST Docker image
@@ -178,7 +178,7 @@
 
 ** Expose a network port
 #+begin_src conf :tangle ./Dockerfile
-  EXPOSE 8888/tcp
+  EXPOSE 8000/tcp
 #+end_src
 
 * Script to build
@@ -215,7 +215,7 @@
   -v "${1}:/data/input"
   -v "${2}:/data/output"
   -v "CACHE:/root/.cache"
-  -p '0.0.0.0:8080:8080/tcp'
+  -p '0.0.0.0:8000:8000/tcp'
   cudarust
   'fish' ;
 #+end_src

@@ -173,7 +173,7 @@ async fn main() -> std::io::Result<()> {
             .unwrap(),
     ));
 
-    println!("🚀 Server started at http://0.0.0.0:8080");
+    println!("🚀 Server started at http://0.0.0.0:8000");
 
     // Start the HTTP server
     HttpServer::new(move || {
@@ -181,7 +181,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(model.clone()) // Share the model session with the handlers
             .route("/infer", web::post().to(infer))
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", 8000))?
     .run()
     .await
 }

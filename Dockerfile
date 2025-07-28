@@ -79,4 +79,4 @@ RUN \
         'wget' \
     && echo 'DONE apt-get stuff' ;
 
-EXPOSE 8888/tcp
+EXPOSE 8000/tcp

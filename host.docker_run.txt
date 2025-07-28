@@ -13,6 +13,6 @@ docker run
 -v "${1}:/data/input"
 -v "${2}:/data/output"
 -v "CACHE:/root/.cache"
--p '0.0.0.0:8080:8080/tcp'
+-p '0.0.0.0:8000:8000/tcp'
 cudarust
 'fish' ;
