@@ -5,8 +5,8 @@ use image::{DynamicImage, GenericImageView, imageops};
 use ndarray::{Array, Axis};
 
 use ort::{
-    inputs,
     execution_providers::CUDAExecutionProvider,
+    inputs,
     session::{Session, SessionOutputs, builder::GraphOptimizationLevel},
     value::TensorRef,
 };
@@ -24,6 +24,7 @@ struct prediction_probabilities {
     p1: f32,
     p2: f32,
     p3: f32,
+    mj: &str,
 }
 
 #[derive(Serialize)]
@@ -83,11 +84,28 @@ async fn infer(
     // Format the output
     let mut predictions = Vec::new();
     for row in output.axis_iter(Axis(1)) {
-        predictions.push(prediction_probabilities {
-            p1: row[0],
-            p2: row[1],
-            p3: row[2],
-        });
+        if ((row[0] > row[1]) & (row[0] > row[2])) {
+            predictions.push(prediction_probabilities {
+                p1: row[0],
+                p2: row[1],
+                p3: row[2],
+                mj: "empty",
+            });
+        } else if ((row[1] > row[0]) & (row[1] > row[2])) {
+            predictions.push(prediction_probabilities {
+                p1: row[0],
+                p2: row[1],
+                p3: row[2],
+                mj: "occupied",
+            });
+        } else {
+            predictions.push(prediction_probabilities {
+                p1: row[0],
+                p2: row[1],
+                p3: row[2],
+                mj: "other",
+            });
+        }
     }
 
     Ok(HttpResponse::Ok().json(InferenceResponse { predictions }))
