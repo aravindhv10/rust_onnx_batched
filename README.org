@@ -321,8 +321,11 @@
           git add './host.docker_build.sh'
           git add './host.docker_run.sh'
           git add './host.docker_run.txt'
+          git add './infer.sh'
           git add './shell.nix'
           git add './src/main.rs'
+          git add './start.sh'
+
       " "log" "err")
 #+end_src
 
