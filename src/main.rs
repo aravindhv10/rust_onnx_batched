@@ -21,16 +21,19 @@ const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Serialize)]
 struct prediction_probabilities<'a> {
-    p1: f32,
-    p2: f32,
-    p3: f32,
+    p1: &'a str,
+    p2: &'a str,
+    p3: &'a str,
     mj: &'a str,
 }
 
-#[derive(Serialize)]
-struct InferenceResponse<'a> {
-    predictions: Vec<prediction_probabilities<'a>>,
-}
+// #[derive(Serialize)]
+// struct prediction_probabilities<'a> {
+//     p1: f32,
+//     p2: f32,
+//     p3: f32,
+//     mj: &'a str,
+// }
 
 /// # **Handles the inference request.**
 ///
@@ -43,7 +46,7 @@ async fn infer(
     // Isolate the image data from the multipart payload
     let mut image_data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
-        if field.content_disposition().get_name() == Some("image") {
+        if field.content_disposition().get_name() == Some("file") {
             while let Some(chunk) = field.try_next().await? {
                 image_data.extend_from_slice(&chunk);
             }
@@ -86,56 +89,34 @@ async fn infer(
     for row in output.axis_iter(Axis(1)) {
         if ((row[0] > row[1]) & (row[0] > row[2])) {
             return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: row[0],
-                p2: row[1],
-                p3: row[2],
+                p1: &row[0].to_string(),
+                p2: &row[1].to_string(),
+                p3: &row[2].to_string(),
                 mj: "empty",
             }));
-            // predictions.push(prediction_probabilities {
-            //     p1: row[0],
-            //     p2: row[1],
-            //     p3: row[2],
-            //     mj: "empty",
-            // });
         } else if ((row[1] > row[0]) & (row[1] > row[2])) {
             return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: row[0],
-                p2: row[1],
-                p3: row[2],
+                p1: &row[0].to_string(),
+                p2: &row[1].to_string(),
+                p3: &row[2].to_string(),
                 mj: "occupied",
             }));
-
-            // predictions.push(prediction_probabilities {
-            //     p1: row[0],
-            //     p2: row[1],
-            //     p3: row[2],
-            //     mj: "occupied",
-            // });
         } else {
             return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: row[0],
-                p2: row[1],
-                p3: row[2],
+                p1: &row[0].to_string(),
+                p2: &row[1].to_string(),
+                p3: &row[2].to_string(),
                 mj: "other",
             }));
-
-            // predictions.push(prediction_probabilities {
-            //     p1: row[0],
-            //     p2: row[1],
-            //     p3: row[2],
-            //     mj: "other",
-            // });
         }
     }
 
     return Ok(HttpResponse::Ok().json(prediction_probabilities {
-        p1: 0.0,
-        p2: 0.0,
-        p3: 1.0,
-        mj: "empty",
+        p1: &(0.0).to_string(),
+        p2: &(0.0).to_string(),
+        p3: &(1.0).to_string(),
+        mj: "other",
     }));
-
-    // Ok(HttpResponse::Ok().json(InferenceResponse { predictions }))
 }
 
 /// # **Preprocesses the image before inference.**
