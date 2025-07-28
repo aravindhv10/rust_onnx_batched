@@ -20,7 +20,7 @@ const MODEL_PATH: &str = "./model.onnx";
 const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Serialize)]
-struct prediction_probabilities <'a> {
+struct prediction_probabilities<'a> {
     p1: f32,
     p2: f32,
     p3: f32,
@@ -82,33 +82,53 @@ async fn infer(
         .into_owned();
 
     // Format the output
-    let mut predictions = Vec::new();
+    // let mut predictions = Vec::new();
     for row in output.axis_iter(Axis(1)) {
         if ((row[0] > row[1]) & (row[0] > row[2])) {
-            predictions.push(prediction_probabilities {
+            return Ok(HttpResponse::Ok().json(prediction_probabilities {
                 p1: row[0],
                 p2: row[1],
                 p3: row[2],
                 mj: "empty",
-            });
+            }));
+            // predictions.push(prediction_probabilities {
+            //     p1: row[0],
+            //     p2: row[1],
+            //     p3: row[2],
+            //     mj: "empty",
+            // });
         } else if ((row[1] > row[0]) & (row[1] > row[2])) {
-            predictions.push(prediction_probabilities {
+            return Ok(HttpResponse::Ok().json(prediction_probabilities {
                 p1: row[0],
                 p2: row[1],
                 p3: row[2],
                 mj: "occupied",
-            });
+            }));
+
+            // predictions.push(prediction_probabilities {
+            //     p1: row[0],
+            //     p2: row[1],
+            //     p3: row[2],
+            //     mj: "occupied",
+            // });
         } else {
-            predictions.push(prediction_probabilities {
+            return Ok(HttpResponse::Ok().json(prediction_probabilities {
                 p1: row[0],
                 p2: row[1],
                 p3: row[2],
                 mj: "other",
-            });
+            }));
+
+            // predictions.push(prediction_probabilities {
+            //     p1: row[0],
+            //     p2: row[1],
+            //     p3: row[2],
+            //     mj: "other",
+            // });
         }
     }
 
-    Ok(HttpResponse::Ok().json(InferenceResponse { predictions }))
+    // Ok(HttpResponse::Ok().json(InferenceResponse { predictions }))
 }
 
 /// # **Preprocesses the image before inference.**
