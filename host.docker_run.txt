@@ -11,7 +11,7 @@ docker run
 --shm-size 107374182400
 --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
 -v "${1}:/data/input"
--v "CACHE:/root/.cache"
+-v "CACHE:/usr/local/cargo/registry"
 -p '0.0.0.0:8000:8000/tcp'
 cudarust
 '/data/input/start.sh' ;
