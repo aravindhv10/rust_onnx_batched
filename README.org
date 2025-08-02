@@ -58,7 +58,6 @@
   raqote = "0.8.5"
   serde = { version = "1.0", features = ["derive"] }
   futures-util = "0.3"
-  org = "0.3.1"
   gxhash = "3.5.0"
 #+end_src
 

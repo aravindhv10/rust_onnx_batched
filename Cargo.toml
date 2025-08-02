@@ -11,7 +11,6 @@ ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", 
 raqote = "0.8.5"
 serde = { version = "1.0", features = ["derive"] }
 futures-util = "0.3"
-org = "0.3.1"
 gxhash = "3.5.0"
 
 ort = { version = "2.0.0-rc.10", features = ["webgpu"] }

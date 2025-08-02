@@ -26,7 +26,7 @@ use std::sync::Mutex;
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
-const PATH_DIR_JSON: &str = "/tmp/json";
+const PATH_DIR_OUT: &str = "/tmp/out";
 
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
@@ -39,9 +39,9 @@ struct prediction_probabilities {
     p3: f32,
 }
 
-fn hash_content(image_data: &Vec<u8>) -> u128{
+fn hash_content(image_data: &Vec<u8>) -> String{
     let seed = 123456789;
-    gxhash::gxhash128(&image_data, seed)
+    format!("{:x}", gxhash::gxhash128(&image_data, seed) )
 }
 
 fn save_image(image_data: Vec<u8>, name_image: &str) -> Result<(), Error> {
@@ -71,6 +71,7 @@ async fn infer(
     mut payload: Multipart,
     model: web::Data<Mutex<Session>>,
 ) -> Result<HttpResponse, Error> {
+
     // Isolate the image data from the multipart payload
     let mut image_data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
@@ -85,11 +86,14 @@ async fn infer(
         return Ok(HttpResponse::BadRequest().body("Image data not provided."));
     }
 
-    println!("hash of image: {}",hash_content(&image_data));
+    let img_hash = hash_content(&image_data);
+
+    save_image(image_data, img_hash) ;
 
     // Load and preprocess the image
     let original_img = image::load_from_memory(&image_data)
         .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
+
     let preprocessed_image = preprocess_image(original_img);
 
     // Prepare the input tensor
