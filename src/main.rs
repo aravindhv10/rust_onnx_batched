@@ -45,28 +45,27 @@ fn hash_image_content(image_data: &Vec<u8>) -> String {
 }
 
 fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
-    let ret: Vec<String>;
     match fs::read_dir(path_dir_input) {
         Ok(list_entry) => {
+            let mut ret: Vec<String> = vec![];
             for i in list_entry {
                 match i {
                     Ok(path) => {
-                        ret.push(path.path().display());
+                        ret.push(path.path().display().to_string());
                     }
                     Err(e) => {
                         eprintln!(
                             "Failed to read a path inside directory {} due to {}",
-                            path_dir_out, e
+                            path_dir_input, e
                         );
                     }
                 }
             }
-
             Ok(ret)
         }
         Err(e) => {
             eprintln!("Failed to read directory: {}", e);
-            Err(e)
+            Err(e.into())
         }
     }
 }
