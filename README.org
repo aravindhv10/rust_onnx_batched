@@ -59,6 +59,7 @@
   serde = { version = "1.0", features = ["derive"] }
   futures-util = "0.3"
   org = "0.3.1"
+  gxhash = "3.5.0"
 #+end_src
 
 * ORT Related
@@ -399,14 +400,17 @@
 
           git add './Cargo.toml'
           git add './Dockerfile'
-          git add './README.org'
           git add './host.docker_build.sh'
+          git add './host.docker_run_main.sh'
           git add './host.docker_run.sh'
           git add './host.docker_run.txt'
+          git add './image_name.txt'
           git add './infer.sh'
+          git add './README.org'
           git add './shell.nix'
           git add './src/main.rs'
           git add './start.sh'
+          git add './Cargo.lock'
 
       " "log" "err")
 #+end_src
