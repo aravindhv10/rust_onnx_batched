@@ -39,12 +39,37 @@ struct prediction_probabilities {
     p3: f32,
 }
 
-fn hash_content(image_data: &Vec<u8>) -> String {
+fn hash_image_content(image_data: &Vec<u8>) -> String {
     let seed = 123456789;
     format!("{:x}", gxhash::gxhash128(&image_data, seed))
 }
 
+fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
+    let ret: Vec<String>;
+    match fs::read_dir(path_dir_input) {
+        Ok(list_entry) => {
+            for i in list_entry {
+                match i {
+                    Ok(path) => {
+                        ret.push(path.path().display());
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Failed to read a path inside directory {} due to {}",
+                            path_dir_out, e
+                        );
+                    }
+                }
+            }
 
+            Ok(ret)
+        }
+        Err(e) => {
+            eprintln!("Failed to read directory: {}", e);
+            Err(e)
+        }
+    }
+}
 
 fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
     match fs::create_dir_all(PATH_DIR_INCOMPLETE) {
@@ -62,18 +87,18 @@ fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
                         }
                     }
                     Err(e) => {
-                        println!("Failed to write the temporary file {} due to {}", s2, e);
+                        eprintln!("Failed to write the temporary file {} due to {}", s2, e);
                         Err(e.into())
                     }
                 }
             }
             Err(e) => {
-                println!("Failed creating directory {} due to {}", PATH_DIR_IMAGE, e);
+                eprintln!("Failed creating directory {} due to {}", PATH_DIR_IMAGE, e);
                 Err(e.into())
             }
         },
         Err(e) => {
-            println!(
+            eprintln!(
                 "Failed creating directory {} due to {}",
                 PATH_DIR_INCOMPLETE, e
             );
@@ -104,9 +129,9 @@ async fn infer(
         return Ok(HttpResponse::BadRequest().body("Image data not provided."));
     }
 
-    let img_hash = hash_content(&image_data);
+    let img_hash = hash_image_content(&image_data);
 
-    save_image(&image_data, &img_hash);
+    let _ = save_image(&image_data, &img_hash);
 
     // Load and preprocess the image
     let original_img = image::load_from_memory(&image_data)
