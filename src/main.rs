@@ -47,8 +47,8 @@ fn hash_content(image_data: &Vec<u8>) -> String {
 
 
 fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
-    match fs::create_dir(PATH_DIR_INCOMPLETE) {
-        Ok(_) => match fs::create_dir(PATH_DIR_IMAGE) {
+    match fs::create_dir_all(PATH_DIR_INCOMPLETE) {
+        Ok(_) => match fs::create_dir_all(PATH_DIR_IMAGE) {
             Ok(_) => {
                 let s1: String = String::from(PATH_DIR_INCOMPLETE);
                 let s2: String = s1 + name_image;
