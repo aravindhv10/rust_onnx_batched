@@ -36,18 +36,21 @@ struct prediction_probabilities {
     p3: f32,
 }
 
-fn save_image(image_data: Vec<u8>, name_image: &str) -> Result<(), E> {
+fn save_image(image_data: Vec<u8>, name_image: &str) -> Result<(), Error> {
     let s1: String = String::from(PATH_DIR_INCOMPLETE);
     let s2: String = s1 + name_image;
     match fs::write(&s2, image_data) {
         Ok(_) => {
             let s1: String = String::from(PATH_DIR_IMAGE);
-            let s2: String = s1 + name_image;
-            fs::rename(&s2, image_data)
+            let s3: String = s1 + name_image;
+            match fs::rename(&s2, s3) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e.into()),
+            }
         }
         Err(e) => {
             println!("Failed to write the temporary file {} due to {}", s2, e);
-            Err(e)
+            Err(e.into())
         }
     }
 }
