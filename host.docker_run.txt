@@ -18,5 +18,5 @@ podman run
 --shm-size 107374182400
 
 "$('cat' './image_name.txt')"
+
 '/data/input/start.sh' ;
-# 'fish' ;

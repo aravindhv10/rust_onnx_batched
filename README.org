@@ -262,8 +262,18 @@
 *** Image name and command
 #+begin_src conf :tangle ./host.docker_run.txt
   "$('cat' './image_name.txt')"
+#+end_src
+
+*** Final command
+
+**** start the server
+#+begin_src conf :tangle ./host.docker_run.txt
   '/data/input/start.sh' ;
-  # 'fish' ;
+#+end_src
+
+**** COMMENT fish
+#+begin_src conf :tangle ./host.docker_run.txt
+  'fish' ;
 #+end_src
 
 ** Prepare the main script from the template
