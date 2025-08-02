@@ -85,7 +85,7 @@ async fn infer(
         return Ok(HttpResponse::BadRequest().body("Image data not provided."));
     }
 
-    println!("hash of image: {}",hash_content(image_data));
+    println!("hash of image: {}",hash_content(&image_data));
 
     // Load and preprocess the image
     let original_img = image::load_from_memory(&image_data)
