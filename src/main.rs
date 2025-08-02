@@ -14,9 +14,9 @@ use ndarray::Array;
 use ndarray::Axis;
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
 use ort::session::SessionOutputs;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 use serde::Serialize;
 use std::fs;
@@ -39,25 +39,44 @@ struct prediction_probabilities {
     p3: f32,
 }
 
-fn hash_content(image_data: &Vec<u8>) -> String{
+fn hash_content(image_data: &Vec<u8>) -> String {
     let seed = 123456789;
-    format!("{:x}", gxhash::gxhash128(&image_data, seed) )
+    format!("{:x}", gxhash::gxhash128(&image_data, seed))
 }
 
-fn save_image(image_data: Vec<u8>, name_image: &str) -> Result<(), Error> {
-    let s1: String = String::from(PATH_DIR_INCOMPLETE);
-    let s2: String = s1 + name_image;
-    match fs::write(&s2, image_data) {
-        Ok(_) => {
-            let s1: String = String::from(PATH_DIR_IMAGE);
-            let s3: String = s1 + name_image;
-            match fs::rename(&s2, s3) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e.into()),
+
+
+fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
+    match fs::create_dir(PATH_DIR_INCOMPLETE) {
+        Ok(_) => match fs::create_dir(PATH_DIR_IMAGE) {
+            Ok(_) => {
+                let s1: String = String::from(PATH_DIR_INCOMPLETE);
+                let s2: String = s1 + name_image;
+                match fs::write(&s2, image_data) {
+                    Ok(_) => {
+                        let s1: String = String::from(PATH_DIR_IMAGE);
+                        let s3: String = s1 + name_image;
+                        match fs::rename(&s2, s3) {
+                            Ok(_) => Ok(()),
+                            Err(e) => Err(e.into()),
+                        }
+                    }
+                    Err(e) => {
+                        println!("Failed to write the temporary file {} due to {}", s2, e);
+                        Err(e.into())
+                    }
+                }
             }
-        }
+            Err(e) => {
+                println!("Failed creating directory {} due to {}", PATH_DIR_IMAGE, e);
+                Err(e.into())
+            }
+        },
         Err(e) => {
-            println!("Failed to write the temporary file {} due to {}", s2, e);
+            println!(
+                "Failed creating directory {} due to {}",
+                PATH_DIR_INCOMPLETE, e
+            );
             Err(e.into())
         }
     }
@@ -71,7 +90,6 @@ async fn infer(
     mut payload: Multipart,
     model: web::Data<Mutex<Session>>,
 ) -> Result<HttpResponse, Error> {
-
     // Isolate the image data from the multipart payload
     let mut image_data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
@@ -88,7 +106,7 @@ async fn infer(
 
     let img_hash = hash_content(&image_data);
 
-    save_image(image_data, img_hash) ;
+    save_image(&image_data, &img_hash);
 
     // Load and preprocess the image
     let original_img = image::load_from_memory(&image_data)
