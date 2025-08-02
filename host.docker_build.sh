@@ -1,3 +1,3 @@
 #!/bin/sh
 cd "$('dirname' '--' "${0}")"
-sudo -A docker build -t cudarust .
+sudo -A docker build -t onnxrust .

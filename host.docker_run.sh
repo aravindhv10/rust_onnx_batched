@@ -1,5 +1,4 @@
 #!/bin/sh
-A1="$(realpath .)"
 cd "$('dirname' -- "${0}")"
 cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
-sh './host.docker_run_main.sh' "${A1}"
+sh './host.docker_run_main.sh'

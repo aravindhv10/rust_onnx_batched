@@ -1,9 +1,16 @@
-FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rustcuda
+FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rust
+
+FROM ubuntu:24.04 AS rust
 
 ENV HOME='/root'
 ENV DEBIAN_FRONTEND='noninteractive'
-ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
 WORKDIR '/root'
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH \
+    RUST_VERSION=1.88.0
+
+ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
@@ -25,11 +32,6 @@ RUN \
         'wget' \
     && echo 'DONE apt-get stuff' ;
 
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH \
-    RUST_VERSION=1.88.0
-
 RUN set -eux; \
     dpkgArch="$(dpkg --print-architecture)"; \
     rustArch='x86_64-unknown-linux-gnu'; \
@@ -45,7 +47,7 @@ RUN set -eux; \
     cargo --version; \
     rustc --version;
 
-FROM rustcuda
+FROM rust
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \

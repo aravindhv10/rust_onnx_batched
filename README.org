@@ -20,9 +20,17 @@
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
 #+end_src
 
-* Cargo.toml
+** start
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+#+end_src
 
-** with cuda
+** infer
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+#+end_src
+
+* General dependencies
+
+** Cargo
 #+begin_src conf :tangle ./Cargo.toml
   [package]
   name = "onnxdeploy"
@@ -34,57 +42,57 @@
   actix-multipart = "0.6"
   image = { version = "0.25.6", features = ["serde", "nasm"] }
   ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
-  ort = { version = "2.0.0-rc.10", features = ["cuda"] }
   raqote = "0.8.5"
   serde = { version = "1.0", features = ["derive"] }
   futures-util = "0.3"
   org = "0.3.1"
 #+end_src
 
-** COMMENT No cuda
+* ORT Related
+
+** with cuda
+
+*** Cargo
 #+begin_src conf :tangle ./Cargo.toml
-  [package]
-  name = "onnxdeploy"
-  version = "0.1.0"
-  edition = "2024"
-
-  [dependencies]
-  actix-web = "4"
-  actix-multipart = "0.6"
-  image = { version = "0.25.6", features = ["serde", "nasm"] }
-  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
-  ort = "2.0.0-rc.10"
-  raqote = "0.8.5"
-  serde = { version = "1.0", features = ["derive"] }
-  futures-util = "0.3"
+  ort = { version = "2.0.0-rc.10", features = ["cuda"] }
 #+end_src
 
-* Script to start server
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
-  cd "$(dirname -- "${0}")"
-  cargo run --release
-#+end_src
-
-* Script to infer
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
-  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.png"
-  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
-#+end_src
-
-* CUDA + RUST Docker image
-
-** Base image
+*** Base docker image
 #+begin_src conf :tangle ./Dockerfile
-  FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rustcuda
+  FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rust
 #+end_src
 
-** Basic configs
+** WebGPU
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.toml
+  ort = { version = "2.0.0-rc.10", features = ["webgpu"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM ubuntu:24.04 AS rust
+#+end_src
+
+* Basic configs
+
+** Base
 #+begin_src conf :tangle ./Dockerfile
   ENV HOME='/root'
   ENV DEBIAN_FRONTEND='noninteractive'
-  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
   WORKDIR '/root'
+  ENV RUSTUP_HOME=/usr/local/rustup \
+      CARGO_HOME=/usr/local/cargo \
+      PATH=/usr/local/cargo/bin:$PATH \
+      RUST_VERSION=1.88.0
 #+end_src
+
+** CUDA
+#+begin_src conf :tangle ./Dockerfile
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+#+end_src
+
+* Prepare basic packages
 
 ** Important apt install stuff
 #+begin_src conf :tangle ./Dockerfile
@@ -109,15 +117,7 @@
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
-** Set up env for rust
-#+begin_src conf :tangle ./Dockerfile
-  ENV RUSTUP_HOME=/usr/local/rustup \
-      CARGO_HOME=/usr/local/cargo \
-      PATH=/usr/local/cargo/bin:$PATH \
-      RUST_VERSION=1.88.0
-#+end_src
-
-** Download and rust 
+** Download rust 
 #+begin_src conf :tangle ./Dockerfile
   RUN set -eux; \
       dpkgArch="$(dpkg --print-architecture)"; \
@@ -135,11 +135,11 @@
       rustc --version;
 #+end_src
 
-* Image for ORT RUST
+* Prepare with base system packages for rust
 
 ** Base image
 #+begin_src conf :tangle ./Dockerfile
-  FROM rustcuda
+  FROM rust
 #+end_src
 
 ** Important apt install stuff
@@ -177,7 +177,7 @@
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
-** Expose a network port
+* Expose a network port
 #+begin_src conf :tangle ./Dockerfile
   EXPOSE 8000/tcp
 #+end_src
@@ -185,17 +185,16 @@
 * Script to build
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   cd "$('dirname' '--' "${0}")"
-  sudo -A docker build -t cudarust .
+  sudo -A docker build -t onnxrust .
 #+end_src
 
 * Script to run
 
 ** Prepare the main script from the template
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
-  A1="$(realpath .)"
   cd "$('dirname' -- "${0}")"
   cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
-  sh './host.docker_run_main.sh' "${A1}"
+  sh './host.docker_run_main.sh'
 #+end_src
 
 ** Main template
@@ -212,11 +211,11 @@
   --ulimit stack=67108864
   --shm-size 107374182400
   --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
-  -v "${1}:/data/input"
+  -v "$(realpath .):/data/input"
   -v "CACHE:/usr/local/cargo/registry"
   -v "CACHE:/root/.cache"
   -p '0.0.0.0:8000:8000/tcp'
-  cudarust
+  onnxrust
   '/data/input/start.sh' ;
   # 'fish' ;
 #+end_src
@@ -307,6 +306,18 @@
 **** Trailer
 #+begin_src nix :tangle ./shell.nix
   })
+#+end_src
+
+* Script to start server
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+  cd "$(dirname -- "${0}")"
+  cargo run --release
+#+end_src
+
+* Script to infer
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.png"
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
 #+end_src
 
 * COMMENT WORK SPACE
