@@ -1,39 +1,47 @@
 use actix_multipart::Multipart;
-use actix_web::{App, Error, HttpResponse, HttpServer, Responder, web};
+use actix_web::App;
+use actix_web::Error;
+use actix_web::HttpResponse;
+use actix_web::HttpServer;
+use actix_web::Responder;
+use actix_web::web;
 use futures_util::TryStreamExt;
-use image::{DynamicImage, GenericImageView, imageops};
-use ndarray::{Array, Axis};
-
-use ort::{
-    execution_providers::CUDAExecutionProvider,
-    inputs,
-    session::{Session, SessionOutputs, builder::GraphOptimizationLevel},
-    value::TensorRef,
-};
-
+use image::DynamicImage;
+use image::GenericImageView;
+use image::imageops;
+use ndarray::Array;
+use ndarray::Axis;
+use ort::execution_providers::CUDAExecutionProvider;
+use ort::inputs;
+use ort::session::Session;
+use ort::session::SessionOutputs;
+use ort::session::builder::GraphOptimizationLevel;
+use ort::value::TensorRef;
 use serde::Serialize;
+use std::fs;
 use std::io::Write;
 use std::sync::Mutex; // 1. Import Mutex
 
-const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 const MODEL_PATH: &str = "./model.onnx";
+const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
+const PATH_DIR_IMAGE: &str = "/tmp/image";
+const PATH_DIR_JSON: &str = "/tmp/json";
+const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Serialize)]
-struct prediction_probabilities<'a> {
-    p1: &'a str,
-    p2: &'a str,
-    p3: &'a str,
-    mj: &'a str,
+struct prediction_probabilities {
+    p1: f32,
+    p2: f32,
+    p3: f32,
 }
 
-// #[derive(Serialize)]
-// struct prediction_probabilities<'a> {
-//     p1: f32,
-//     p2: f32,
-//     p3: f32,
-//     mj: &'a str,
-// }
+fn save_image(image_data: Vec<u8>, name_image: &str) {
+    let s1: String = String::from(PATH_DIR_INCOMPLETE);
+    let s2: String = s1 + name_image;
+
+    fs::write(s2, image_data).expect("Unable to write image to file");
+}
 
 /// # **Handles the inference request.**
 ///
@@ -89,33 +97,29 @@ async fn infer(
     for row in output.axis_iter(Axis(1)) {
         if ((row[0] > row[1]) & (row[0] > row[2])) {
             return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: &row[0].to_string(),
-                p2: &row[1].to_string(),
-                p3: &row[2].to_string(),
-                mj: "empty",
+                p1: row[0],
+                p2: row[1],
+                p3: row[2],
             }));
         } else if ((row[1] > row[0]) & (row[1] > row[2])) {
             return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: &row[0].to_string(),
-                p2: &row[1].to_string(),
-                p3: &row[2].to_string(),
-                mj: "occupied",
+                p1: row[0],
+                p2: row[1],
+                p3: row[2],
             }));
         } else {
             return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: &row[0].to_string(),
-                p2: &row[1].to_string(),
-                p3: &row[2].to_string(),
-                mj: "other",
+                p1: row[0],
+                p2: row[1],
+                p3: row[2],
             }));
         }
     }
 
     return Ok(HttpResponse::Ok().json(prediction_probabilities {
-        p1: &(0.0).to_string(),
-        p2: &(0.0).to_string(),
-        p3: &(1.0).to_string(),
-        mj: "other",
+        p1: 0.0,
+        p2: 0.0,
+        p3: 1.0,
     }));
 }
 

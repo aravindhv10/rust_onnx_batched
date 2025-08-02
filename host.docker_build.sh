@@ -1,3 +1,4 @@
 #!/bin/sh
 cd "$('dirname' '--' "${0}")"
-sudo -A docker build -t onnxrust .
+
+podman build -t "$('cat' './image_name.txt')" .

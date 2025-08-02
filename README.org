@@ -28,6 +28,19 @@
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
 #+end_src
 
+** Text file to define docker commands
+#+begin_src conf :tangle ./host.docker_run.txt
+#+end_src
+
+** Text file to define docker image name
+#+begin_src conf :tangle ./image_name.txt
+#+end_src
+
+* Define the image name
+#+begin_src conf :tangle ./image_name.txt
+  onnxrust
+#+end_src
+
 * General dependencies
 
 ** Cargo
@@ -50,7 +63,7 @@
 
 * ORT Related
 
-** with cuda
+** COMMENT CUDA
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.toml
@@ -87,7 +100,7 @@
       RUST_VERSION=1.88.0
 #+end_src
 
-** CUDA
+** COMMENT CUDA
 #+begin_src conf :tangle ./Dockerfile
   ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
 #+end_src
@@ -182,13 +195,75 @@
   EXPOSE 8000/tcp
 #+end_src
 
-* Script to build
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
-  cd "$('dirname' '--' "${0}")"
-  sudo -A docker build -t onnxrust .
+* Script to run
+
+** Main template
+
+*** Change dir
+#+begin_src conf :tangle ./host.docker_run.txt
+  cd "$('dirname' -- "${0}")" ;
 #+end_src
 
-* Script to run
+*** COMMENT Root user
+#+begin_src conf :tangle ./host.docker_run.txt
+  sudo -A
+#+end_src
+
+*** Main command
+
+**** COMMENT docker
+#+begin_src conf :tangle ./host.docker_run.txt
+  docker run
+#+end_src
+
+**** podman
+#+begin_src conf :tangle ./host.docker_run.txt
+  podman run
+#+end_src
+
+*** Interactive
+#+begin_src conf :tangle ./host.docker_run.txt
+  --tty
+  --interactive
+  --rm
+#+end_src
+
+*** COMMENT CUDA
+#+begin_src conf :tangle ./host.docker_run.txt
+  --gpus 'all,"capabilities=compute,utility,video"'
+#+end_src
+
+*** COMMENT IPC
+#+begin_src conf :tangle ./host.docker_run.txt
+  --ipc host
+#+end_src
+
+*** MOUNTS
+#+begin_src conf :tangle ./host.docker_run.txt
+  --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
+  -v "$(realpath .):/data/input"
+  -v "CACHE:/usr/local/cargo/registry"
+  -v "CACHE:/root/.cache"
+#+end_src
+
+*** Network port
+#+begin_src conf :tangle ./host.docker_run.txt
+  -p '0.0.0.0:8000:8000/tcp'
+#+end_src
+
+*** memory size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --ulimit memlock=-1
+  --ulimit stack=67108864
+  --shm-size 107374182400
+#+end_src
+
+*** Image name and command
+#+begin_src conf :tangle ./host.docker_run.txt
+  "$('cat' './image_name.txt')"
+  '/data/input/start.sh' ;
+  # 'fish' ;
+#+end_src
 
 ** Prepare the main script from the template
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
@@ -197,30 +272,24 @@
   sh './host.docker_run_main.sh'
 #+end_src
 
-** Main template
-#+begin_src conf :tangle ./host.docker_run.txt
-  cd "$('dirname' -- "${0}")" ;
-  sudo -A
-  docker run
-  --tty
-  --interactive
-  --rm
-  --gpus 'all,"capabilities=compute,utility,video"'
-  --ipc host
-  --ulimit memlock=-1
-  --ulimit stack=67108864
-  --shm-size 107374182400
-  --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
-  -v "$(realpath .):/data/input"
-  -v "CACHE:/usr/local/cargo/registry"
-  -v "CACHE:/root/.cache"
-  -p '0.0.0.0:8000:8000/tcp'
-  onnxrust
-  '/data/input/start.sh' ;
-  # 'fish' ;
+* Script to build
+
+** Change directory
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  cd "$('dirname' '--' "${0}")"
 #+end_src
 
-* Main shell code
+** COMMENT using docker
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  sudo -A docker build -t onnxrust .
+#+end_src
+
+** using podman
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  podman build -t "$('cat' './image_name.txt')" .
+#+end_src
+
+* Main nix shell code
 
 ** Main nix code
 
