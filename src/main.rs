@@ -132,6 +132,15 @@ async fn infer(
 
     let _ = save_image(&image_data, &img_hash);
 
+    match get_list_files_under_dir(PATH_DIR_IMAGE) {
+        Ok(list_file) => {
+            println!("List of files {:?}", list_file);
+        }
+        Err(e) => {
+            println!("Failed reading dir: {}", e);
+        }
+    }
+
     // Load and preprocess the image
     let original_img = image::load_from_memory(&image_data)
         .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
