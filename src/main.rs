@@ -24,7 +24,7 @@ use std::sync::Mutex; // 1. Import Mutex
 
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
-const PATH_DIR_IMAGE: &str = "/tmp/image";
+const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_JSON: &str = "/tmp/json";
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 const IMAGE_RESOLUTION: u32 = 448;
@@ -36,11 +36,20 @@ struct prediction_probabilities {
     p3: f32,
 }
 
-fn save_image(image_data: Vec<u8>, name_image: &str) {
+fn save_image(image_data: Vec<u8>, name_image: &str) -> Result<(), E> {
     let s1: String = String::from(PATH_DIR_INCOMPLETE);
     let s2: String = s1 + name_image;
-
-    fs::write(s2, image_data).expect("Unable to write image to file");
+    match fs::write(&s2, image_data) {
+        Ok(_) => {
+            let s1: String = String::from(PATH_DIR_IMAGE);
+            let s2: String = s1 + name_image;
+            fs::rename(&s2, image_data)
+        }
+        Err(e) => {
+            println!("Failed to write the temporary file {} due to {}", s2, e);
+            Err(e)
+        }
+    }
 }
 
 /// # **Handles the inference request.**
