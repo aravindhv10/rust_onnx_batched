@@ -50,6 +50,9 @@
   version = "0.1.0"
   edition = "2024"
 
+  [build]
+  rustflags = ["-C", "target-cpu=native"] 
+
   [dependencies]
   actix-web = "4"
   actix-multipart = "0.6"
@@ -381,7 +384,7 @@
 * Script to start server
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
   cd "$(dirname -- "${0}")"
-  export RUSTFLAGS="-C target-cpu=native"
+  # export RUSTFLAGS="-C target-cpu=native"
   cargo run --release
 #+end_src
 
