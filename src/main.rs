@@ -6,6 +6,7 @@ use actix_web::HttpServer;
 use actix_web::Responder;
 use actix_web::web;
 use futures_util::TryStreamExt;
+use gxhash;
 use image::DynamicImage;
 use image::GenericImageView;
 use image::imageops;
@@ -13,21 +14,22 @@ use ndarray::Array;
 use ndarray::Axis;
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::inputs;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
 use ort::session::SessionOutputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 use serde::Serialize;
 use std::fs;
 use std::io::Write;
-use std::sync::Mutex; // 1. Import Mutex
-use gxhash;
+use std::sync::Mutex;
 
 const MODEL_PATH: &str = "./model.onnx";
-const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
+const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
 const PATH_DIR_JSON: &str = "/tmp/json";
+
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
+
 const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Serialize)]
@@ -35,6 +37,11 @@ struct prediction_probabilities {
     p1: f32,
     p2: f32,
     p3: f32,
+}
+
+fn hash_content(image_data: &Vec<u8>) -> u128{
+    let seed = 123456789;
+    gxhash::gxhash128(&image_data, seed)
 }
 
 fn save_image(image_data: Vec<u8>, name_image: &str) -> Result<(), Error> {
@@ -77,6 +84,8 @@ async fn infer(
     if image_data.is_empty() {
         return Ok(HttpResponse::BadRequest().body("Image data not provided."));
     }
+
+    println!("hash of image: {}",hash_content(image_data));
 
     // Load and preprocess the image
     let original_img = image::load_from_memory(&image_data)
