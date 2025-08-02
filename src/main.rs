@@ -21,6 +21,7 @@ use serde::Serialize;
 use std::fs;
 use std::io::Write;
 use std::sync::Mutex; // 1. Import Mutex
+use gxhash;
 
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
