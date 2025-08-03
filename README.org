@@ -452,7 +452,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Added more explicit array initialization'
+  M 'More progress on inference function'
 #+end_src
 
 ** COMMENT elisp

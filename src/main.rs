@@ -11,8 +11,8 @@ use image::DynamicImage;
 use image::GenericImageView;
 use image::imageops;
 use ndarray::Array;
-use ndarray::Ix4;
 use ndarray::Axis;
+use ndarray::Ix4;
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::inputs;
 use ort::session::Session;
@@ -22,8 +22,8 @@ use ort::value::TensorRef;
 use serde::Serialize;
 use std::fs;
 use std::io::Write;
-use std::sync::Mutex;
 use std::path::Path;
+use std::sync::Mutex;
 
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
@@ -119,7 +119,7 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
         Ok(list_file) => {
             let batch_size = list_file.len();
 
-            let mut input = Array::<f32, Ix4>::zeros((
+            let mut input = Array::<u8, Ix4>::zeros((
                 batch_size,
                 IMAGE_RESOLUTION as usize,
                 IMAGE_RESOLUTION as usize,
@@ -128,7 +128,15 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
 
             for i in 0..batch_size {
                 match image::open(Path::new(list_file[i].as_str())) {
-                    Ok(original_image) => {}
+                    Ok(original_image) => {
+                        let preprocessed_image = preprocess_image(original_image);
+                        for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
+                            let [r, g, b, _] = pixel.0;
+                            input[[i as usize, y as usize, x as usize, 0]] = r;
+                            input[[i as usize, y as usize, x as usize, 1]] = g;
+                            input[[i as usize, y as usize, x as usize, 2]] = b;
+                        }
+                    }
                     Err(e) => {
                         println!("Unable to read image {} due to {}.", list_file[i], e);
                     }
