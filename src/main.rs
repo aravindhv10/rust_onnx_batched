@@ -3,7 +3,7 @@ use actix_web::App;
 use actix_web::Error;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
-use actix_web::Responder;
+// use actix_web::Responder;
 use actix_web::web;
 use bincode::{Decode, Encode, config};
 use futures_util::TryStreamExt;
@@ -240,7 +240,7 @@ fn clean_old_out(timeout:u64){
 
 fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) -> Result<(), Error> {
     let mut session = model.lock().unwrap();
-    clean_old_out(1);
+    clean_old_out(86400);
     match fs::create_dir_all(PATH_DIR_OUT) {
         Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
             Ok(list_file) => {
