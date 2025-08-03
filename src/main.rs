@@ -193,12 +193,15 @@ fn do_batched_infer_on_list_file_under_dir(model: web::Data<Mutex<Session>>) -> 
                     let s2: String = s1 + keys[index];
 
                     match fs::write(&s2, encoded) {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            println!("Wrote prediction to file {}",&s2);
+                        }
                         Err(e) => {
                             println!("Failed to write predictions into {} due to {}", &s2, e);
                         }
                     }
                 }
+                return Ok(()) ;
             }
             Err(e) => {
                 println!("Failed reading dir: {}", e);

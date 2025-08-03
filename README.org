@@ -463,7 +463,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Added bincode for writing binary file'
+  M 'More completion of batched infer function'
 #+end_src
 
 ** COMMENT elisp
