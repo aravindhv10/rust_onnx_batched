@@ -137,6 +137,22 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
                             input[[i as usize, y as usize, x as usize, 1]] = g;
                             input[[i as usize, y as usize, x as usize, 2]] = b;
                         }
+
+                        match std::fs::remove_file(Path::new(list_file[i].as_str())) {
+                            Ok(_) => {
+                                println!(
+                                    "Removed image file {} after reading it.",
+                                    list_file[i].as_str()
+                                );
+                            }
+                            Err(e) => {
+                                println!(
+                                    "Failed to remove file {} after reading it due to {}.",
+                                    list_file[i].as_str(),
+                                    e
+                                );
+                            }
+                        }
                     }
                     Err(e) => {
                         println!("Unable to read image {} due to {}.", list_file[i], e);
@@ -153,6 +169,16 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
                 .unwrap()
                 .t()
                 .into_owned();
+
+            let mut results: Vec<prediction_probabilities> = vec![];
+
+            for (index, row) in output.axis_iter(Axis(1)).enumerate() {
+                results.push(prediction_probabilities {
+                    p1: row[0],
+                    p2: row[1],
+                    p3: row[2],
+                });
+            }
         }
         Err(e) => {
             println!("Failed reading dir: {}", e);
