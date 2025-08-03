@@ -411,6 +411,7 @@
   /image.jpg
   /image.png
   /model.onnx
+  /target/
 #+end_src
 
 * WORK SPACE
