@@ -463,7 +463,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Fully working and serving batched inference'
+  M 'Partially done with cleanups'
 #+end_src
 
 ** COMMENT elisp

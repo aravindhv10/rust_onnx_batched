@@ -195,7 +195,7 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
 
                 for i in 0..batch_size {
                     keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
-                    // match image::open(Path::new(list_file[i].as_str())) {
+
                     match read_image(list_file[i].as_str()) {
                         Ok(original_image) => {
                             let preprocessed_image = preprocess_image(original_image);
@@ -208,13 +208,13 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
 
                             match std::fs::remove_file(Path::new(list_file[i].as_str())) {
                                 Ok(_) => {
-                                    println!(
+                                    eprintln!(
                                         "Removed image file {} after reading it.",
                                         list_file[i].as_str()
                                     );
                                 }
                                 Err(e) => {
-                                    println!(
+                                    eprintln!(
                                         "Failed to remove file {} after reading it due to {}.",
                                         list_file[i].as_str(),
                                         e
@@ -223,7 +223,7 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
                             }
                         }
                         Err(e) => {
-                            println!("Unable to read image {} due to {}.", list_file[i], e);
+                            eprintln!("Unable to read image {} due to {}.", list_file[i], e);
                         }
                     }
                 }
@@ -247,29 +247,29 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
                         p3: row[2],
                     };
 
-                    println!("Inside prediction results: {:?}", result);
+                    eprintln!("Inside prediction results: {:?}", result);
                     match save_predictions(&result, keys[index]) {
                         Ok(_) => {}
                         Err(e) => {}
                     }
                 }
-                println!("Done inferring, now returning");
+                eprintln!("Done inferring, now returning");
                 return Ok(());
             }
             Err(e) => {
-                println!("Failed reading dir: {}", e);
+                eprintln!("Failed reading dir: {}", e);
                 return Err(e.into());
             }
         },
         Err(e) => {
-            println!(
+            eprintln!(
                 "Unable to create the output directory {} due to the error {}",
                 PATH_DIR_OUT, e
             );
             return Err(e.into());
         }
     }
-    println!("Done inferring, now returning");
+    eprintln!("Done inferring, now returning");
     return Ok(());
 }
 
@@ -299,11 +299,30 @@ async fn infer(
 
     let _ = save_image(&image_data, &img_hash);
 
-    let _ = do_batched_infer_on_list_file_under_dir(&model);
+    match do_batched_infer_on_list_file_under_dir(&model) {
+        Ok(_) => {
+            eprintln!("Done with inference");
+        }
+        Err(e) => {
+            eprintln!("Failed at inference due to {}", e);
+        }
+    }
 
-    let preds = load_predictions(&img_hash).unwrap();
-    println!("Predictions inside the web function: {:?}", preds);
-    return Ok(HttpResponse::Ok().json(preds)) ;
+    match load_predictions(&img_hash) {
+        Ok(preds) => {
+            eprintln!("Predictions inside the web function: {:?}", preds);
+            return Ok(HttpResponse::Ok().json(preds));
+        }
+        Err(e) => {
+            eprintln!("Failed in loading predictions from the cache due to {}", e);
+
+            return Ok(HttpResponse::Ok().json(prediction_probabilities {
+                p1: 0.0,
+                p2: 0.0,
+                p3: 1.0,
+            }));
+        }
+    }
 }
 
 /// # **Preprocesses the image before inference.**
