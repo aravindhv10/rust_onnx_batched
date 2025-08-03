@@ -27,6 +27,9 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Mutex;
 
+use std::time::SystemTime;
+
+
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
@@ -151,6 +154,17 @@ fn hash_image_content(image_data: &Vec<u8>) -> String {
     format!("{:x}", gxhash::gxhash128(&image_data, seed))
 }
 
+fn get_time_from_epoch() -> Result<u64, String> {
+    match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+        Err(_) => {
+            return Err("Failed to get time".to_string());
+        },
+        Ok(n) => {
+            return Ok(n.as_secs());
+        },
+    }
+}
+
 fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
     match fs::read_dir(path_dir_input) {
         Ok(list_entry) => {
@@ -177,9 +191,56 @@ fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> 
     }
 }
 
+fn clean_old_out(timeout:u64){
+    let time_now = SystemTime::now();
+
+    match get_list_files_under_dir(PATH_DIR_OUT)  {
+        Err(e) => {
+            println!("Failed to get list of files {}", e);
+        } ,
+        Ok(list_entry) => {
+            for i in list_entry {
+                match fs::metadata(i.as_str()) {
+                    Err(e) => {
+                        println!("Failed to get metadata due to {}", e);
+                    },
+                    Ok(metadata) => {
+                        match metadata.created() {
+                            Err(e) => {
+                                println!("Failed to get creation time due to {}", e);
+                            },
+                            Ok(creation_time) => {
+                                match time_now.duration_since(creation_time) {
+                                    Err(e) => {
+                                        println!("Duration failed {}", e);
+                                    },
+                                    Ok(n) => {
+                                        if n.as_secs() > timeout {
+                                            match std::fs::remove_file(Path::new(i.as_str())) {
+                                                Err(e) => {
+                                                    println!("Failed to remove old file {} due to {}",i , e);
+                                                },
+                                                Ok(_) => {
+                                                    println!("Removed old file {}",i);
+                                                }
+                                            }
+                                        } else {
+                                            println!("Not removing {} as its not old", i);
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    },
+                }
+            }
+        }
+    }
+}
+
 fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) -> Result<(), Error> {
     let mut session = model.lock().unwrap();
-
+    clean_old_out(1);
     match fs::create_dir_all(PATH_DIR_OUT) {
         Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
             Ok(list_file) => {
@@ -243,8 +304,6 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
 
                     println!("output => {:?}", output);
 
-                    let mut results: Vec<prediction_probabilities> = vec![];
-
                     for (index, row) in output.axis_iter(Axis(1)).enumerate() {
                         let result = prediction_probabilities {
                             p1: row[0],
@@ -255,7 +314,7 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
                         eprintln!("Inside prediction results: {:?}", result);
                         match save_predictions(&result, keys[index]) {
                             Ok(_) => {}
-                            Err(e) => {}
+                            Err(_) => {}
                         }
                     }
                 }
