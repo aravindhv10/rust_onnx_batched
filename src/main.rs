@@ -184,6 +184,8 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
         Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
             Ok(list_file) => {
                 let batch_size = list_file.len();
+                eprintln!("Inferring with batch_size = {}",batch_size);
+
                 let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
 
                 let mut input = Array::<u8, Ix4>::zeros((
