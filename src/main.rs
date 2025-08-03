@@ -67,36 +67,21 @@ fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result
     }
 }
 
-// fn load_predictions ( hash_key: &str) -> Result<prediction_probabilities, Error> {
-// }
-
-fn hash_image_content(image_data: &Vec<u8>) -> String {
-    let seed = 123456789;
-    format!("{:x}", gxhash::gxhash128(&image_data, seed))
-}
-
-fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
-    match fs::read_dir(path_dir_input) {
-        Ok(list_entry) => {
-            let mut ret: Vec<String> = vec![];
-            for i in list_entry {
-                match i {
-                    Ok(path) => {
-                        ret.push(path.path().display().to_string());
-                    }
-                    Err(e) => {
-                        eprintln!(
-                            "Failed to read a path inside directory {} due to {}",
-                            path_dir_input, e
-                        );
-                    }
-                }
+fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
+    let s1: String = String::from(PATH_DIR_OUT);
+    let s2: String = s1 + hash_key;
+    match fs::read(s2) {
+        Ok(encoded) => match bincode::decode_from_slice(&encoded[..], config::standard()) {
+            Ok(res) => {
+                let (decoded, len): (prediction_probabilities, usize) = res;
+                return Ok(decoded);
             }
-            Ok(ret)
-        }
+            Err(e) => {
+                return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
+            }
+        },
         Err(e) => {
-            eprintln!("Failed to read directory: {}", e);
-            Err(e.into())
+            return Err(e.into());
         }
     }
 }
@@ -157,6 +142,37 @@ fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
         Err(e) => {
             println!("Unable to read the file {} due to {}", path_file_input, e);
             return Err(e.into());
+        }
+    }
+}
+
+fn hash_image_content(image_data: &Vec<u8>) -> String {
+    let seed = 123456789;
+    format!("{:x}", gxhash::gxhash128(&image_data, seed))
+}
+
+fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
+    match fs::read_dir(path_dir_input) {
+        Ok(list_entry) => {
+            let mut ret: Vec<String> = vec![];
+            for i in list_entry {
+                match i {
+                    Ok(path) => {
+                        ret.push(path.path().display().to_string());
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Failed to read a path inside directory {} due to {}",
+                            path_dir_input, e
+                        );
+                    }
+                }
+            }
+            Ok(ret)
+        }
+        Err(e) => {
+            eprintln!("Failed to read directory: {}", e);
+            Err(e.into())
         }
     }
 }
@@ -236,21 +252,6 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
                         Ok(_) => {}
                         Err(e) => {}
                     }
-
-                    // let encoded: Vec<u8> =
-                    //     bincode::encode_to_vec(&result, config::standard()).unwrap();
-
-                    // let s1: String = String::from(PATH_DIR_OUT);
-                    // let s2: String = s1 + keys[index];
-
-                    // match fs::write(&s2, encoded) {
-                    //     Ok(_) => {
-                    //         println!("Wrote prediction to file {}", &s2);
-                    //     }
-                    //     Err(e) => {
-                    //         println!("Failed to write predictions into {} due to {}", &s2, e);
-                    //     }
-                    // }
                 }
                 println!("Done inferring, now returning");
                 return Ok(());
@@ -300,76 +301,9 @@ async fn infer(
 
     let _ = do_batched_infer_on_list_file_under_dir(&model);
 
-    match get_list_files_under_dir(PATH_DIR_IMAGE) {
-        Ok(list_file) => {
-            println!("List of files {:?}", list_file);
-            for i in list_file {
-                let newstr = &i[PATH_DIR_IMAGE.len()..];
-                println!("{}", newstr);
-            }
-        }
-        Err(e) => {
-            println!("Failed reading dir: {}", e);
-        }
-    }
-
-    // Load and preprocess the image
-    let original_img = image::load_from_memory(&image_data)
-        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-
-    let preprocessed_image = preprocess_image(original_img);
-
-    // Prepare the input tensor
-    let mut input = Array::zeros((1, IMAGE_RESOLUTION as usize, IMAGE_RESOLUTION as usize, 3));
-    for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
-        let [r, g, b, _] = pixel.0;
-        input[[0, y as usize, x as usize, 0]] = r;
-        input[[0, y as usize, x as usize, 1]] = g;
-        input[[0, y as usize, x as usize, 2]] = b;
-    }
-
-    // Run the model
-    let mut session = model.lock().unwrap();
-
-    let outputs = session
-        .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
-        .unwrap();
-
-    let output = outputs["output"]
-        .try_extract_array::<f32>()
-        .unwrap()
-        .t()
-        .into_owned();
-
-    // Format the output
-    // let mut predictions = Vec::new();
-    for row in output.axis_iter(Axis(1)) {
-        if ((row[0] > row[1]) & (row[0] > row[2])) {
-            return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: row[0],
-                p2: row[1],
-                p3: row[2],
-            }));
-        } else if ((row[1] > row[0]) & (row[1] > row[2])) {
-            return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: row[0],
-                p2: row[1],
-                p3: row[2],
-            }));
-        } else {
-            return Ok(HttpResponse::Ok().json(prediction_probabilities {
-                p1: row[0],
-                p2: row[1],
-                p3: row[2],
-            }));
-        }
-    }
-
-    return Ok(HttpResponse::Ok().json(prediction_probabilities {
-        p1: 0.0,
-        p2: 0.0,
-        p3: 1.0,
-    }));
+    let preds = load_predictions(&img_hash).unwrap();
+    println!("Predictions inside the web function: {:?}", preds);
+    return Ok(HttpResponse::Ok().json(preds)) ;
 }
 
 /// # **Preprocesses the image before inference.**
