@@ -120,6 +120,7 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
     match get_list_files_under_dir(PATH_DIR_IMAGE) {
         Ok(list_file) => {
             let batch_size = list_file.len();
+            let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
 
             let mut input = Array::<u8, Ix4>::zeros((
                 batch_size,
@@ -129,6 +130,7 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
             ));
 
             for i in 0..batch_size {
+                keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
                 match image::open(Path::new(list_file[i].as_str())) {
                     Ok(original_image) => {
                         let preprocessed_image = preprocess_image(original_image);
@@ -181,7 +183,7 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
                 };
 
                 let s1: String = String::from(PATH_DIR_OUT);
-                let s2: String = s1 + name_image;
+                let s2: String = s1 + keys[index];
                 fs::write(&s2, result);
             }
         }
@@ -220,6 +222,10 @@ async fn infer(
     match get_list_files_under_dir(PATH_DIR_IMAGE) {
         Ok(list_file) => {
             println!("List of files {:?}", list_file);
+            for i in list_file {
+                let newstr = &i[PATH_DIR_IMAGE.len()..];
+                println!("{}", newstr);
+            }
         }
         Err(e) => {
             println!("Failed reading dir: {}", e);
