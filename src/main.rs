@@ -51,17 +51,17 @@ fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result
             let s2: String = s1 + hash_key;
             match fs::write(&s2, encoded) {
                 Ok(_) => {
-                    println!("Wrote prediction to file {}", &s2);
+                    eprintln!("Wrote prediction to file {}", &s2);
                     return Ok(());
                 }
                 Err(e) => {
-                    println!("Failed to write predictions into {} due to {}", &s2, e);
+                    eprintln!("Failed to write predictions into {} due to {}", &s2, e);
                     return Err(e.into());
                 }
             }
         }
         Err(e) => {
-            println!("Failed encoding the result {}", e);
+            eprintln!("Failed encoding the result {}", e);
             return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
         }
     }
@@ -135,12 +135,12 @@ fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
                 return Ok(original_image);
             }
             Err(e) => {
-                println!("Failed to decode image due to {}.", e);
+                eprintln!("Failed to decode image due to {}.", e);
                 return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
             }
         },
         Err(e) => {
-            println!("Unable to read the file {} due to {}", path_file_input, e);
+            eprintln!("Unable to read the file {} due to {}", path_file_input, e);
             return Err(e.into());
         }
     }
@@ -370,7 +370,7 @@ async fn main() -> std::io::Result<()> {
             .unwrap(),
     ));
 
-    println!("🚀 Server started at http://0.0.0.0:8000");
+    eprintln!("🚀 Server started at http://0.0.0.0:8000");
 
     // Start the HTTP server
     HttpServer::new(move || {
