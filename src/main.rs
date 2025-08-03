@@ -9,7 +9,7 @@ use bincode::{Decode, Encode, config};
 use futures_util::TryStreamExt;
 use gxhash;
 use image::DynamicImage;
-use image::GenericImageView;
+// use image::GenericImageView;
 use image::imageops;
 use ndarray::Array;
 use ndarray::Axis;
@@ -17,13 +17,13 @@ use ndarray::Ix4;
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::inputs;
 use ort::session::Session;
-use ort::session::SessionOutputs;
+// use ort::session::SessionOutputs;
 use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
-use std::io::Write;
+// use std::io::Write;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -35,7 +35,7 @@ const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
 const PATH_DIR_OUT: &str = "/tmp/out/";
 
-const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
+// const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
 const IMAGE_RESOLUTION: u32 = 448;
 
@@ -76,7 +76,7 @@ fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
     match fs::read(s2) {
         Ok(encoded) => match bincode::decode_from_slice(&encoded[..], config::standard()) {
             Ok(res) => {
-                let (decoded, len): (prediction_probabilities, usize) = res;
+                let (decoded, _len): (prediction_probabilities, usize) = res;
                 return Ok(decoded);
             }
             Err(e) => {
@@ -154,16 +154,16 @@ fn hash_image_content(image_data: &Vec<u8>) -> String {
     format!("{:x}", gxhash::gxhash128(&image_data, seed))
 }
 
-fn get_time_from_epoch() -> Result<u64, String> {
-    match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-        Err(_) => {
-            return Err("Failed to get time".to_string());
-        },
-        Ok(n) => {
-            return Ok(n.as_secs());
-        },
-    }
-}
+// fn get_time_from_epoch() -> Result<u64, String> {
+//     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+//         Err(_) => {
+//             return Err("Failed to get time".to_string());
+//         },
+//         Ok(n) => {
+//             return Ok(n.as_secs());
+//         },
+//     }
+// }
 
 fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
     match fs::read_dir(path_dir_input) {
@@ -335,8 +335,8 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
             return Err(e.into());
         }
     }
-    eprintln!("Done inferring, now returning");
-    return Ok(());
+    // eprintln!("Done inferring, now returning");
+    // return Ok(());
 }
 
 fn check_existance_of_predictions(hash_key: &str) -> bool {

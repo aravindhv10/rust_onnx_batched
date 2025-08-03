@@ -463,7 +463,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More cleanups and refinements'
+  M 'More cleanups of dead code'
 #+end_src
 
 ** COMMENT elisp
