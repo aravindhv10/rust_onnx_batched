@@ -462,7 +462,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More progress on inference function'
+  M 'Mostly completed inference function'
 #+end_src
 
 ** COMMENT elisp

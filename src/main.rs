@@ -115,6 +115,7 @@ fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
 }
 
 fn do_infer(model: web::Data<Mutex<Session>>) {
+    let mut session = model.lock().unwrap();
     match get_list_files_under_dir(PATH_DIR_IMAGE) {
         Ok(list_file) => {
             let batch_size = list_file.len();
@@ -142,6 +143,16 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
                     }
                 }
             }
+
+            let outputs = session
+                .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
+                .unwrap();
+
+            let output = outputs["output"]
+                .try_extract_array::<f32>()
+                .unwrap()
+                .t()
+                .into_owned();
         }
         Err(e) => {
             println!("Failed reading dir: {}", e);
