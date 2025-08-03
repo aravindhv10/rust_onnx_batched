@@ -409,6 +409,8 @@
 * WORK SPACE
 
 ** git worker
+
+*** Functions
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   G () {
       git add "./${1}"
@@ -418,6 +420,13 @@
       rm -vf -- "./${1}"
   }
 
+  M () {
+      git commit -m "${1}"
+  }
+#+end_src
+
+*** Add files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   G 'Cargo.toml'
   G 'Dockerfile'
   G 'host.docker_build.sh'
@@ -431,11 +440,19 @@
   G 'src/main.rs'
   G 'start.sh'
   G 'Cargo.lock'
+#+end_src
 
+*** Clean files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   C 'README.org~'
   C '#shell.nix#'
   C 'shell.nix~'
   C '.git.sh'
+#+end_src
+
+*** Commit the changes
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  M 'More work on batching'
 #+end_src
 
 ** COMMENT elisp
