@@ -463,7 +463,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Replaced println with eprintln'
+  M 'Fixed 0 batch size issue'
 #+end_src
 
 ** COMMENT elisp

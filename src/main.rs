@@ -184,77 +184,82 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
         Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
             Ok(list_file) => {
                 let batch_size = list_file.len();
-                eprintln!("Inferring with batch_size = {}",batch_size);
+                if batch_size > 0 {
+                    eprintln!("Inferring with batch_size = {}", batch_size);
 
-                let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
+                    let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
 
-                let mut input = Array::<u8, Ix4>::zeros((
-                    batch_size,
-                    IMAGE_RESOLUTION as usize,
-                    IMAGE_RESOLUTION as usize,
-                    3,
-                ));
+                    let mut input = Array::<u8, Ix4>::zeros((
+                        batch_size,
+                        IMAGE_RESOLUTION as usize,
+                        IMAGE_RESOLUTION as usize,
+                        3,
+                    ));
 
-                for i in 0..batch_size {
-                    keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
+                    for i in 0..batch_size {
+                        keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
 
-                    match read_image(list_file[i].as_str()) {
-                        Ok(original_image) => {
-                            let preprocessed_image = preprocess_image(original_image);
-                            for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
-                                let [r, g, b, _] = pixel.0;
-                                input[[i as usize, y as usize, x as usize, 0]] = r;
-                                input[[i as usize, y as usize, x as usize, 1]] = g;
-                                input[[i as usize, y as usize, x as usize, 2]] = b;
+                        match read_image(list_file[i].as_str()) {
+                            Ok(original_image) => {
+                                let preprocessed_image = preprocess_image(original_image);
+                                for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
+                                    let [r, g, b, _] = pixel.0;
+                                    input[[i as usize, y as usize, x as usize, 0]] = r;
+                                    input[[i as usize, y as usize, x as usize, 1]] = g;
+                                    input[[i as usize, y as usize, x as usize, 2]] = b;
+                                }
+
+                                match std::fs::remove_file(Path::new(list_file[i].as_str())) {
+                                    Ok(_) => {
+                                        eprintln!(
+                                            "Removed image file {} after reading it.",
+                                            list_file[i].as_str()
+                                        );
+                                    }
+                                    Err(e) => {
+                                        eprintln!(
+                                            "Failed to remove file {} after reading it due to {}.",
+                                            list_file[i].as_str(),
+                                            e
+                                        );
+                                    }
+                                }
                             }
-
-                            match std::fs::remove_file(Path::new(list_file[i].as_str())) {
-                                Ok(_) => {
-                                    eprintln!(
-                                        "Removed image file {} after reading it.",
-                                        list_file[i].as_str()
-                                    );
-                                }
-                                Err(e) => {
-                                    eprintln!(
-                                        "Failed to remove file {} after reading it due to {}.",
-                                        list_file[i].as_str(),
-                                        e
-                                    );
-                                }
+                            Err(e) => {
+                                eprintln!("Unable to read image {} due to {}.", list_file[i], e);
                             }
                         }
-                        Err(e) => {
-                            eprintln!("Unable to read image {} due to {}.", list_file[i], e);
+                    }
+
+                    let outputs = session
+                        .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
+                        .unwrap();
+
+                    let output = outputs["output"]
+                        .try_extract_array::<f32>()
+                        .unwrap()
+                        .t()
+                        .into_owned();
+
+                    println!("output => {:?}", output);
+
+                    let mut results: Vec<prediction_probabilities> = vec![];
+
+                    for (index, row) in output.axis_iter(Axis(1)).enumerate() {
+                        let result = prediction_probabilities {
+                            p1: row[0],
+                            p2: row[1],
+                            p3: row[2],
+                        };
+
+                        eprintln!("Inside prediction results: {:?}", result);
+                        match save_predictions(&result, keys[index]) {
+                            Ok(_) => {}
+                            Err(e) => {}
                         }
                     }
                 }
 
-                let outputs = session
-                    .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
-                    .unwrap();
-
-                let output = outputs["output"]
-                    .try_extract_array::<f32>()
-                    .unwrap()
-                    .t()
-                    .into_owned();
-
-                let mut results: Vec<prediction_probabilities> = vec![];
-
-                for (index, row) in output.axis_iter(Axis(1)).enumerate() {
-                    let result = prediction_probabilities {
-                        p1: row[0],
-                        p2: row[1],
-                        p3: row[2],
-                    };
-
-                    eprintln!("Inside prediction results: {:?}", result);
-                    match save_predictions(&result, keys[index]) {
-                        Ok(_) => {}
-                        Err(e) => {}
-                    }
-                }
                 eprintln!("Done inferring, now returning");
                 return Ok(());
             }
