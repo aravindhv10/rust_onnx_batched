@@ -273,6 +273,12 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
     return Ok(());
 }
 
+fn check_existance_of_predictions(hash_key: &str) -> bool {
+    let s1: String = String::from(PATH_DIR_OUT);
+    let s2: String = s1 + hash_key;
+    return Path::new(&s2).exists();
+}
+
 /// # **Handles the inference request.**
 ///
 /// This function takes the multipart request, extracts the image, preprocesses it,
@@ -297,14 +303,16 @@ async fn infer(
 
     let img_hash = hash_image_content(&image_data);
 
-    let _ = save_image(&image_data, &img_hash);
+    if !check_existance_of_predictions(&img_hash) {
+        let _ = save_image(&image_data, &img_hash);
 
-    match do_batched_infer_on_list_file_under_dir(&model) {
-        Ok(_) => {
-            eprintln!("Done with inference");
-        }
-        Err(e) => {
-            eprintln!("Failed at inference due to {}", e);
+        match do_batched_infer_on_list_file_under_dir(&model) {
+            Ok(_) => {
+                eprintln!("Done with inference");
+            }
+            Err(e) => {
+                eprintln!("Failed at inference due to {}", e);
+            }
         }
     }
 
