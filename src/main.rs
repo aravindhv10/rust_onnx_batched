@@ -11,6 +11,7 @@ use image::DynamicImage;
 use image::GenericImageView;
 use image::imageops;
 use ndarray::Array;
+use ndarray::Ix4;
 use ndarray::Axis;
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::inputs;
@@ -118,7 +119,7 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
         Ok(list_file) => {
             let batch_size = list_file.len();
 
-            let mut input = Array::zeros((
+            let mut input = Array::<f32, Ix4>::zeros((
                 batch_size,
                 IMAGE_RESOLUTION as usize,
                 IMAGE_RESOLUTION as usize,

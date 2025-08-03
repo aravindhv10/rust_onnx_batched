@@ -452,7 +452,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Minor improvement to error reporting'
+  M 'Added more explicit array initialization'
 #+end_src
 
 ** COMMENT elisp
