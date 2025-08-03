@@ -222,6 +222,7 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
                         }
                     }
                 }
+                println!("Done inferring, now returning");
                 return Ok(());
             }
             Err(e) => {
@@ -237,7 +238,8 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
             return Err(e.into());
         }
     }
-    Ok(())
+    println!("Done inferring, now returning");
+    return Ok(());
 }
 
 /// # **Handles the inference request.**
