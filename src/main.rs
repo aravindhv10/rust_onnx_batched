@@ -117,7 +117,25 @@ fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
     }
 }
 
-fn do_batched_infer_on_list_file_under_dir(model: web::Data<Mutex<Session>>) -> Result<(), Error> {
+fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
+    match fs::read(path_file_input) {
+        Ok(image_data) => match image::load_from_memory(&image_data) {
+            Ok(original_image) => {
+                return Ok(original_image);
+            }
+            Err(e) => {
+                println!("Failed to decode image due to {}.", e);
+                return Err(actix_web::error::ErrorInternalServerError(e.to_string()) ) ;
+            }
+        },
+        Err(e) => {
+            println!("Unable to read the file {} due to {}", path_file_input, e);
+            return Err(e.into());
+        }
+    }
+}
+
+fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) -> Result<(), Error> {
     let mut session = model.lock().unwrap();
 
     match fs::create_dir_all(PATH_DIR_OUT) {
@@ -135,7 +153,8 @@ fn do_batched_infer_on_list_file_under_dir(model: web::Data<Mutex<Session>>) -> 
 
                 for i in 0..batch_size {
                     keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
-                    match image::open(Path::new(list_file[i].as_str())) {
+                    // match image::open(Path::new(list_file[i].as_str())) {
+                    match read_image(list_file[i].as_str()) {
                         Ok(original_image) => {
                             let preprocessed_image = preprocess_image(original_image);
                             for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
@@ -186,6 +205,8 @@ fn do_batched_infer_on_list_file_under_dir(model: web::Data<Mutex<Session>>) -> 
                         p3: row[2],
                     };
 
+                    println!("Inside prediction results: {:?}", result);
+
                     let encoded: Vec<u8> =
                         bincode::encode_to_vec(&result, config::standard()).unwrap();
 
@@ -194,14 +215,14 @@ fn do_batched_infer_on_list_file_under_dir(model: web::Data<Mutex<Session>>) -> 
 
                     match fs::write(&s2, encoded) {
                         Ok(_) => {
-                            println!("Wrote prediction to file {}",&s2);
+                            println!("Wrote prediction to file {}", &s2);
                         }
                         Err(e) => {
                             println!("Failed to write predictions into {} due to {}", &s2, e);
                         }
                     }
                 }
-                return Ok(()) ;
+                return Ok(());
             }
             Err(e) => {
                 println!("Failed reading dir: {}", e);
@@ -244,6 +265,8 @@ async fn infer(
     let img_hash = hash_image_content(&image_data);
 
     let _ = save_image(&image_data, &img_hash);
+
+    let _ = do_batched_infer_on_list_file_under_dir(&model);
 
     match get_list_files_under_dir(PATH_DIR_IMAGE) {
         Ok(list_file) => {
