@@ -452,7 +452,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More work on batching'
+  M 'Minor improvement to error reporting'
 #+end_src
 
 ** COMMENT elisp
@@ -462,13 +462,14 @@
   (async-shell-command "
           # find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
           './.git.sh'
+          git status
       " "log" "err")
 #+end_src
 
 * COMMENT Pushing
 #+begin_src emacs-lisp :results silent
   (async-shell-command "
-      \"${HOME}/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh\"
+      ~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh
       git push
   " "log" "err")
 #+end_src

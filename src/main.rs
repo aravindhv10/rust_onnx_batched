@@ -22,6 +22,7 @@ use serde::Serialize;
 use std::fs;
 use std::io::Write;
 use std::sync::Mutex;
+use std::path::Path;
 
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
@@ -80,9 +81,15 @@ fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
                     Ok(_) => {
                         let s1: String = String::from(PATH_DIR_IMAGE);
                         let s3: String = s1 + name_image;
-                        match fs::rename(&s2, s3) {
+                        match fs::rename(&s2, &s3) {
                             Ok(_) => Ok(()),
-                            Err(e) => Err(e.into()),
+                            Err(e) => {
+                                eprintln!(
+                                    "Failed to rename the temporary file {} to {} due to {}",
+                                    s2, s3, e
+                                );
+                                Err(e.into())
+                            }
                         }
                     }
                     Err(e) => {
@@ -102,6 +109,33 @@ fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
                 PATH_DIR_INCOMPLETE, e
             );
             Err(e.into())
+        }
+    }
+}
+
+fn do_infer(model: web::Data<Mutex<Session>>) {
+    match get_list_files_under_dir(PATH_DIR_IMAGE) {
+        Ok(list_file) => {
+            let batch_size = list_file.len();
+
+            let mut input = Array::zeros((
+                batch_size,
+                IMAGE_RESOLUTION as usize,
+                IMAGE_RESOLUTION as usize,
+                3,
+            ));
+
+            for i in 0..batch_size {
+                match image::open(Path::new(list_file[i].as_str())) {
+                    Ok(original_image) => {}
+                    Err(e) => {
+                        println!("Unable to read image {} due to {}.", list_file[i], e);
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            println!("Failed reading dir: {}", e);
         }
     }
 }
