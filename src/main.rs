@@ -44,6 +44,32 @@ struct prediction_probabilities {
     p3: f32,
 }
 
+fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
+    match bincode::encode_to_vec(&result, config::standard()) {
+        Ok(encoded) => {
+            let s1: String = String::from(PATH_DIR_OUT);
+            let s2: String = s1 + hash_key;
+            match fs::write(&s2, encoded) {
+                Ok(_) => {
+                    println!("Wrote prediction to file {}", &s2);
+                    return Ok(());
+                }
+                Err(e) => {
+                    println!("Failed to write predictions into {} due to {}", &s2, e);
+                    return Err(e.into());
+                }
+            }
+        }
+        Err(e) => {
+            println!("Failed encoding the result {}", e);
+            return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
+        }
+    }
+}
+
+// fn load_predictions ( hash_key: &str) -> Result<prediction_probabilities, Error> {
+// }
+
 fn hash_image_content(image_data: &Vec<u8>) -> String {
     let seed = 123456789;
     format!("{:x}", gxhash::gxhash128(&image_data, seed))
@@ -125,7 +151,7 @@ fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
             }
             Err(e) => {
                 println!("Failed to decode image due to {}.", e);
-                return Err(actix_web::error::ErrorInternalServerError(e.to_string()) ) ;
+                return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
             }
         },
         Err(e) => {
@@ -206,21 +232,25 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
                     };
 
                     println!("Inside prediction results: {:?}", result);
-
-                    let encoded: Vec<u8> =
-                        bincode::encode_to_vec(&result, config::standard()).unwrap();
-
-                    let s1: String = String::from(PATH_DIR_OUT);
-                    let s2: String = s1 + keys[index];
-
-                    match fs::write(&s2, encoded) {
-                        Ok(_) => {
-                            println!("Wrote prediction to file {}", &s2);
-                        }
-                        Err(e) => {
-                            println!("Failed to write predictions into {} due to {}", &s2, e);
-                        }
+                    match save_predictions(&result, keys[index]) {
+                        Ok(_) => {}
+                        Err(e) => {}
                     }
+
+                    // let encoded: Vec<u8> =
+                    //     bincode::encode_to_vec(&result, config::standard()).unwrap();
+
+                    // let s1: String = String::from(PATH_DIR_OUT);
+                    // let s2: String = s1 + keys[index];
+
+                    // match fs::write(&s2, encoded) {
+                    //     Ok(_) => {
+                    //         println!("Wrote prediction to file {}", &s2);
+                    //     }
+                    //     Err(e) => {
+                    //         println!("Failed to write predictions into {} due to {}", &s2, e);
+                    //     }
+                    // }
                 }
                 println!("Done inferring, now returning");
                 return Ok(());
