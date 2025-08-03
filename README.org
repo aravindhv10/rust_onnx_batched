@@ -1,5 +1,9 @@
 * COMMENT SAMPLE
 
+** git worker
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+#+end_src
+
 ** nix
 #+begin_src nix :tangle ./shell.nix
 #+end_src
@@ -55,11 +59,11 @@
   actix-multipart = "0.6"
   image = { version = "0.25.6", features = ["serde", "nasm"] }
   ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
-  raqote = "0.8.5"
   serde = { version = "1.0", features = ["derive"] }
   futures-util = "0.3"
   gxhash = "3.5.0"
 #+end_src
+  raqote = "0.8.5"
 
 * ORT Related
 
@@ -174,6 +178,8 @@
           'ipython3' \
           'libcairo2-dev' \
           'libfontconfig-dev' \
+          'libopenblas64-dev' \
+          'libopenblas-dev' \
           'libssl-dev' \
           'make' \
           'nasm' \
@@ -400,33 +406,52 @@
   curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
 #+end_src
 
-* COMMENT WORK SPACE
+* WORK SPACE
+
+** git worker
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  G () {
+      git add "./${1}"
+  }
+
+  C(){
+      rm -vf -- "./${1}"
+  }
+
+  G 'Cargo.toml'
+  G 'Dockerfile'
+  G 'host.docker_build.sh'
+  G 'host.docker_run_main.sh'
+  G 'host.docker_run.sh'
+  G 'host.docker_run.txt'
+  G 'image_name.txt'
+  G 'infer.sh'
+  G 'README.org'
+  G 'shell.nix'
+  G 'src/main.rs'
+  G 'start.sh'
+  G 'Cargo.lock'
+
+  C 'README.org~'
+  C '#shell.nix#'
+  C 'shell.nix~'
+  C '.git.sh'
+#+end_src
+
+** COMMENT elisp
 #+begin_src emacs-lisp :results silent
   (save-buffer)
   (org-babel-tangle)
   (async-shell-command "
           # find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
-          rm -vf -- './README.org~' './#shell.nix#' './shell.nix~'
-
-          git add './Cargo.toml'
-          git add './Dockerfile'
-          git add './host.docker_build.sh'
-          git add './host.docker_run_main.sh'
-          git add './host.docker_run.sh'
-          git add './host.docker_run.txt'
-          git add './image_name.txt'
-          git add './infer.sh'
-          git add './README.org'
-          git add './shell.nix'
-          git add './src/main.rs'
-          git add './start.sh'
-          git add './Cargo.lock'
-
+          './.git.sh'
       " "log" "err")
 #+end_src
 
 * COMMENT Pushing
-#+begin_src sh :shebang #!/bin/sh :results output
-~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh;
-git push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
+      \"${HOME}/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh\"
+      git push
+  " "log" "err")
 #+end_src

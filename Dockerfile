@@ -62,6 +62,8 @@ RUN \
         'ipython3' \
         'libcairo2-dev' \
         'libfontconfig-dev' \
+        'libopenblas64-dev' \
+        'libopenblas-dev' \
         'libssl-dev' \
         'make' \
         'nasm' \
