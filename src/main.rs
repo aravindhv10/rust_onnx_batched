@@ -5,6 +5,7 @@ use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::Responder;
 use actix_web::web;
+use bincode;
 use futures_util::TryStreamExt;
 use gxhash;
 use image::DynamicImage;
@@ -19,6 +20,7 @@ use ort::session::Session;
 use ort::session::SessionOutputs;
 use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
+use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
 use std::io::Write;
@@ -35,7 +37,7 @@ const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 const IMAGE_RESOLUTION: u32 = 448;
 
 // #[repr(C)]
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct prediction_probabilities {
     p1: f32,
     p2: f32,
@@ -184,7 +186,8 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
 
                 let s1: String = String::from(PATH_DIR_OUT);
                 let s2: String = s1 + keys[index];
-                fs::write(&s2, result);
+
+                fs::write(&s2, bincode::serialize(&result).unwrap());
             }
         }
         Err(e) => {
