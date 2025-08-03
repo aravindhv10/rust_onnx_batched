@@ -34,6 +34,7 @@ const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
 const IMAGE_RESOLUTION: u32 = 448;
 
+// #[repr(C)]
 #[derive(Serialize)]
 struct prediction_probabilities {
     p1: f32,
@@ -173,11 +174,15 @@ fn do_infer(model: web::Data<Mutex<Session>>) {
             let mut results: Vec<prediction_probabilities> = vec![];
 
             for (index, row) in output.axis_iter(Axis(1)).enumerate() {
-                results.push(prediction_probabilities {
+                let result = prediction_probabilities {
                     p1: row[0],
                     p2: row[1],
                     p3: row[2],
-                });
+                };
+
+                let s1: String = String::from(PATH_DIR_OUT);
+                let s2: String = s1 + name_image;
+                fs::write(&s2, result);
             }
         }
         Err(e) => {
