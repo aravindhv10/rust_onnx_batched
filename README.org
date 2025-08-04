@@ -64,7 +64,6 @@
   gxhash = "3.5.0"
   bincode = { version = "2.0.1", features = ["serde"] }
 #+end_src
-  raqote = "0.8.5"
 
 * ORT Related
 
@@ -109,7 +108,6 @@
       PATH=/usr/local/cargo/bin:$PATH \
       RUST_VERSION=1.88.0
 #+end_src
-
 
 * Prepare basic packages
 
@@ -212,15 +210,11 @@
   cd "$('dirname' -- "${0}")" ;
 #+end_src
 
-*** Root user
-#+begin_src conf :tangle ./host.docker_run.txt
-  sudo -A
-#+end_src
-
 *** Main command
 
 **** docker
 #+begin_src conf :tangle ./host.docker_run.txt
+  sudo -A
   docker
 #+end_src
 
@@ -229,7 +223,7 @@
   podman
 #+end_src
 
-*** podman
+*** run
 #+begin_src conf :tangle ./host.docker_run.txt
   run
 #+end_src
@@ -246,9 +240,16 @@
   --gpus 'all,"capabilities=compute,utility,video"'
 #+end_src
 
-*** IPC
+*** IPC and shm sizes
+
+**** IPC
 #+begin_src conf :tangle ./host.docker_run.txt
   --ipc host
+#+end_src
+
+**** shm size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --shm-size 107374182400
 #+end_src
 
 *** MOUNTS
@@ -268,7 +269,6 @@
 #+begin_src conf :tangle ./host.docker_run.txt
   --ulimit memlock=-1
   --ulimit stack=67108864
-  --shm-size 107374182400
 #+end_src
 
 *** Image name and command
@@ -302,12 +302,14 @@
   cd "$('dirname' '--' "${0}")"
 #+end_src
 
-** using docker
+** Actual build command
+
+*** using docker
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   sudo -A docker build -t onnxrust .
 #+end_src
 
-** COMMENT using podman
+*** COMMENT using podman
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   podman build -t "$('cat' './image_name.txt')" .
 #+end_src
@@ -470,7 +472,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Wrote translation layer'
+  M 'More cleaning of cuda code'
 #+end_src
 
 ** COMMENT elisp

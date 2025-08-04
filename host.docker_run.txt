@@ -1,7 +1,6 @@
 cd "$('dirname' -- "${0}")" ;
 
 sudo -A
-
 docker
 
 run
@@ -14,6 +13,8 @@ run
 
 --ipc host
 
+--shm-size 107374182400
+
 --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
 -v "$(realpath .):/data/input"
 -v "CACHE:/usr/local/cargo/registry"
@@ -23,7 +24,6 @@ run
 
 --ulimit memlock=-1
 --ulimit stack=67108864
---shm-size 107374182400
 
 "$('cat' './image_name.txt')"
 
