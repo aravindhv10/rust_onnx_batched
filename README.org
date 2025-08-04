@@ -240,9 +240,16 @@
   --gpus 'all,"capabilities=compute,utility,video"'
 #+end_src
 
-*** IPC
+*** IPC and shm sizes
+
+**** IPC
 #+begin_src conf :tangle ./host.docker_run.txt
   --ipc host
+#+end_src
+
+**** COMMENT shm size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --shm-size 107374182400
 #+end_src
 
 *** MOUNTS
@@ -257,6 +264,7 @@
 #+begin_src conf :tangle ./host.docker_run.txt
   -p '0.0.0.0:8000:8000/tcp'
 #+end_src
+
 
 *** memory size
 #+begin_src conf :tangle ./host.docker_run.txt
