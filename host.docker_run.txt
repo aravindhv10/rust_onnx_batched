@@ -19,7 +19,6 @@ run
 
 --ulimit memlock=-1
 --ulimit stack=67108864
---shm-size 107374182400
 
 "$('cat' './image_name.txt')"
 

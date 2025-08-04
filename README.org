@@ -270,7 +270,6 @@
 #+begin_src conf :tangle ./host.docker_run.txt
   --ulimit memlock=-1
   --ulimit stack=67108864
-  --shm-size 107374182400
 #+end_src
 
 *** Image name and command
