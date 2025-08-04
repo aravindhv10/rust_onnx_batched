@@ -68,7 +68,7 @@
 
 * ORT Related
 
-** COMMENT CUDA
+** CUDA
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.toml
@@ -80,7 +80,12 @@
   FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rust
 #+end_src
 
-** WebGPU
+*** Capabilities
+#+begin_src conf :tangle ./Dockerfile
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+#+end_src
+
+** COMMENT WebGPU
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.toml
@@ -105,10 +110,6 @@
       RUST_VERSION=1.88.0
 #+end_src
 
-** COMMENT CUDA
-#+begin_src conf :tangle ./Dockerfile
-  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
-#+end_src
 
 * Prepare basic packages
 
@@ -463,7 +464,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More cleanups of dead code'
+  M 'Changed code to use cuda'
 #+end_src
 
 ** COMMENT elisp
