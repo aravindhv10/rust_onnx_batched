@@ -64,7 +64,6 @@
   gxhash = "3.5.0"
   bincode = { version = "2.0.1", features = ["serde"] }
 #+end_src
-  raqote = "0.8.5"
 
 * ORT Related
 
@@ -211,15 +210,11 @@
   cd "$('dirname' -- "${0}")" ;
 #+end_src
 
-*** Root user
-#+begin_src conf :tangle ./host.docker_run.txt
-  sudo -A
-#+end_src
-
 *** Main command
 
 **** COMMENT docker
 #+begin_src conf :tangle ./host.docker_run.txt
+  sudo -A
   docker
 #+end_src
 
@@ -301,12 +296,14 @@
   cd "$('dirname' '--' "${0}")"
 #+end_src
 
-** COMMENT using docker
+** Actual build command
+
+*** COMMENT using docker
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   sudo -A docker build -t onnxrust .
 #+end_src
 
-** using podman
+*** using podman
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   podman build -t "$('cat' './image_name.txt')" .
 #+end_src
@@ -468,7 +465,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Some cleaning'
+  M 'More cleaning'
 #+end_src
 
 ** COMMENT elisp

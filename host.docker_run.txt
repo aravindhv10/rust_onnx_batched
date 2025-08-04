@@ -1,7 +1,5 @@
 cd "$('dirname' -- "${0}")" ;
 
-sudo -A
-
 podman
 
 run
