@@ -64,7 +64,7 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
     return prediction_probabilities_reply {
         p1: input.ps[0].to_string(),
         p2: input.ps[1].to_string(),
-        p3: input.p2[2].to_string(),
+        p3: input.ps[2].to_string(),
         mj: CLASS_LABELS[max_index].to_string(),
     };
 }
@@ -411,9 +411,7 @@ async fn infer(
             eprintln!("Failed in loading predictions from the cache due to {}", e);
 
             let tmp = prediction_probabilities {
-                p1: 0.0,
-                p2: 0.0,
-                p3: 1.0,
+                ps: [0.0, 0.0, 1.0,],
             };
 
             return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
