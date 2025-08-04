@@ -1,6 +1,8 @@
 cd "$('dirname' -- "${0}")" ;
 
-podman run
+podman
+
+run
 
 --tty
 --interactive

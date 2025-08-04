@@ -80,6 +80,11 @@
   FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rust
 #+end_src
 
+*** env
+#+begin_src conf :tangle ./Dockerfile
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+#+end_src
+
 ** WebGPU
 
 *** Cargo
@@ -103,11 +108,6 @@
       CARGO_HOME=/usr/local/cargo \
       PATH=/usr/local/cargo/bin:$PATH \
       RUST_VERSION=1.88.0
-#+end_src
-
-** COMMENT CUDA
-#+begin_src conf :tangle ./Dockerfile
-  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
 #+end_src
 
 * Prepare basic packages
@@ -220,12 +220,17 @@
 
 **** COMMENT docker
 #+begin_src conf :tangle ./host.docker_run.txt
-  docker run
+  docker
 #+end_src
 
 **** podman
 #+begin_src conf :tangle ./host.docker_run.txt
-  podman run
+  podman
+#+end_src
+
+*** run
+#+begin_src conf :tangle ./host.docker_run.txt
+  run
 #+end_src
 
 *** Interactive
@@ -463,7 +468,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More cleanups of dead code'
+  M 'Refinement of README'
 #+end_src
 
 ** COMMENT elisp
