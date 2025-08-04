@@ -29,13 +29,12 @@ use std::sync::Mutex;
 
 use std::time::SystemTime;
 
-
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
 const PATH_DIR_OUT: &str = "/tmp/out/";
 
-// const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
+const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
 
 const IMAGE_RESOLUTION: u32 = 448;
 
@@ -45,6 +44,33 @@ struct prediction_probabilities {
     p1: f32,
     p2: f32,
     p3: f32,
+}
+
+#[derive(Serialize)]
+struct prediction_probabilities_reply {
+    p1: String,
+    p2: String,
+    p3: String,
+    mj: String,
+}
+
+fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_probabilities_reply {
+    let ps: [f32; 3] = [input.p1, input.p2, input.p3];
+
+    let mut max_index: usize = 0;
+
+    for i in 1..3 {
+        if ps[i] > ps[max_index] {
+            max_index = i;
+        }
+    }
+
+    return prediction_probabilities_reply {
+        p1: input.p1.to_string(),
+        p2: input.p2.to_string(),
+        p3: input.p3.to_string(),
+        mj: CLASS_LABELS[max_index].to_string(),
+    };
 }
 
 fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
@@ -191,46 +217,45 @@ fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> 
     }
 }
 
-fn clean_old_out(timeout:u64){
+fn clean_old_out(timeout: u64) {
     let time_now = SystemTime::now();
 
-    match get_list_files_under_dir(PATH_DIR_OUT)  {
+    match get_list_files_under_dir(PATH_DIR_OUT) {
         Err(e) => {
             println!("Failed to get list of files {}", e);
-        } ,
+        }
         Ok(list_entry) => {
             for i in list_entry {
                 match fs::metadata(i.as_str()) {
                     Err(e) => {
                         println!("Failed to get metadata due to {}", e);
-                    },
-                    Ok(metadata) => {
-                        match metadata.created() {
+                    }
+                    Ok(metadata) => match metadata.created() {
+                        Err(e) => {
+                            println!("Failed to get creation time due to {}", e);
+                        }
+                        Ok(creation_time) => match time_now.duration_since(creation_time) {
                             Err(e) => {
-                                println!("Failed to get creation time due to {}", e);
-                            },
-                            Ok(creation_time) => {
-                                match time_now.duration_since(creation_time) {
-                                    Err(e) => {
-                                        println!("Duration failed {}", e);
-                                    },
-                                    Ok(n) => {
-                                        if n.as_secs() > timeout {
-                                            match std::fs::remove_file(Path::new(i.as_str())) {
-                                                Err(e) => {
-                                                    println!("Failed to remove old file {} due to {}",i , e);
-                                                },
-                                                Ok(_) => {
-                                                    println!("Removed old file {}",i);
-                                                }
-                                            }
-                                        } else {
-                                            println!("Not removing {} as its not old", i);
+                                println!("Duration failed {}", e);
+                            }
+                            Ok(n) => {
+                                if n.as_secs() > timeout {
+                                    match std::fs::remove_file(Path::new(i.as_str())) {
+                                        Err(e) => {
+                                            println!(
+                                                "Failed to remove old file {} due to {}",
+                                                i, e
+                                            );
+                                        }
+                                        Ok(_) => {
+                                            println!("Removed old file {}", i);
                                         }
                                     }
+                                } else {
+                                    println!("Not removing {} as its not old", i);
                                 }
-                            },
-                        }
+                            }
+                        },
                     },
                 }
             }
@@ -385,16 +410,19 @@ async fn infer(
     match load_predictions(&img_hash) {
         Ok(preds) => {
             eprintln!("Predictions inside the web function: {:?}", preds);
-            return Ok(HttpResponse::Ok().json(preds));
+
+            return Ok(HttpResponse::Ok().json(get_prediction_for_reply(preds)));
         }
         Err(e) => {
             eprintln!("Failed in loading predictions from the cache due to {}", e);
 
-            return Ok(HttpResponse::Ok().json(prediction_probabilities {
+            let tmp = prediction_probabilities {
                 p1: 0.0,
                 p2: 0.0,
                 p3: 1.0,
-            }));
+            };
+
+            return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
         }
     }
 }
