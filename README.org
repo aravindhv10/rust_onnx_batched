@@ -455,16 +455,17 @@
 
 *** Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  C '#shell.nix#'
   C '.git.sh'
   C 'README.org~'
-  C '#shell.nix#'
   C 'shell.nix~'
   C 'tmp.sh'
+  C 'tree'
 #+end_src
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Changed code to use cuda'
+  M 'Minor cleanups'
 #+end_src
 
 ** COMMENT elisp
