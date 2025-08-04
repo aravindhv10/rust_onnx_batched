@@ -470,7 +470,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Minor cleanups'
+  M 'Wrote translation layer'
 #+end_src
 
 ** COMMENT elisp
