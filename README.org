@@ -212,21 +212,26 @@
   cd "$('dirname' -- "${0}")" ;
 #+end_src
 
-*** COMMENT Root user
+*** Root user
 #+begin_src conf :tangle ./host.docker_run.txt
   sudo -A
 #+end_src
 
 *** Main command
 
-**** COMMENT docker
+**** docker
 #+begin_src conf :tangle ./host.docker_run.txt
-  docker run
+  docker
 #+end_src
 
-**** podman
+**** COMMENT podman
 #+begin_src conf :tangle ./host.docker_run.txt
-  podman run
+  podman
+#+end_src
+
+*** podman
+#+begin_src conf :tangle ./host.docker_run.txt
+  run
 #+end_src
 
 *** Interactive
@@ -236,12 +241,12 @@
   --rm
 #+end_src
 
-*** COMMENT CUDA
+*** CUDA
 #+begin_src conf :tangle ./host.docker_run.txt
   --gpus 'all,"capabilities=compute,utility,video"'
 #+end_src
 
-*** COMMENT IPC
+*** IPC
 #+begin_src conf :tangle ./host.docker_run.txt
   --ipc host
 #+end_src
@@ -297,12 +302,12 @@
   cd "$('dirname' '--' "${0}")"
 #+end_src
 
-** COMMENT using docker
+** using docker
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   sudo -A docker build -t onnxrust .
 #+end_src
 
-** using podman
+** COMMENT using podman
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   podman build -t "$('cat' './image_name.txt')" .
 #+end_src

@@ -1,10 +1,18 @@
 cd "$('dirname' -- "${0}")" ;
 
-podman run
+sudo -A
+
+docker
+
+run
 
 --tty
 --interactive
 --rm
+
+--gpus 'all,"capabilities=compute,utility,video"'
+
+--ipc host
 
 --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
 -v "$(realpath .):/data/input"
