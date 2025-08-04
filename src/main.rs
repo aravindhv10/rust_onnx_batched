@@ -41,9 +41,7 @@ const IMAGE_RESOLUTION: u32 = 448;
 // #[derive(Serialize, Deserialize, Debug, PartialEq, Encode, Decode)]
 #[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
 struct prediction_probabilities {
-    p1: f32,
-    p2: f32,
-    p3: f32,
+    ps: [f32; 3],
 }
 
 #[derive(Serialize)]
@@ -55,20 +53,18 @@ struct prediction_probabilities_reply {
 }
 
 fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_probabilities_reply {
-    let ps: [f32; 3] = [input.p1, input.p2, input.p3];
-
     let mut max_index: usize = 0;
 
     for i in 1..3 {
-        if ps[i] > ps[max_index] {
+        if input.ps[i] > input.ps[max_index] {
             max_index = i;
         }
     }
 
     return prediction_probabilities_reply {
-        p1: input.p1.to_string(),
-        p2: input.p2.to_string(),
-        p3: input.p3.to_string(),
+        p1: input.ps[0].to_string(),
+        p2: input.ps[1].to_string(),
+        p3: input.p2[2].to_string(),
         mj: CLASS_LABELS[max_index].to_string(),
     };
 }
@@ -331,9 +327,7 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) ->
 
                     for (index, row) in output.axis_iter(Axis(1)).enumerate() {
                         let result = prediction_probabilities {
-                            p1: row[0],
-                            p2: row[1],
-                            p3: row[2],
+                            ps: [row[0], row[1], row[2]],
                         };
 
                         eprintln!("Inside prediction results: {:?}", result);
@@ -456,8 +450,8 @@ async fn main() -> std::io::Result<()> {
             .unwrap()
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .unwrap()
-            .with_execution_providers([CUDAExecutionProvider::default().build()])
-            .unwrap()
+            // .with_execution_providers([CUDAExecutionProvider::default().build()])
+            // .unwrap()
             .commit_from_file(MODEL_PATH)
             .unwrap(),
     ));

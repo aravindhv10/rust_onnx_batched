@@ -218,12 +218,12 @@
 
 *** Main command
 
-**** docker
+**** COMMENT docker
 #+begin_src conf :tangle ./host.docker_run.txt
   docker
 #+end_src
 
-**** COMMENT podman
+**** podman
 #+begin_src conf :tangle ./host.docker_run.txt
   podman
 #+end_src
@@ -301,12 +301,12 @@
   cd "$('dirname' '--' "${0}")"
 #+end_src
 
-** using docker
+** COMMENT using docker
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   sudo -A docker build -t onnxrust .
 #+end_src
 
-** COMMENT using podman
+** using podman
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   podman build -t "$('cat' './image_name.txt')" .
 #+end_src
@@ -468,7 +468,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Added translation layer'
+  M 'Some cleaning'
 #+end_src
 
 ** COMMENT elisp
