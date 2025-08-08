@@ -16,6 +16,7 @@ use ndarray::Axis;
 use ndarray::Ix4;
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
+use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::inputs;
 use ort::session::Session;
 // use ort::session::SessionOutputs;
@@ -479,7 +480,29 @@ fn get_webgpu_model() -> Result<Session, String> {
     }
 }
 
+fn get_openvino_model() -> Result<Session, String> {
+    let res1 = Session::builder()
+        .unwrap()
+        .with_optimization_level(GraphOptimizationLevel::Level3)
+        .unwrap();
+
+    let res2 = res1.with_execution_providers([OpenVINOExecutionProvider::default().build()]);
+
+    match res2 {
+        Ok(res3) => {
+            let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+            println!("Constructed onnx with CUDA support");
+            return Ok(res4);
+        }
+        Err(_) => {
+            println!("Failed to construct model with WebGPU support");
+            return Err("Failed to construct model with WebGPU support".to_string());
+        }
+    }
+}
+
 fn get_model() -> Session {
+    return get_openvino_model().unwrap();
     match get_cuda_model() {
         Ok(model) => {
             return model;

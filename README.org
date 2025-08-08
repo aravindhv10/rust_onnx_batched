@@ -84,7 +84,7 @@
   ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
 #+end_src
 
-** WebGPU
+** COMMENT WebGPU
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.toml
@@ -94,6 +94,18 @@
 *** Base docker image
 #+begin_src conf :tangle ./Dockerfile
   FROM ubuntu:24.04 AS rust
+#+end_src
+
+** OpenVino
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.toml
+  ort = { version = "2.0.0-rc.10", features = ["openvino"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM openvino/ubuntu24_dev:latest AS rust
 #+end_src
 
 * Basic configs
@@ -471,7 +483,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Made more refinement of GPU code selection'
+  M 'Trying openvino'
 #+end_src
 
 ** COMMENT elisp

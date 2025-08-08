@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS rust
+FROM openvino/ubuntu24_dev:latest AS rust
 
 ENV HOME='/root'
 ENV DEBIAN_FRONTEND='noninteractive'
