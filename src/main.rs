@@ -15,6 +15,7 @@ use ndarray::Array;
 use ndarray::Axis;
 use ndarray::Ix4;
 use ort::execution_providers::CUDAExecutionProvider;
+use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
 use ort::session::Session;
 // use ort::session::SessionOutputs;
@@ -436,7 +437,7 @@ fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
     )
 }
 
-fn get_model() -> Session {
+fn get_cuda_model() -> Result<Session, String> {
     let res1 = Session::builder()
         .unwrap()
         .with_optimization_level(GraphOptimizationLevel::Level3)
@@ -448,38 +449,50 @@ fn get_model() -> Session {
         Ok(res3) => {
             let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
             println!("Constructed onnx with CUDA support");
-            return res4;
+            return Ok(res4);
         }
         Err(_) => {
-            let res1 = Session::builder()
-                .unwrap()
-                .with_optimization_level(GraphOptimizationLevel::Level3)
-                .unwrap();
+            println!("Failed to construct model with CUDA support");
+            return Err("Failed to construct model with CUDA support".to_string());
+        }
+    }
+}
 
-            let res2 = res2.commit_from_file(MODEL_PATH).unwrap();
-            println!("No CUDA support found, returning CPU version");
-            return res2;
+fn get_webgpu_model() -> Result<Session, String> {
+    let res1 = Session::builder()
+        .unwrap()
+        .with_optimization_level(GraphOptimizationLevel::Level3)
+        .unwrap();
+
+    let res2 = res1.with_execution_providers([WebGPUExecutionProvider::default().build()]);
+
+    match res2 {
+        Ok(res3) => {
+            let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+            println!("Constructed onnx with CUDA support");
+            return Ok(res4);
+        }
+        Err(_) => {
+            println!("Failed to construct model with WebGPU support");
+            return Err("Failed to construct model with WebGPU support".to_string());
+        }
+    }
+}
+
+fn get_model() -> Session {
+    match get_cuda_model() {
+        Ok(model) => {
+            return model;
+        }
+        Err(_) => {
+            return get_webgpu_model().unwrap();
         }
     }
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // ort::init()
-    //     .with_execution_providers([CUDAExecutionProvider::default().build()])
-    //     .commit()
-    //     .unwrap();
-    // Initialize the ONNX session
-    let model = web::Data::new(Mutex::new(
-        get_model(), // Session::builder()
-                     //     .unwrap()
-                     //     .with_optimization_level(GraphOptimizationLevel::Level3)
-                     //     .unwrap()
-                     //     // .with_execution_providers([CUDAExecutionProvider::default().build()])
-                     //     // .unwrap()
-                     //     .commit_from_file(MODEL_PATH)
-                     //     .unwrap(),
-    ));
+    let model = web::Data::new(Mutex::new(get_model()));
 
     eprintln!("🚀 Server started at http://0.0.0.0:8000");
 

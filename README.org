@@ -471,7 +471,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Made cuda model construction more automated'
+  M 'Made more refinement of GPU code selection'
 #+end_src
 
 ** COMMENT elisp
