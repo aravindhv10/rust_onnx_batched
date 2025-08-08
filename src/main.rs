@@ -411,7 +411,7 @@ async fn infer(
             eprintln!("Failed in loading predictions from the cache due to {}", e);
 
             let tmp = prediction_probabilities {
-                ps: [0.0, 0.0, 1.0,],
+                ps: [0.0, 0.0, 1.0],
             };
 
             return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
@@ -436,6 +436,33 @@ fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
     )
 }
 
+fn get_model() -> Session {
+    let res1 = Session::builder()
+        .unwrap()
+        .with_optimization_level(GraphOptimizationLevel::Level3)
+        .unwrap();
+
+    let res2 = res1.with_execution_providers([CUDAExecutionProvider::default().build()]);
+
+    match res2 {
+        Ok(res3) => {
+            let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+            println!("Constructed onnx with CUDA support");
+            return res4;
+        }
+        Err(_) => {
+            let res1 = Session::builder()
+                .unwrap()
+                .with_optimization_level(GraphOptimizationLevel::Level3)
+                .unwrap();
+
+            let res2 = res2.commit_from_file(MODEL_PATH).unwrap();
+            println!("No CUDA support found, returning CPU version");
+            return res2;
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // ort::init()
@@ -444,14 +471,14 @@ async fn main() -> std::io::Result<()> {
     //     .unwrap();
     // Initialize the ONNX session
     let model = web::Data::new(Mutex::new(
-        Session::builder()
-            .unwrap()
-            .with_optimization_level(GraphOptimizationLevel::Level3)
-            .unwrap()
-            // .with_execution_providers([CUDAExecutionProvider::default().build()])
-            // .unwrap()
-            .commit_from_file(MODEL_PATH)
-            .unwrap(),
+        get_model(), // Session::builder()
+                     //     .unwrap()
+                     //     .with_optimization_level(GraphOptimizationLevel::Level3)
+                     //     .unwrap()
+                     //     // .with_execution_providers([CUDAExecutionProvider::default().build()])
+                     //     // .unwrap()
+                     //     .commit_from_file(MODEL_PATH)
+                     //     .unwrap(),
     ));
 
     eprintln!("🚀 Server started at http://0.0.0.0:8000");

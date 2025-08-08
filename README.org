@@ -265,7 +265,6 @@
   -p '0.0.0.0:8000:8000/tcp'
 #+end_src
 
-
 *** memory size
 #+begin_src conf :tangle ./host.docker_run.txt
   --ulimit memlock=-1
@@ -472,7 +471,7 @@
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More cleaning'
+  M 'Made cuda model construction more automated'
 #+end_src
 
 ** COMMENT elisp
