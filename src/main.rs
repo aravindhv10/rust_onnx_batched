@@ -502,13 +502,13 @@ fn get_openvino_model() -> Result<Session, String> {
 }
 
 fn get_model() -> Session {
-    return get_openvino_model().unwrap();
     match get_cuda_model() {
         Ok(model) => {
             return model;
         }
         Err(_) => {
-            return get_webgpu_model().unwrap();
+            return get_openvino_model().unwrap();
+            // return get_webgpu_model().unwrap();
         }
     }
 }
