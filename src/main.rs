@@ -261,9 +261,15 @@ fn clean_old_out(timeout: u64) {
     }
 }
 
-fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>) -> Result<(), Error> {
+fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, img_hash: &str) -> Result<(), Error> {
     let mut session = model.lock().unwrap();
     clean_old_out(86400);
+
+    if check_existance_of_predictions(&img_hash) {
+        eprintln!("Already inferred, nothing to be done");
+        return Ok(());
+    }
+
     match fs::create_dir_all(PATH_DIR_OUT) {
         Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
             Ok(list_file) => {
@@ -393,7 +399,7 @@ async fn infer(
     if !check_existance_of_predictions(&img_hash) {
         let _ = save_image(&image_data, &img_hash);
 
-        match do_batched_infer_on_list_file_under_dir(&model) {
+        match do_batched_infer_on_list_file_under_dir(&model, &img_hash) {
             Ok(_) => {
                 eprintln!("Done with inference");
             }
