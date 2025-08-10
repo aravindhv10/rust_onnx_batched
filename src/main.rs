@@ -15,12 +15,12 @@ use ndarray::Array;
 use ndarray::Axis;
 use ndarray::Ix4;
 use ort::execution_providers::CUDAExecutionProvider;
-use ort::execution_providers::WebGPUExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
+use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
 // use ort::session::SessionOutputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
@@ -28,19 +28,15 @@ use std::fs;
 // use std::io::Write;
 use std::path::Path;
 use std::sync::Mutex;
-
 use std::time::SystemTime;
 
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
 const PATH_DIR_OUT: &str = "/tmp/out/";
-
 const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
-
 const IMAGE_RESOLUTION: u32 = 448;
 
-// #[derive(Serialize, Deserialize, Debug, PartialEq, Encode, Decode)]
 #[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
 struct prediction_probabilities {
     ps: [f32; 3],
@@ -346,8 +342,8 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, im
                     }
                 }
 
-                eprintln!("Done inferring, now returning");
-                return Ok(());
+                // eprintln!("Done inferring, now returning");
+                // return Ok(());
             }
             Err(e) => {
                 eprintln!("Failed reading dir: {}", e);
@@ -362,8 +358,8 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, im
             return Err(e.into());
         }
     }
-    // eprintln!("Done inferring, now returning");
-    // return Ok(());
+    eprintln!("Done inferring, now returning");
+    return Ok(());
 }
 
 fn check_existance_of_predictions(hash_key: &str) -> bool {
