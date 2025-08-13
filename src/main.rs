@@ -109,7 +109,7 @@ fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
     }
 }
 
-fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
+async fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
     match fs::create_dir_all(PATH_DIR_INCOMPLETE) {
         Ok(_) => match fs::create_dir_all(PATH_DIR_IMAGE) {
             Ok(_) => {
@@ -151,7 +151,7 @@ fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
     }
 }
 
-fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
+async fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
     match fs::read(path_file_input) {
         Ok(image_data) => match image::load_from_memory(&image_data) {
             Ok(original_image) => {
@@ -185,7 +185,7 @@ fn hash_image_content(image_data: &Vec<u8>) -> String {
 //     }
 // }
 
-fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
+async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
     match fs::read_dir(path_dir_input) {
         Ok(list_entry) => {
             let mut ret: Vec<String> = vec![];
@@ -211,10 +211,10 @@ fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> 
     }
 }
 
-fn clean_old_out(timeout: u64) {
+async fn clean_old_out(timeout: u64) {
     let time_now = SystemTime::now();
 
-    match get_list_files_under_dir(PATH_DIR_OUT) {
+    match get_list_files_under_dir(PATH_DIR_OUT).await {
         Err(e) => {
             println!("Failed to get list of files {}", e);
         }
@@ -257,17 +257,17 @@ fn clean_old_out(timeout: u64) {
     }
 }
 
-fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, img_hash: &str) -> Result<(), Error> {
-    let mut session = model.lock().unwrap();
-    clean_old_out(86400);
+async fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, img_hash: &str) -> Result<(), Error> {
+    clean_old_out(86400).await;
 
+    let mut session = model.lock().unwrap();
     if check_existance_of_predictions(&img_hash) {
         eprintln!("Already inferred, nothing to be done");
         return Ok(());
     }
 
     match fs::create_dir_all(PATH_DIR_OUT) {
-        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
+        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE).await {
             Ok(list_file) => {
                 let batch_size = list_file.len();
                 if batch_size > 0 {
@@ -285,7 +285,7 @@ fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, im
                     for i in 0..batch_size {
                         keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
 
-                        match read_image(list_file[i].as_str()) {
+                        match read_image(list_file[i].as_str()).await {
                             Ok(original_image) => {
                                 let preprocessed_image = preprocess_image(original_image);
                                 for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
@@ -393,9 +393,9 @@ async fn infer(
     let img_hash = hash_image_content(&image_data);
 
     if !check_existance_of_predictions(&img_hash) {
-        let _ = save_image(&image_data, &img_hash);
+        let _ = save_image(&image_data, &img_hash).await;
 
-        match do_batched_infer_on_list_file_under_dir(&model, &img_hash) {
+        match do_batched_infer_on_list_file_under_dir(&model, &img_hash).await {
             Ok(_) => {
                 eprintln!("Done with inference");
             }
