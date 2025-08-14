@@ -18,8 +18,8 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
 // use ort::session::SessionOutputs;
 use ort::value::TensorRef;
 use serde::Deserialize;
@@ -30,23 +30,29 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::SystemTime;
 
+const num_features: usize = 3;
+
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
 const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
 const PATH_DIR_OUT: &str = "/tmp/out/";
-const CLASS_LABELS: [&str; 3] = ["empty", "occupied", "other"];
+const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 const IMAGE_RESOLUTION: u32 = 448;
 
 #[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
 struct prediction_probabilities {
-    ps: [f32; 3],
+    ps: [f32; num_features],
+}
+
+fn get_prediction_probabilities_junk() -> prediction_probabilities {
+    return prediction_probabilities {
+        ps: [0.0, 0.0, 1.0],
+    };
 }
 
 #[derive(Serialize)]
 struct prediction_probabilities_reply {
-    p1: String,
-    p2: String,
-    p3: String,
+    ps: [String; num_features],
     mj: String,
 }
 
@@ -60,9 +66,11 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
     }
 
     return prediction_probabilities_reply {
-        p1: input.ps[0].to_string(),
-        p2: input.ps[1].to_string(),
-        p3: input.ps[2].to_string(),
+        ps: [
+            input.ps[0].to_string(),
+            input.ps[1].to_string(),
+            input.ps[2].to_string(),
+        ],
         mj: CLASS_LABELS[max_index].to_string(),
     };
 }
@@ -257,15 +265,10 @@ async fn clean_old_out(timeout: u64) {
     }
 }
 
-async fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, img_hash: &str) -> Result<(), Error> {
-
-    clean_old_out(86400).await;
-
-    if check_existance_of_predictions(&img_hash) {
-        eprintln!("Already inferred, nothing to be done");
-        return Ok(());
-    }
-
+async fn do_batched_infer_on_list_file_under_dir(
+    model: &web::Data<Mutex<Session>>,
+    img_hash: &str,
+) -> Result<(), Error> {
     let mut session = model.lock().unwrap();
 
     if check_existance_of_predictions(&img_hash) {
@@ -412,6 +415,8 @@ async fn infer(
         }
     }
 
+    clean_old_out(86400).await;
+
     match load_predictions(&img_hash) {
         Ok(preds) => {
             eprintln!("Predictions inside the web function: {:?}", preds);
@@ -421,9 +426,7 @@ async fn infer(
         Err(e) => {
             eprintln!("Failed in loading predictions from the cache due to {}", e);
 
-            let tmp = prediction_probabilities {
-                ps: [0.0, 0.0, 1.0],
-            };
+            let tmp = get_prediction_probabilities_junk();
 
             return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
         }
