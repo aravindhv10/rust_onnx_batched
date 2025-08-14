@@ -258,9 +258,16 @@ async fn clean_old_out(timeout: u64) {
 }
 
 async fn do_batched_infer_on_list_file_under_dir(model: &web::Data<Mutex<Session>>, img_hash: &str) -> Result<(), Error> {
+
     clean_old_out(86400).await;
 
+    if check_existance_of_predictions(&img_hash) {
+        eprintln!("Already inferred, nothing to be done");
+        return Ok(());
+    }
+
     let mut session = model.lock().unwrap();
+
     if check_existance_of_predictions(&img_hash) {
         eprintln!("Already inferred, nothing to be done");
         return Ok(());
