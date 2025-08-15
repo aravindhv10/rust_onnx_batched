@@ -28,8 +28,8 @@ use std::fs;
 // use std::io::Write;
 use std::path::Path;
 // use std::sync::Mutex;
-use tokio::sync::Mutex;
 use std::time::SystemTime;
+use tokio::sync::Mutex;
 
 const num_features: usize = 3;
 
@@ -46,14 +46,20 @@ struct prediction_probabilities {
 }
 
 fn get_prediction_probabilities_junk() -> prediction_probabilities {
-    return prediction_probabilities {
-        ps: [0.0, 0.0, 1.0],
+    let mut ret = prediction_probabilities {
+        ps: [0.0; num_features],
     };
+
+    ret.ps[num_features - 1] = 1.0;
+
+    return ret;
 }
 
 #[derive(Serialize)]
 struct prediction_probabilities_reply {
-    ps: [String; num_features],
+    p1: String,
+    p2: String,
+    p3: String,
     mj: String,
 }
 
@@ -67,11 +73,9 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
     }
 
     return prediction_probabilities_reply {
-        ps: [
-            input.ps[0].to_string(),
-            input.ps[1].to_string(),
-            input.ps[2].to_string(),
-        ],
+        p1: input.ps[0].to_string(),
+        p2: input.ps[1].to_string(),
+        p3: input.ps[2].to_string(),
         mj: CLASS_LABELS[max_index].to_string(),
     };
 }
@@ -270,7 +274,7 @@ async fn do_batched_infer_on_list_file_under_dir(
     model: &web::Data<Mutex<Session>>,
     img_hash: &str,
 ) -> Result<(), Error> {
-    let mut session = model.lock().unwrap();
+    let mut session = model.lock().await; // .unwrap();
 
     if check_existance_of_predictions(&img_hash) {
         eprintln!("Already inferred, nothing to be done");

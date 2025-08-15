@@ -504,7 +504,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Optimizing mutex'
+  M 'Significant optimizations'
 #+end_src
 
 ** COMMENT elisp
