@@ -27,7 +27,8 @@ use serde::Serialize;
 use std::fs;
 // use std::io::Write;
 use std::path::Path;
-use std::sync::Mutex;
+// use std::sync::Mutex;
+use tokio::sync::Mutex;
 use std::time::SystemTime;
 
 const num_features: usize = 3;
@@ -520,7 +521,6 @@ fn get_model() -> Session {
         }
         Err(_) => {
             return get_openvino_model().unwrap();
-            // return get_webgpu_model().unwrap();
         }
     }
 }

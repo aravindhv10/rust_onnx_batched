@@ -76,6 +76,7 @@ For running the inference on both CPU and GPU.
   futures-util = "0.3"
   gxhash = "3.5.0"
   bincode = { version = "2.0.1", features = ["serde"] }
+  tokio = { version = "1.47.1", features = ["full"] }
 #+end_src
 
 * ORT Related
@@ -503,7 +504,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More optimizations'
+  M 'Optimizing mutex'
 #+end_src
 
 ** COMMENT elisp
