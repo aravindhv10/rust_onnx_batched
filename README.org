@@ -507,7 +507,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Multi threaded image reading and processing'
+  M 'More futures joining work'
 #+end_src
 
 ** COMMENT elisp
@@ -522,9 +522,19 @@ Port on which the rest api listens to
 #+end_src
 
 * COMMENT Pushing
+
+** Prepare ssh key and push
 #+begin_src emacs-lisp :results silent
   (async-shell-command "
       ~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh
+      git push
+  " "log" "err")
+#+end_src
+
+
+** Just push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
       git push
   " "log" "err")
 #+end_src

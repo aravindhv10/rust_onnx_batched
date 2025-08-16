@@ -19,14 +19,14 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
 // use ort::session::SessionOutputs;
 use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
-use std::fs::read_dir;
+// use std::fs::read_dir;
 // use std::io::Write;
 use std::path::Path;
 // use std::sync::Mutex;
@@ -34,7 +34,8 @@ use std::time::SystemTime;
 use tokio;
 use tokio::fs::create_dir_all;
 use tokio::fs::read;
-// use tokio::fs::read_dir;
+use tokio::fs::read_dir;
+use tokio::fs::remove_file;
 use tokio::fs::write;
 use tokio::sync::Mutex;
 
@@ -234,34 +235,8 @@ fn hash_image_content(image_data: &Vec<u8>) -> String {
 //     }
 // }
 
-fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
-    match read_dir(path_dir_input) {
-        Ok(list_entry) => {
-            let mut ret: Vec<String> = vec![];
-            for i in list_entry {
-                match i {
-                    Ok(path) => {
-                        ret.push(path.path().display().to_string());
-                    }
-                    Err(e) => {
-                        eprintln!(
-                            "Failed to read a path inside directory {} due to {}",
-                            path_dir_input, e
-                        );
-                    }
-                }
-            }
-            Ok(ret)
-        }
-        Err(e) => {
-            eprintln!("Failed to read directory: {}", e);
-            Err(e.into())
-        }
-    }
-}
-
-async fn get_list_files_under_dir_async(path_dir_input: &str) -> Result<Vec<String>, Error> {
-    match tokio::fs::read_dir(path_dir_input).await {
+async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
+    match read_dir(path_dir_input).await {
         Ok(mut list_entry) => {
             let mut ret: Vec<String> = vec![];
             while let Some(i) = list_entry.next_entry().await? {
@@ -279,7 +254,7 @@ async fn get_list_files_under_dir_async(path_dir_input: &str) -> Result<Vec<Stri
 async fn clean_old_out(timeout: u64) {
     let time_now = SystemTime::now();
 
-    match get_list_files_under_dir_async(PATH_DIR_OUT).await {
+    match get_list_files_under_dir(PATH_DIR_OUT).await {
         Err(e) => {
             println!("Failed to get list of files {}", e);
         }
@@ -334,7 +309,7 @@ async fn do_batched_infer_on_list_file_under_dir_new(
     }
 
     match create_dir_all(PATH_DIR_OUT).await {
-        Ok(_) => match get_list_files_under_dir_async(PATH_DIR_IMAGE).await {
+        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE).await {
             Ok(list_file) => {
                 let batch_size = list_file.len();
                 if batch_size > 0 {
@@ -353,45 +328,79 @@ async fn do_batched_infer_on_list_file_under_dir_new(
                         keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
                     }
 
-                    let mut futures = vec![];
+                    {
+                        let mut futures = Vec::with_capacity(batch_size);
 
-                    for i in 0..batch_size {
-                        futures.push(read_and_process_image(list_file[i].as_str()));
-                    }
+                        for i in 0..batch_size {
+                            futures.push(read_and_process_image(list_file[i].as_str()));
+                        }
 
-                    let images = join_all(futures).await;
+                        let images = join_all(futures).await;
 
-                    for i in 0..batch_size {
-                        match &images[i] {
-                            Ok(preprocessed_image) => {
-                                for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
-                                    let [r, g, b, _] = pixel.0;
-                                    input[[i as usize, y as usize, x as usize, 0]] = r;
-                                    input[[i as usize, y as usize, x as usize, 1]] = g;
-                                    input[[i as usize, y as usize, x as usize, 2]] = b;
-                                }
-
-                                match std::fs::remove_file(Path::new(list_file[i].as_str())) {
-                                    Ok(_) => {
-                                        eprintln!(
-                                            "Removed image file {} after reading it.",
-                                            list_file[i].as_str()
-                                        );
-                                    }
-                                    Err(e) => {
-                                        eprintln!(
-                                            "Failed to remove file {} after reading it due to {}.",
-                                            list_file[i].as_str(),
-                                            e
-                                        );
+                        for i in 0..batch_size {
+                            match &images[i] {
+                                Ok(preprocessed_image) => {
+                                    for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
+                                        let [r, g, b, _] = pixel.0;
+                                        input[[i as usize, y as usize, x as usize, 0]] = r;
+                                        input[[i as usize, y as usize, x as usize, 1]] = g;
+                                        input[[i as usize, y as usize, x as usize, 2]] = b;
                                     }
                                 }
-                            }
-                            Err(e) => {
-                                eprintln!("Unable to read image {} due to {}.", list_file[i], e);
+                                Err(e) => {
+                                    eprintln!(
+                                        "Unable to read image {} due to {}.",
+                                        list_file[i], e
+                                    );
+                                }
                             }
                         }
                     }
+
+                    {
+                        let mut futures = Vec::with_capacity(batch_size);
+                        for i in 0..batch_size {
+                            futures.push(remove_file(Path::new(list_file[i].as_str())));
+                        }
+
+                        let results = join_all(futures).await;
+
+                        for i in 0..batch_size {
+                            match &results[i] {
+                                Ok(_) => {
+                                    eprintln!(
+                                        "Removed image file {} after reading it.",
+                                        list_file[i].as_str()
+                                    );
+                                }
+                                Err(e) => {
+                                    eprintln!(
+                                        "Failed to remove file {} after reading it due to {}.",
+                                        list_file[i].as_str(),
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    // for i in 0..batch_size {
+                    //     match std::fs::remove_file(Path::new(list_file[i].as_str())) {
+                    //         Ok(_) => {
+                    //             eprintln!(
+                    //                 "Removed image file {} after reading it.",
+                    //                 list_file[i].as_str()
+                    //             );
+                    //         }
+                    //         Err(e) => {
+                    //             eprintln!(
+                    //                 "Failed to remove file {} after reading it due to {}.",
+                    //                 list_file[i].as_str(),
+                    //                 e
+                    //             );
+                    //         }
+                    //     }
+                    // }
 
                     let outputs = session
                         .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
@@ -450,7 +459,7 @@ async fn do_batched_infer_on_list_file_under_dir(
     }
 
     match create_dir_all(PATH_DIR_OUT).await {
-        Ok(_) => match get_list_files_under_dir_async(PATH_DIR_IMAGE).await {
+        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE).await {
             Ok(list_file) => {
                 let batch_size = list_file.len();
                 if batch_size > 0 {
