@@ -263,11 +263,9 @@ async fn get_list_files_under_dir_async(path_dir_input: &str) -> Result<Vec<Stri
     match tokio::fs::read_dir(path_dir_input).await {
         Ok(mut list_entry) => {
             let mut ret: Vec<String> = vec![];
-
             while let Some(i) = list_entry.next_entry().await? {
                 ret.push(i.path().display().to_string());
             }
-
             Ok(ret)
         }
         Err(e) => {
