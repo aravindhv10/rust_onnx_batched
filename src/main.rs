@@ -6,7 +6,8 @@ use actix_web::HttpServer;
 // use actix_web::Responder;
 use actix_web::web;
 use bincode::{Decode, Encode, config};
-// use futures_util::TryStreamExt;
+use futures::future::join_all;
+use futures_util::TryStreamExt;
 use gxhash;
 use image::DynamicImage;
 // use image::GenericImageView;
@@ -18,13 +19,14 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::Session;
 use ort::session::builder::GraphOptimizationLevel;
+use ort::session::Session;
 // use ort::session::SessionOutputs;
 use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
+use std::fs::read_dir;
 // use std::io::Write;
 use std::path::Path;
 // use std::sync::Mutex;
@@ -32,9 +34,8 @@ use std::time::SystemTime;
 use tokio;
 use tokio::fs::create_dir_all;
 use tokio::fs::read;
-use tokio::fs::write;
 // use tokio::fs::read_dir;
-use std::fs::read_dir;
+use tokio::fs::write;
 use tokio::sync::Mutex;
 
 const num_features: usize = 3;
@@ -358,8 +359,10 @@ async fn do_batched_infer_on_list_file_under_dir_new(
                         futures.push(read_and_process_image(list_file[i].as_str()));
                     }
 
+                    let images = join_all(futures).await;
+
                     for i in 0..batch_size {
-                        match read_and_process_image(list_file[i].as_str()).await {
+                        match &images[i] {
                             Ok(preprocessed_image) => {
                                 for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
                                     let [r, g, b, _] = pixel.0;
@@ -574,7 +577,7 @@ async fn infer(
     if !check_existance_of_predictions(&img_hash) {
         let _ = save_image(&image_data, &img_hash).await;
 
-        match do_batched_infer_on_list_file_under_dir(&model, &img_hash).await {
+        match do_batched_infer_on_list_file_under_dir_new(&model, &img_hash).await {
             Ok(_) => {
                 eprintln!("Done with inference");
             }

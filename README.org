@@ -507,7 +507,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Added futures'
+  M 'Multi threaded image reading and processing'
 #+end_src
 
 ** COMMENT elisp
