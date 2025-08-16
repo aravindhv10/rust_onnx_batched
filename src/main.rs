@@ -29,6 +29,10 @@ use std::fs;
 use std::path::Path;
 // use std::sync::Mutex;
 use std::time::SystemTime;
+use tokio::fs::read;
+use tokio::fs::write;
+// use tokio::fs::read_dir;
+use std::fs::read_dir;
 use tokio::sync::Mutex;
 
 const num_features: usize = 3;
@@ -80,12 +84,12 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
     };
 }
 
-fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
+async fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
     match bincode::encode_to_vec(&result, config::standard()) {
         Ok(encoded) => {
             let s1: String = String::from(PATH_DIR_OUT);
             let s2: String = s1 + hash_key;
-            match fs::write(&s2, encoded) {
+            match write(&s2, encoded).await {
                 Ok(_) => {
                     eprintln!("Wrote prediction to file {}", &s2);
                     return Ok(());
@@ -103,10 +107,10 @@ fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result
     }
 }
 
-fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
+async fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
     let s1: String = String::from(PATH_DIR_OUT);
     let s2: String = s1 + hash_key;
-    match fs::read(s2) {
+    match read(s2).await {
         Ok(encoded) => match bincode::decode_from_slice(&encoded[..], config::standard()) {
             Ok(res) => {
                 let (decoded, _len): (prediction_probabilities, usize) = res;
@@ -128,7 +132,7 @@ async fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error>
             Ok(_) => {
                 let s1: String = String::from(PATH_DIR_INCOMPLETE);
                 let s2: String = s1 + name_image;
-                match fs::write(&s2, image_data) {
+                match write(&s2, image_data).await {
                     Ok(_) => {
                         let s1: String = String::from(PATH_DIR_IMAGE);
                         let s3: String = s1 + name_image;
@@ -165,7 +169,7 @@ async fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error>
 }
 
 async fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
-    match fs::read(path_file_input) {
+    match read(path_file_input).await {
         Ok(image_data) => match image::load_from_memory(&image_data) {
             Ok(original_image) => {
                 return Ok(original_image);
@@ -227,8 +231,8 @@ fn hash_image_content(image_data: &Vec<u8>) -> String {
 //     }
 // }
 
-async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
-    match fs::read_dir(path_dir_input) {
+fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
+    match read_dir(path_dir_input) {
         Ok(list_entry) => {
             let mut ret: Vec<String> = vec![];
             for i in list_entry {
@@ -256,7 +260,7 @@ async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, E
 async fn clean_old_out(timeout: u64) {
     let time_now = SystemTime::now();
 
-    match get_list_files_under_dir(PATH_DIR_OUT).await {
+    match get_list_files_under_dir(PATH_DIR_OUT) {
         Err(e) => {
             println!("Failed to get list of files {}", e);
         }
@@ -311,7 +315,7 @@ async fn do_batched_infer_on_list_file_under_dir(
     }
 
     match fs::create_dir_all(PATH_DIR_OUT) {
-        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE).await {
+        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
             Ok(list_file) => {
                 let batch_size = list_file.len();
                 if batch_size > 0 {
@@ -378,7 +382,7 @@ async fn do_batched_infer_on_list_file_under_dir(
                         };
 
                         eprintln!("Inside prediction results: {:?}", result);
-                        match save_predictions(&result, keys[index]) {
+                        match save_predictions(&result, keys[index]).await {
                             Ok(_) => {}
                             Err(_) => {}
                         }
@@ -450,7 +454,7 @@ async fn infer(
 
     clean_old_out(86400).await;
 
-    match load_predictions(&img_hash) {
+    match load_predictions(&img_hash).await {
         Ok(preds) => {
             eprintln!("Predictions inside the web function: {:?}", preds);
 
