@@ -182,6 +182,35 @@ async fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
     }
 }
 
+/// # **Preprocesses the image before inference.**
+///
+/// This function crops the image to a square and resizes it to the required resolution.
+fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
+    let (width, height) = (original_img.width(), original_img.height());
+    let size = width.min(height);
+    let x = (width - size) / 2;
+    let y = (height - size) / 2;
+    let cropped_img = imageops::crop_imm(&original_img, x, y, size, size).to_image();
+    imageops::resize(
+        &cropped_img,
+        IMAGE_RESOLUTION,
+        IMAGE_RESOLUTION,
+        imageops::FilterType::CatmullRom,
+    )
+}
+
+async fn read_and_process_image(path_file_input: &str) -> Result<image::RgbaImage, Error> {
+    match read_image(path_file_input).await {
+        Ok(original_image) => {
+            return Ok(preprocess_image(original_image));
+        }
+        Err(e) => {
+            eprintln!("Unable to read the file {} due to {}", path_file_input, e);
+            return Err(e.into());
+        }
+    }
+}
+
 fn hash_image_content(image_data: &Vec<u8>) -> String {
     let seed = 123456789;
     format!("{:x}", gxhash::gxhash128(&image_data, seed))
@@ -300,9 +329,8 @@ async fn do_batched_infer_on_list_file_under_dir(
                     for i in 0..batch_size {
                         keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
 
-                        match read_image(list_file[i].as_str()).await {
-                            Ok(original_image) => {
-                                let preprocessed_image = preprocess_image(original_image);
+                        match read_and_process_image(list_file[i].as_str()).await {
+                            Ok(preprocessed_image) => {
                                 for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
                                     let [r, g, b, _] = pixel.0;
                                     input[[i as usize, y as usize, x as usize, 0]] = r;
@@ -436,23 +464,6 @@ async fn infer(
             return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
         }
     }
-}
-
-/// # **Preprocesses the image before inference.**
-///
-/// This function crops the image to a square and resizes it to the required resolution.
-fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
-    let (width, height) = (original_img.width(), original_img.height());
-    let size = width.min(height);
-    let x = (width - size) / 2;
-    let y = (height - size) / 2;
-    let cropped_img = imageops::crop_imm(&original_img, x, y, size, size).to_image();
-    imageops::resize(
-        &cropped_img,
-        IMAGE_RESOLUTION,
-        IMAGE_RESOLUTION,
-        imageops::FilterType::CatmullRom,
-    )
 }
 
 fn get_cuda_model() -> Result<Session, String> {
