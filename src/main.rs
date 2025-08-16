@@ -29,6 +29,8 @@ use std::fs;
 use std::path::Path;
 // use std::sync::Mutex;
 use std::time::SystemTime;
+use tokio;
+use tokio::fs::create_dir_all;
 use tokio::fs::read;
 use tokio::fs::write;
 // use tokio::fs::read_dir;
@@ -257,10 +259,28 @@ fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> 
     }
 }
 
+async fn get_list_files_under_dir_async(path_dir_input: &str) -> Result<Vec<String>, Error> {
+    match tokio::fs::read_dir(path_dir_input).await {
+        Ok(mut list_entry) => {
+            let mut ret: Vec<String> = vec![];
+
+            while let Some(i) = list_entry.next_entry().await? {
+                ret.push(i.path().display().to_string());
+            }
+
+            Ok(ret)
+        }
+        Err(e) => {
+            eprintln!("Failed to read directory: {}", e);
+            Err(e.into())
+        }
+    }
+}
+
 async fn clean_old_out(timeout: u64) {
     let time_now = SystemTime::now();
 
-    match get_list_files_under_dir(PATH_DIR_OUT) {
+    match get_list_files_under_dir_async(PATH_DIR_OUT).await {
         Err(e) => {
             println!("Failed to get list of files {}", e);
         }
@@ -314,8 +334,8 @@ async fn do_batched_infer_on_list_file_under_dir(
         return Ok(());
     }
 
-    match fs::create_dir_all(PATH_DIR_OUT) {
-        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE) {
+    match create_dir_all(PATH_DIR_OUT).await {
+        Ok(_) => match get_list_files_under_dir_async(PATH_DIR_IMAGE).await {
             Ok(list_file) => {
                 let batch_size = list_file.len();
                 if batch_size > 0 {
