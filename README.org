@@ -77,6 +77,7 @@ For running the inference on both CPU and GPU.
   gxhash = "3.5.0"
   bincode = { version = "2.0.1", features = ["serde"] }
   tokio = { version = "1.47.1", features = ["full"] }
+  futures = "0.3.31"
 #+end_src
 
 * ORT Related
@@ -506,7 +507,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More async'
+  M 'Added futures'
 #+end_src
 
 ** COMMENT elisp
