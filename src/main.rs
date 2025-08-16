@@ -251,6 +251,38 @@ async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, E
     }
 }
 
+async fn clean_if_old(i: String, time_now: SystemTime, timeout: u64) {
+    match tokio::fs::metadata(i.as_str()).await {
+        Err(e) => {
+            println!("Failed to get metadata due to {}", e);
+        }
+        Ok(metadata) => match metadata.created() {
+            Err(e) => {
+                println!("Failed to get creation time due to {}", e);
+            }
+            Ok(creation_time) => match time_now.duration_since(creation_time) {
+                Err(e) => {
+                    println!("Duration failed {}", e);
+                }
+                Ok(n) => {
+                    if n.as_secs() > timeout {
+                        match tokio::fs::remove_file(Path::new(i.as_str())).await {
+                            Err(e) => {
+                                println!("Failed to remove old file {} due to {}", i, e);
+                            }
+                            Ok(_) => {
+                                println!("Removed old file {}", i);
+                            }
+                        }
+                    } else {
+                        println!("Not removing {} as its not old", i);
+                    }
+                }
+            },
+        },
+    }
+}
+
 async fn clean_old_out(timeout: u64) {
     let time_now = SystemTime::now();
 
@@ -259,45 +291,16 @@ async fn clean_old_out(timeout: u64) {
             println!("Failed to get list of files {}", e);
         }
         Ok(list_entry) => {
+            let mut futures = Vec::with_capacity(list_entry.len());
             for i in list_entry {
-                match fs::metadata(i.as_str()) {
-                    Err(e) => {
-                        println!("Failed to get metadata due to {}", e);
-                    }
-                    Ok(metadata) => match metadata.created() {
-                        Err(e) => {
-                            println!("Failed to get creation time due to {}", e);
-                        }
-                        Ok(creation_time) => match time_now.duration_since(creation_time) {
-                            Err(e) => {
-                                println!("Duration failed {}", e);
-                            }
-                            Ok(n) => {
-                                if n.as_secs() > timeout {
-                                    match std::fs::remove_file(Path::new(i.as_str())) {
-                                        Err(e) => {
-                                            println!(
-                                                "Failed to remove old file {} due to {}",
-                                                i, e
-                                            );
-                                        }
-                                        Ok(_) => {
-                                            println!("Removed old file {}", i);
-                                        }
-                                    }
-                                } else {
-                                    println!("Not removing {} as its not old", i);
-                                }
-                            }
-                        },
-                    },
-                }
+                futures.push(clean_if_old(i, time_now, timeout));
             }
+            let _ = join_all(futures).await;
         }
     }
 }
 
-async fn do_batched_infer_on_list_file_under_dir_new(
+async fn do_batched_infer_on_list_file_under_dir(
     model: &web::Data<Mutex<Session>>,
     img_hash: &str,
 ) -> Result<(), Error> {
@@ -384,24 +387,6 @@ async fn do_batched_infer_on_list_file_under_dir_new(
                         }
                     }
 
-                    // for i in 0..batch_size {
-                    //     match std::fs::remove_file(Path::new(list_file[i].as_str())) {
-                    //         Ok(_) => {
-                    //             eprintln!(
-                    //                 "Removed image file {} after reading it.",
-                    //                 list_file[i].as_str()
-                    //             );
-                    //         }
-                    //         Err(e) => {
-                    //             eprintln!(
-                    //                 "Failed to remove file {} after reading it due to {}.",
-                    //                 list_file[i].as_str(),
-                    //                 e
-                    //             );
-                    //         }
-                    //     }
-                    // }
-
                     let outputs = session
                         .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
                         .unwrap();
@@ -447,7 +432,7 @@ async fn do_batched_infer_on_list_file_under_dir_new(
     return Ok(());
 }
 
-async fn do_batched_infer_on_list_file_under_dir(
+async fn do_batched_infer_on_list_file_under_dir_old(
     model: &web::Data<Mutex<Session>>,
     img_hash: &str,
 ) -> Result<(), Error> {
@@ -586,7 +571,7 @@ async fn infer(
     if !check_existance_of_predictions(&img_hash) {
         let _ = save_image(&image_data, &img_hash).await;
 
-        match do_batched_infer_on_list_file_under_dir_new(&model, &img_hash).await {
+        match do_batched_infer_on_list_file_under_dir(&model, &img_hash).await {
             Ok(_) => {
                 eprintln!("Done with inference");
             }
