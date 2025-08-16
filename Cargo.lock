@@ -1638,7 +1638,6 @@ dependencies = [
  "actix-web",
  "bincode",
  "futures",
- "futures-util",
  "gxhash",
  "image",
  "ndarray",

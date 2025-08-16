@@ -77,6 +77,7 @@ For running the inference on both CPU and GPU.
   bincode = { version = "2.0.1", features = ["serde"] }
   tokio = { version = "1.47.1", features = ["full"] }
   futures = "0.3.31"
+  futures_util = "0.3.31"
 #+end_src
 
 * ORT Related

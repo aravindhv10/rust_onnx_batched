@@ -6,7 +6,7 @@ use actix_web::HttpServer;
 // use actix_web::Responder;
 use actix_web::web;
 use bincode::{Decode, Encode, config};
-use futures_util::TryStreamExt;
+// use futures_util::TryStreamExt;
 use gxhash;
 use image::DynamicImage;
 // use image::GenericImageView;
