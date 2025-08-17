@@ -88,6 +88,42 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
     };
 }
 
+async fn create_all_directories() {
+    let mut futures = Vec::with_capacity(list_entry.len());
+    futures.push(create_dir_all(PATH_DIR_IMAGE));
+    futures.push(create_dir_all(PATH_DIR_INCOMPLETE));
+    futures.push(create_dir_all(PATH_DIR_OUT));
+    let res = join_all(futures).await;
+
+    match res[0] {
+        Err(e) => {
+            eprintln!("Failed to create directory {}", PATH_DIR_IMAGE);
+            return Err(e.into());
+        }
+        Ok(_) => {
+            eprintln!("Successfully created directory {}", PATH_DIR_IMAGE);
+        }
+    };
+
+    match res[1] {
+        Err(e) => {
+            eprintln!("Failed to create directory {}", PATH_DIR_INCOMPLETE);
+        }
+        Ok(_) => {
+            eprintln!("Successfully created directory {}", PATH_DIR_INCOMPLETE);
+        }
+    };
+
+    match res[2] {
+        Err(e) => {
+            eprintln!("Failed to create directory {}", PATH_DIR_OUT);
+        }
+        Ok(_) => {
+            eprintln!("Successfully created directory {}", PATH_DIR_OUT);
+        }
+    };
+}
+
 async fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
     match bincode::encode_to_vec(&result, config::standard()) {
         Ok(encoded) => {
@@ -131,42 +167,25 @@ async fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Er
 }
 
 async fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
-    match fs::create_dir_all(PATH_DIR_INCOMPLETE) {
-        Ok(_) => match fs::create_dir_all(PATH_DIR_IMAGE) {
-            Ok(_) => {
-                let s1: String = String::from(PATH_DIR_INCOMPLETE);
-                let s2: String = s1 + name_image;
-                match write(&s2, image_data).await {
-                    Ok(_) => {
-                        let s1: String = String::from(PATH_DIR_IMAGE);
-                        let s3: String = s1 + name_image;
-                        match fs::rename(&s2, &s3) {
-                            Ok(_) => Ok(()),
-                            Err(e) => {
-                                eprintln!(
-                                    "Failed to rename the temporary file {} to {} due to {}",
-                                    s2, s3, e
-                                );
-                                Err(e.into())
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to write the temporary file {} due to {}", s2, e);
-                        Err(e.into())
-                    }
+    let s1: String = String::from(PATH_DIR_INCOMPLETE);
+    let s2: String = s1 + name_image;
+    match write(&s2, image_data).await {
+        Ok(_) => {
+            let s1: String = String::from(PATH_DIR_IMAGE);
+            let s3: String = s1 + name_image;
+            match fs::rename(&s2, &s3) {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    eprintln!(
+                        "Failed to rename the temporary file {} to {} due to {}",
+                        s2, s3, e
+                    );
+                    Err(e.into())
                 }
             }
-            Err(e) => {
-                eprintln!("Failed creating directory {} due to {}", PATH_DIR_IMAGE, e);
-                Err(e.into())
-            }
-        },
+        }
         Err(e) => {
-            eprintln!(
-                "Failed creating directory {} due to {}",
-                PATH_DIR_INCOMPLETE, e
-            );
+            eprintln!("Failed to write the temporary file {} due to {}", s2, e);
             Err(e.into())
         }
     }
@@ -311,123 +330,111 @@ async fn do_batched_infer_on_list_file_under_dir(
         return Ok(());
     }
 
-    match create_dir_all(PATH_DIR_OUT).await {
-        Ok(_) => match get_list_files_under_dir(PATH_DIR_IMAGE).await {
-            Ok(list_file) => {
-                let batch_size = list_file.len();
-                if batch_size > 0 {
-                    eprintln!("Inferring with batch_size = {}", batch_size);
+    match get_list_files_under_dir(PATH_DIR_IMAGE).await {
+        Ok(list_file) => {
+            let batch_size = list_file.len();
+            if batch_size > 0 {
+                eprintln!("Inferring with batch_size = {}", batch_size);
 
-                    let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
+                let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
 
-                    let mut input = Array::<u8, Ix4>::zeros((
-                        batch_size,
-                        IMAGE_RESOLUTION as usize,
-                        IMAGE_RESOLUTION as usize,
-                        3,
-                    ));
+                let mut input = Array::<u8, Ix4>::zeros((
+                    batch_size,
+                    IMAGE_RESOLUTION as usize,
+                    IMAGE_RESOLUTION as usize,
+                    3,
+                ));
+
+                for i in 0..batch_size {
+                    keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
+                }
+
+                {
+                    let mut futures = Vec::with_capacity(batch_size);
 
                     for i in 0..batch_size {
-                        keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
+                        futures.push(read_and_process_image(list_file[i].as_str()));
                     }
 
-                    {
-                        let mut futures = Vec::with_capacity(batch_size);
+                    let images = join_all(futures).await;
 
-                        for i in 0..batch_size {
-                            futures.push(read_and_process_image(list_file[i].as_str()));
-                        }
-
-                        let images = join_all(futures).await;
-
-                        for i in 0..batch_size {
-                            match &images[i] {
-                                Ok(preprocessed_image) => {
-                                    for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
-                                        let [r, g, b, _] = pixel.0;
-                                        input[[i as usize, y as usize, x as usize, 0]] = r;
-                                        input[[i as usize, y as usize, x as usize, 1]] = g;
-                                        input[[i as usize, y as usize, x as usize, 2]] = b;
-                                    }
-                                }
-                                Err(e) => {
-                                    eprintln!(
-                                        "Unable to read image {} due to {}.",
-                                        list_file[i], e
-                                    );
+                    for i in 0..batch_size {
+                        match &images[i] {
+                            Ok(preprocessed_image) => {
+                                for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
+                                    let [r, g, b, _] = pixel.0;
+                                    input[[i as usize, y as usize, x as usize, 0]] = r;
+                                    input[[i as usize, y as usize, x as usize, 1]] = g;
+                                    input[[i as usize, y as usize, x as usize, 2]] = b;
                                 }
                             }
-                        }
-                    }
-
-                    {
-                        let mut futures = Vec::with_capacity(batch_size);
-                        for i in 0..batch_size {
-                            futures.push(remove_file(Path::new(list_file[i].as_str())));
-                        }
-
-                        let results = join_all(futures).await;
-
-                        for i in 0..batch_size {
-                            match &results[i] {
-                                Ok(_) => {
-                                    eprintln!(
-                                        "Removed image file {} after reading it.",
-                                        list_file[i].as_str()
-                                    );
-                                }
-                                Err(e) => {
-                                    eprintln!(
-                                        "Failed to remove file {} after reading it due to {}.",
-                                        list_file[i].as_str(),
-                                        e
-                                    );
-                                }
+                            Err(e) => {
+                                eprintln!("Unable to read image {} due to {}.", list_file[i], e);
                             }
-                        }
-                    }
-
-                    let outputs = session
-                        .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
-                        .unwrap();
-
-                    let output = outputs["output"]
-                        .try_extract_array::<f32>()
-                        .unwrap()
-                        .t()
-                        .into_owned();
-
-                    println!("output => {:?}", output);
-
-                    for (index, row) in output.axis_iter(Axis(1)).enumerate() {
-                        let result = prediction_probabilities {
-                            ps: [row[0], row[1], row[2]],
-                        };
-
-                        eprintln!("Inside prediction results: {:?}", result);
-                        match save_predictions(&result, keys[index]).await {
-                            Ok(_) => {}
-                            Err(_) => {}
                         }
                     }
                 }
 
-                // eprintln!("Done inferring, now returning");
-                // return Ok(());
+                {
+                    let mut futures = Vec::with_capacity(batch_size);
+                    for i in 0..batch_size {
+                        futures.push(remove_file(Path::new(list_file[i].as_str())));
+                    }
+
+                    let results = join_all(futures).await;
+
+                    for i in 0..batch_size {
+                        match &results[i] {
+                            Ok(_) => {
+                                eprintln!(
+                                    "Removed image file {} after reading it.",
+                                    list_file[i].as_str()
+                                );
+                            }
+                            Err(e) => {
+                                eprintln!(
+                                    "Failed to remove file {} after reading it due to {}.",
+                                    list_file[i].as_str(),
+                                    e
+                                );
+                            }
+                        }
+                    }
+                }
+
+                let outputs = session
+                    .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
+                    .unwrap();
+
+                let output = outputs["output"]
+                    .try_extract_array::<f32>()
+                    .unwrap()
+                    .t()
+                    .into_owned();
+
+                println!("output => {:?}", output);
+
+                for (index, row) in output.axis_iter(Axis(1)).enumerate() {
+                    let result = prediction_probabilities {
+                        ps: [row[0], row[1], row[2]],
+                    };
+
+                    eprintln!("Inside prediction results: {:?}", result);
+                    match save_predictions(&result, keys[index]).await {
+                        Ok(_) => {}
+                        Err(_) => {}
+                    }
+                }
             }
-            Err(e) => {
-                eprintln!("Failed reading dir: {}", e);
-                return Err(e.into());
-            }
-        },
+            // eprintln!("Done inferring, now returning");
+            // return Ok(());
+        }
         Err(e) => {
-            eprintln!(
-                "Unable to create the output directory {} due to the error {}",
-                PATH_DIR_OUT, e
-            );
+            eprintln!("Failed reading dir: {}", e);
             return Err(e.into());
         }
     }
+
     eprintln!("Done inferring, now returning");
     return Ok(());
 }
@@ -676,6 +683,8 @@ fn get_model() -> Session {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let model = web::Data::new(Mutex::new(get_model()));
+
+    create_all_directories().await;
 
     eprintln!("🚀 Server started at http://0.0.0.0:8000");
 
