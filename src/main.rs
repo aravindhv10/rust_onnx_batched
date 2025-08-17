@@ -89,23 +89,22 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
 }
 
 async fn create_all_directories() {
-    let mut futures = Vec::with_capacity(list_entry.len());
+    let mut futures = Vec::with_capacity(3);
     futures.push(create_dir_all(PATH_DIR_IMAGE));
     futures.push(create_dir_all(PATH_DIR_INCOMPLETE));
     futures.push(create_dir_all(PATH_DIR_OUT));
     let res = join_all(futures).await;
 
-    match res[0] {
+    match &res[0] {
         Err(e) => {
             eprintln!("Failed to create directory {}", PATH_DIR_IMAGE);
-            return Err(e.into());
         }
         Ok(_) => {
             eprintln!("Successfully created directory {}", PATH_DIR_IMAGE);
         }
     };
 
-    match res[1] {
+    match &res[1] {
         Err(e) => {
             eprintln!("Failed to create directory {}", PATH_DIR_INCOMPLETE);
         }
@@ -114,7 +113,7 @@ async fn create_all_directories() {
         }
     };
 
-    match res[2] {
+    match &res[2] {
         Err(e) => {
             eprintln!("Failed to create directory {}", PATH_DIR_OUT);
         }
