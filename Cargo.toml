@@ -4,15 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-actix-web = "4"
-actix-multipart = "0.6"
-image = { version = "0.25.6", features = ["serde", "nasm"] }
-ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
-serde = { version = "1.0", features = ["derive"] }
-gxhash = "3.5.0"
+actix-multipart = "0.7.2"
+actix-web = "4.11.0"
 bincode = { version = "2.0.1", features = ["serde"] }
-tokio = { version = "1.47.1", features = ["full"] }
+env_logger = "0.11.8"
 futures = "0.3.31"
 futures-util = "0.3.31"
+gxhash = "3.5.0"
+image = { version = "0.25.6", features = ["serde", "nasm"] }
+lockfree = "0.5.1"
+log = "0.4.27"
+ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+serde = { version = "1.0.219", features = ["derive"] }
+thiserror = "2.0.15"
+tokio = { version = "1.47.1", features = ["full"] }
 
 ort = { version = "2.0.0-rc.10", features = ["openvino"] }

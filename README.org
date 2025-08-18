@@ -68,16 +68,20 @@ For running the inference on both CPU and GPU.
 *** Dependencies
 #+begin_src conf :tangle ./Cargo.toml
   [dependencies]
-  actix-web = "4"
-  actix-multipart = "0.6"
-  image = { version = "0.25.6", features = ["serde", "nasm"] }
-  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
-  serde = { version = "1.0", features = ["derive"] }
-  gxhash = "3.5.0"
+  actix-multipart = "0.7.2"
+  actix-web = "4.11.0"
   bincode = { version = "2.0.1", features = ["serde"] }
-  tokio = { version = "1.47.1", features = ["full"] }
+  env_logger = "0.11.8"
   futures = "0.3.31"
   futures-util = "0.3.31"
+  gxhash = "3.5.0"
+  image = { version = "0.25.6", features = ["serde", "nasm"] }
+  lockfree = "0.5.1"
+  log = "0.4.27"
+  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+  serde = { version = "1.0.219", features = ["derive"] }
+  thiserror = "2.0.15"
+  tokio = { version = "1.47.1", features = ["full"] }
 #+end_src
 
 * ORT Related
@@ -507,7 +511,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Optimizing dir creation'
+  M 'Updated Cargo'
 #+end_src
 
 ** COMMENT elisp
