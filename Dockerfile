@@ -1,5 +1,3 @@
-FROM openvino/ubuntu24_dev:latest AS rust
-
 ENV HOME='/root'
 ENV DEBIAN_FRONTEND='noninteractive'
 WORKDIR '/root'

@@ -62,7 +62,7 @@ For running the inference on both CPU and GPU.
   [package]
   name = "onnxdeploy"
   version = "0.1.0"
-  edition = "2024"
+  edition = "2021"
 #+end_src
 
 *** Dependencies
@@ -83,6 +83,7 @@ For running the inference on both CPU and GPU.
   thiserror = "2.0.15"
   tokio = { version = "1.47.1", features = ["full"] }
   serde_json = "1.0.142"
+  ort2 = "0.1.2"
 #+end_src
 
 * ORT Related
@@ -119,7 +120,7 @@ For running the inference on both CPU and GPU.
   FROM ubuntu:24.04 AS rust
 #+end_src
 
-** OpenVino
+** COMMENT OpenVino
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.toml

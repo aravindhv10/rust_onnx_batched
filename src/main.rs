@@ -1,59 +1,33 @@
 use actix_multipart::Multipart;
-use actix_web::App;
-use actix_web::Error;
-use actix_web::HttpResponse;
-use actix_web::HttpServer;
-use actix_web::Responder;
-use actix_web::web;
-use bincode::config;
-use bincode::Decode;
-use bincode::Encode;
-use futures::future::join_all;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, ResponseError};
 use futures_util::TryStreamExt;
-use gxhash;
-use image::DynamicImage;
-// use image::GenericImageView;
-use image::imageops;
+use image;
 use lockfree::queue::Queue;
-use log::error;
-use log::info;
-use ndarray::Array;
-use ndarray::Axis;
-use ndarray::Ix4;
-use ndarray::s;
-use ort::execution_providers::CUDAExecutionProvider;
-use ort::execution_providers::OpenVINOExecutionProvider;
-use ort::execution_providers::WebGPUExecutionProvider;
-use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
-use ort::session::Session;
-// use ort::session::SessionOutputs;
-use ort::value::TensorRef;
-use serde::Deserialize;
-use serde::Serialize;
-use std::fs;
-// use std::fs::read_dir;
-// use std::io::Write;
-use std::path::Path;
-// use std::sync::Mutex;
-use std::time::SystemTime;
-use tokio;
-use tokio::fs::create_dir_all;
-use tokio::fs::read;
-use tokio::fs::read_dir;
-use tokio::fs::remove_file;
-use tokio::fs::write;
-use tokio::sync::Mutex;
+use log::{error, info};
+use ndarray::{Array, ArrayView, Axis, Ix3, Ix4};
+use ort::{
+    session::{builder::GraphOptimizationLevel, Session},
+    Error as OrtError,
+};
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::{
+    sync::Arc,
+    thread,
+    time::{Duration, Instant},
+};
+use thiserror::Error;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
+// --- Configuration Constants ---
+
 const NUM_FEATURES: usize = 3;
+const MAX_BATCH_SIZE: usize = 32;
+const BATCH_TIMEOUT_MS: u64 = 100;
 
 const MODEL_PATH: &str = "./model.onnx";
-const PATH_DIR_IMAGE: &str = "/tmp/image/";
-const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
-const PATH_DIR_OUT: &str = "/tmp/out/";
-const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
+const CLASS_LABELS: [&str; NUM_FEATURES] = ["empty", "occupied", "other"];
 const IMAGE_RESOLUTION: u32 = 448;
 
 // --- Types for Communication and Results ---
@@ -80,7 +54,7 @@ struct PredictionReply {
 
 // --- Custom Error Handling ---
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 enum InferenceError {
     #[error("Request timed out")]
     Timeout,
@@ -89,19 +63,43 @@ enum InferenceError {
     #[error("Image processing error: {0}")]
     ImageError(String),
     #[error("ORT (ONNX Runtime) error: {0}")]
-    OrtError(#[from] ort::OrtError),
+    OrtError(String),
     #[error("Invalid input data: {0}")]
     InvalidInput(String),
+    #[error("Multipart form error: {0}")]
+    MultipartError(String),
 }
 
 impl ResponseError for InferenceError {
     fn error_response(&self) -> HttpResponse {
         let status_code = match self {
             InferenceError::Timeout => actix_web::http::StatusCode::REQUEST_TIMEOUT,
-            InferenceError::InvalidInput(_) => actix_web::http::StatusCode::BAD_REQUEST,
+            InferenceError::InvalidInput(_) | InferenceError::MultipartError(_) => {
+                actix_web::http::StatusCode::BAD_REQUEST
+            }
             _ => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
         };
         HttpResponse::build(status_code).json(serde_json::json!({ "error": self.to_string() }))
+    }
+}
+
+// Manual `From` implementations to convert external errors into our custom error type.
+
+impl From<OrtError> for InferenceError {
+    fn from(err: OrtError) -> Self {
+        InferenceError::OrtError(err.to_string())
+    }
+}
+
+impl From<actix_multipart::MultipartError> for InferenceError {
+    fn from(err: actix_multipart::MultipartError) -> Self {
+        InferenceError::MultipartError(err.to_string())
+    }
+}
+
+impl From<image::ImageError> for InferenceError {
+    fn from(err: image::ImageError) -> Self {
+        InferenceError::ImageError(err.to_string())
     }
 }
 
@@ -113,6 +111,7 @@ async fn infer(
     mut payload: Multipart,
 ) -> Result<impl Responder, InferenceError> {
     let mut image_data = Vec::new();
+    // Await the next field from the multipart payload.
     if let Some(mut field) = payload.try_next().await? {
         while let Some(chunk) = field.try_next().await? {
             image_data.extend_from_slice(&chunk);
@@ -120,14 +119,19 @@ async fn infer(
     }
 
     if image_data.is_empty() {
-        return Err(InferenceError::InvalidInput("Image data not provided.".into()));
+        return Err(InferenceError::InvalidInput(
+            "Image data not provided.".into(),
+        ));
     }
 
     // Create a one-shot channel to receive the result from the inference thread.
     let (tx, rx) = oneshot::channel();
 
     // Create and push the job to the lock-free queue.
-    let job = InferenceJob { image_bytes: image_data, responder: tx };
+    let job = InferenceJob {
+        image_bytes: image_data,
+        responder: tx,
+    };
     queue.push(job);
 
     // Asynchronously wait for the result with a 10-second timeout.
@@ -163,7 +167,9 @@ fn batch_inference_thread(queue: Arc<Queue<InferenceJob>>) {
             }
         }
 
-        let should_process = !batch.is_empty() && (batch.len() >= MAX_BATCH_SIZE || last_batch_time.elapsed() > Duration::from_millis(BATCH_TIMEOUT_MS));
+        let should_process = !batch.is_empty()
+            && (batch.len() >= MAX_BATCH_SIZE
+                || last_batch_time.elapsed() > Duration::from_millis(BATCH_TIMEOUT_MS));
 
         if should_process {
             let jobs_to_process: Vec<InferenceJob> = batch.drain(..).collect();
@@ -174,7 +180,7 @@ fn batch_inference_thread(queue: Arc<Queue<InferenceJob>>) {
 
             // Send results back to the waiting handlers.
             for (job, result) in jobs_to_process.into_iter().zip(results) {
-                // The `_ =` ignores the result. If it fails, the client already disconnected.
+                // The `_ =` ignores the result. If it fails, the client likely already disconnected.
                 let _ = job.responder.send(result);
             }
 
@@ -191,101 +197,134 @@ fn run_batch_inference(
     session: &Session,
     jobs: &[InferenceJob],
 ) -> Vec<Result<PredictionProbabilities, InferenceError>> {
-    
-    // 1. Preprocess all images in the batch
+    // 1. Preprocess all images
     let image_tensors: Vec<_> = jobs
         .iter()
         .map(|job| preprocess_image(&job.image_bytes))
         .collect();
 
     // 2. Separate successful from failed preprocessing
-    let mut results: Vec<Result<PredictionProbabilities, InferenceError>> = Vec::with_capacity(jobs.len());
-    let mut successful_tensors = Vec::new();
+    let mut results: Vec<Option<Result<PredictionProbabilities, InferenceError>>> =
+        vec![None; jobs.len()];
+    let mut successful_tensors: Vec<Array<f32, Ix3>> = Vec::new();
     let mut original_indices = Vec::new();
-    
+
     for (i, res) in image_tensors.into_iter().enumerate() {
         match res {
             Ok(tensor) => {
                 successful_tensors.push(tensor);
                 original_indices.push(i);
-                // Add a placeholder which we will fill later
-                results.push(Err(InferenceError::InvalidInput("Unprocessed".to_string())));
             }
             Err(e) => {
-                results.push(Err(InferenceError::ImageError(e.to_string())));
+                results[i] = Some(Err(e.into()));
             }
         }
     }
-    
+
     // Only run inference if there are valid images
     if !successful_tensors.is_empty() {
         // 3. Stack valid tensors into a single batch tensor
         let views: Vec<_> = successful_tensors.iter().map(|t| t.view()).collect();
-        let batch_tensor = ndarray::stack(Axis(0), &views).expect("Failed to stack tensors");
+        let batch_tensor: Array<f32, Ix4> = match ndarray::stack(Axis(0), &views) {
+            Ok(tensor) => tensor,
+            Err(e) => {
+                let stack_error =
+                    InferenceError::InvalidInput(format!("Failed to stack tensors: {}", e));
+                for &original_idx in &original_indices {
+                    results[original_idx] = Some(Err(stack_error.clone()));
+                }
+                return results.into_iter().map(|r| r.unwrap()).collect();
+            }
+        };
 
-        // 4. Run inference
-        let inputs = inputs!["input" => TensorRef::from_array_view(&batch_tensor).unwrap()].unwrap();
-        match session.run(inputs) {
-            Ok(outputs) => {
-                let output_tensor = outputs["output"].try_extract_tensor::<f32>().unwrap();
-                let output_view = output_tensor.view();
+        // 4. Run inference and process results in a separate closure for cleaner error handling
+        let run_result: Result<Vec<PredictionProbabilities>, InferenceError> = (|| {
+            // The `ort` crate can directly accept an array of ndarray references.
+            // This is the simplest and most correct way to pass inputs for this version.
+            let outputs = session.run([&batch_tensor])?;
+            let output_tensor = outputs[0].try_extract_tensor::<f32>()?;
 
-                // 5. Distribute results back to their original slots
-                for (i, row) in output_view.axis_iter(Axis(0)).enumerate() {
+            let shape = output_tensor
+                .shape()
+                .iter()
+                .map(|i| *i as usize)
+                .collect::<Vec<_>>();
+            let data = output_tensor.as_slice()?;
+            let output_view = ArrayView::from_shape(shape, data)
+                .map_err(|e| OrtError::new(format!("Failed to create ndarray view: {}", e)))?;
+
+            Ok(output_view
+                .axis_iter(Axis(0))
+                .map(|row| PredictionProbabilities {
+                    ps: [row[0], row[1], row[2]],
+                })
+                .collect())
+        })();
+
+        // 5. Distribute results back to their original slots
+        match run_result {
+            Ok(predictions) => {
+                for (i, prediction) in predictions.into_iter().enumerate() {
                     let original_idx = original_indices[i];
-                    let prediction = PredictionProbabilities {
-                        ps: [row[0], row[1], row[2]],
-                    };
-                    results[original_idx] = Ok(prediction);
+                    results[original_idx] = Some(Ok(prediction));
                 }
             }
             Err(e) => {
                 error!("ONNX session run failed: {:?}", e);
                 // Mark all jobs in this batch as failed
                 for &original_idx in &original_indices {
-                    results[original_idx] = Err(e.clone().into());
+                    results[original_idx] = Some(Err(e.clone()));
                 }
             }
         };
     }
 
     results
+        .into_iter()
+        .map(|r| r.expect("Result slot should have been filled"))
+        .collect()
 }
 
-// --- Helper Functions (Your logic, adapted for the new architecture) ---
+// --- Helper Functions ---
 
-fn preprocess_image(image_bytes: &[u8]) -> Result<Array<u8, Ix4>, image::ImageError> {
+/// Preprocesses raw image bytes into a tensor suitable for the ONNX model.
+fn preprocess_image(image_bytes: &[u8]) -> Result<Array<f32, Ix3>, image::ImageError> {
     let original_img = image::load_from_memory(image_bytes)?;
+
+    // --- Center Crop ---
     let (width, height) = (original_img.width(), original_img.height());
     let size = width.min(height);
     let x = (width - size) / 2;
     let y = (height - size) / 2;
     let cropped_img = image::imageops::crop_imm(&original_img, x, y, size, size).to_image();
+
+    // --- Resize ---
     let resized_img = image::imageops::resize(
         &cropped_img,
         IMAGE_RESOLUTION,
         IMAGE_RESOLUTION,
-        image::imageops::FilterType::CatmullRom,
+        image::imageops::FilterType::Triangle,
     );
 
-    let mut array = Array::<u8, Ix4>::zeros((
-        1,
+    // --- Convert to ndarray, normalize, and change layout to CHW ---
+    let mut array = Array::<f32, _>::zeros((
         IMAGE_RESOLUTION as usize,
         IMAGE_RESOLUTION as usize,
         3,
     ));
-
     for (x, y, pixel) in resized_img.enumerate_pixels() {
         let [r, g, b, _] = pixel.0;
-        array[[0, y as usize, x as usize, 0]] = r;
-        array[[0, y as usize, x as usize, 1]] = g;
-        array[[0, y as usize, x as usize, 2]] = b;
+        // Normalize to [0.0, 1.0] and place in (H, W, C) format
+        array[[y as usize, x as usize, 0]] = r as f32 / 255.0;
+        array[[y as usize, x as usize, 1]] = g as f32 / 255.0;
+        array[[y as usize, x as usize, 2]] = b as f32 / 255.0;
     }
 
-    Ok(array.slice_mut(s![0, .., .., ..]).to_owned())
+    // Permute axes from (H, W, C) to (C, H, W)
+    Ok(array.permuted_axes([2, 0, 1]))
 }
 
-
+/// Formats the raw prediction probabilities into the final JSON reply structure.
 fn get_prediction_for_reply(input: PredictionProbabilities) -> PredictionReply {
     let mut max_index: usize = 0;
     for i in 1..NUM_FEATURES {
@@ -302,20 +341,22 @@ fn get_prediction_for_reply(input: PredictionProbabilities) -> PredictionReply {
     }
 }
 
-fn get_model() -> Result<Session, ort::OrtError> {
-    let builder = Session::builder()?
+/// Initializes the ONNX Runtime session.
+fn get_model() -> Result<Session, OrtError> {
+    let mut builder = Session::builder()?
         .with_optimization_level(GraphOptimizationLevel::Level3)?
-        .with_intra_op_num_threads(1)?;
+        .with_intra_threads(1)?;
 
-    // Try CUDA first, fall back to CPU if it fails. Add other providers as needed.
-    // Note: Execution provider registration is global.
-    let session = if let Ok(provider) = ort::execution_providers::CUDAExecutionProvider::default().build() {
+    // This logic is simplified to be more robust against compiler type inference issues.
+    let cuda_provider = ort::execution_providers::CUDAExecutionProvider::default().build();
+    if let Ok(provider) = cuda_provider {
         info!("Attempting to build session with CUDA Execution Provider.");
-        builder.with_execution_providers([provider])?.commit_from_file(MODEL_PATH)
+        builder = builder.with_execution_providers([provider])?;
     } else {
         info!("CUDA provider not available. Falling back to CPU.");
-        builder.commit_from_file(MODEL_PATH)
-    };
+    }
+
+    let session = builder.commit_from_file(MODEL_PATH);
 
     if session.is_ok() {
         info!("Successfully created ONNX session.");
@@ -331,11 +372,11 @@ fn get_model() -> Result<Session, ort::OrtError> {
 async fn main() -> std::io::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    // Create the shared, lock-free queue.
+    // Create the shared, lock-free queue for inference jobs.
     let queue = Arc::new(Queue::new());
     let queue_clone = Arc::clone(&queue);
 
-    // Spawn the dedicated inference thread.
+    // Spawn the dedicated background thread for batch processing.
     thread::spawn(move || {
         batch_inference_thread(queue_clone);
     });
@@ -351,3 +392,4 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
