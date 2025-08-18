@@ -497,6 +497,7 @@ Port on which the rest api listens to
   G 'README.org'
   G 'shell.nix'
   G 'src/main.rs'
+  G 'src/new.rs'
   G 'start.sh'
 #+end_src
 
@@ -511,7 +512,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Minor fixes'
+  M 'Added new.rs'
 #+end_src
 
 ** COMMENT elisp
