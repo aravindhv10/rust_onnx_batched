@@ -1770,6 +1770,7 @@ dependencies = [
  "ndarray",
  "ort",
  "serde",
+ "serde_json",
  "thiserror 2.0.15",
  "tokio",
 ]

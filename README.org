@@ -82,6 +82,7 @@ For running the inference on both CPU and GPU.
   serde = { version = "1.0.219", features = ["derive"] }
   thiserror = "2.0.15"
   tokio = { version = "1.47.1", features = ["full"] }
+  serde_json = "1.0.142"
 #+end_src
 
 * ORT Related
@@ -515,7 +516,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Some cleanups'
+  M 'Started work on better batching'
 #+end_src
 
 ** COMMENT elisp
