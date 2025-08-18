@@ -503,16 +503,18 @@ Port on which the rest api listens to
 
 *** Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  C '#Cargo.toml#'
   C '.git.sh'
   C 'README.org~'
   C '#shell.nix#'
   C 'shell.nix~'
+  C 'src/new.rs~'
   C 'tmp.sh'
 #+end_src
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Added new.rs'
+  M 'Some cleanups'
 #+end_src
 
 ** COMMENT elisp
