@@ -497,6 +497,7 @@ Port on which the rest api listens to
   G 'README.org'
   G 'shell.nix'
   G 'src/main.rs'
+  G 'src/main.rs.awesome'
   G 'src/new.rs'
   G 'start.sh'
 #+end_src
