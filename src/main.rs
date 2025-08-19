@@ -561,7 +561,7 @@ async fn infer(
     // Isolate the image data from the multipart payload
     let mut image_data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
-        if field.content_disposition().get_name() == Some("file") {
+        if field.content_disposition().expect("Failed to get content disposition").get_name() == Some("file") {
             while let Some(chunk) = field.try_next().await? {
                 image_data.extend_from_slice(&chunk);
             }
