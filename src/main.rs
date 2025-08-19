@@ -302,19 +302,23 @@ async fn clean_if_old(i: String, time_now: SystemTime, timeout: u64) {
 }
 
 async fn clean_old_out(timeout: u64) {
-    let time_now = SystemTime::now();
+    loop {
+        let time_now = SystemTime::now();
 
-    match get_list_files_under_dir(PATH_DIR_OUT).await {
-        Err(e) => {
-            println!("Failed to get list of files {}", e);
-        }
-        Ok(list_entry) => {
-            let mut futures = Vec::with_capacity(list_entry.len());
-            for i in list_entry {
-                futures.push(clean_if_old(i, time_now, timeout));
+        match get_list_files_under_dir(PATH_DIR_OUT).await {
+            Err(e) => {
+                println!("Failed to get list of files {}", e);
             }
-            let _ = join_all(futures).await;
+            Ok(list_entry) => {
+                let mut futures = Vec::with_capacity(list_entry.len());
+                for i in list_entry {
+                    futures.push(clean_if_old(i, time_now, timeout));
+                }
+                let _ = join_all(futures).await;
+            }
         }
+
+        tokio::time::sleep(tokio::time::Duration::new(timeout, 0)).await;
     }
 }
 
@@ -561,7 +565,12 @@ async fn infer(
     // Isolate the image data from the multipart payload
     let mut image_data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
-        if field.content_disposition().expect("Failed to get content disposition").get_name() == Some("file") {
+        if field
+            .content_disposition()
+            .expect("Failed to get content disposition")
+            .get_name()
+            == Some("file")
+        {
             while let Some(chunk) = field.try_next().await? {
                 image_data.extend_from_slice(&chunk);
             }
@@ -586,8 +595,6 @@ async fn infer(
             }
         }
     }
-
-    clean_old_out(86400).await;
 
     match load_predictions(&img_hash).await {
         Ok(preds) => {
@@ -687,13 +694,18 @@ async fn main() -> std::io::Result<()> {
 
     eprintln!("🚀 Server started at http://0.0.0.0:8000");
 
+    let res1 = clean_old_out(86400);
+
     // Start the HTTP server
-    HttpServer::new(move || {
+    let res2 = HttpServer::new(move || {
         App::new()
             .app_data(model.clone()) // Share the model session with the handlers
             .route("/infer", web::post().to(infer))
     })
     .bind(("0.0.0.0", 8000))?
-    .run()
-    .await
+    .run();
+
+    let (_, ret) = tokio::join!(res1, res2);
+
+    return ret;
 }
