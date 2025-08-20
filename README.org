@@ -457,13 +457,24 @@ Port on which the rest api listens to
 * Main code
 
 ** External libraries
+
+*** COMMENT holding for reference
+#+begin_src rust :tangle ./src,main.rs
+  use actix_web::Responder;
+  use image::GenericImageView;
+  use ort::session::SessionOutputs;
+  use std::fs::read_dir;
+  use std::io::Write;
+  use std::sync::Mutex;
+#+end_src
+
+*** Actually used
 #+begin_src rust :tangle ./src,main.rs
   use actix_multipart::Multipart;
   use actix_web::App;
   use actix_web::Error;
   use actix_web::HttpResponse;
   use actix_web::HttpServer;
-  // use actix_web::Responder;
   use actix_web::web;
   use bincode::config;
   use bincode::Decode;
@@ -472,7 +483,6 @@ Port on which the rest api listens to
   use futures_util::TryStreamExt;
   use gxhash;
   use image::DynamicImage;
-  // use image::GenericImageView;
   use image::imageops;
   use ndarray::Array;
   use ndarray::Axis;
@@ -483,15 +493,11 @@ Port on which the rest api listens to
   use ort::inputs;
   use ort::session::builder::GraphOptimizationLevel;
   use ort::session::Session;
-  // use ort::session::SessionOutputs;
   use ort::value::TensorRef;
   use serde::Deserialize;
   use serde::Serialize;
   use std::fs;
-  // use std::fs::read_dir;
-  // use std::io::Write;
   use std::path::Path;
-  // use std::sync::Mutex;
   use std::time::SystemTime;
   use tokio;
   use tokio::fs::create_dir_all;
@@ -1231,7 +1237,7 @@ runs the inference, and returns the JSON response.
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Significant reorg'
+  M 'More updates to doc and reorg'
 #+end_src
 
 ** COMMENT elisp
