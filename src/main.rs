@@ -49,6 +49,9 @@ const IMAGE_RESOLUTION: u32 = 448;
 const num_features: usize = 3;
 const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 
+const MAX_BATCH: usize = 16;
+const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
+
 #[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
 struct prediction_probabilities {
     ps: [f32; num_features],
@@ -154,8 +157,6 @@ async fn infer_handler(
 }
 
 async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
-    const MAX_BATCH: usize = 16;
-    const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
 
     while let Some(first) = rx.recv().await {
         let mut batch = vec![first];
