@@ -569,15 +569,6 @@ Port on which the rest api listens to
       return ret;
   }
 #+end_src
-fn process_indexed_data<T, I>(data: &T, index: I)
-    where
-        T: Index<I>, // T must implement Index for type I
-        I: std::fmt::Debug, // Added for demonstration printing
-        T::Output: std::fmt::Debug, // Added for demonstration printing
-    {
-        println!("Value at index {:?}: {:?}", index, &data[index]);
-    }
-
 
 ** Structure to hold return results
 
@@ -988,9 +979,6 @@ fn process_indexed_data<T, I>(data: &T, index: I)
                   println!("output => {:?}", output);
 
                   for (index, row) in output.axis_iter(Axis(1)).enumerate() {
-                      // let result = prediction_probabilities {
-                      //     ps: [row[0], row[1], row[2]],
-                      // };
 
                       let result = get_prediction_probabilities(row);
 
