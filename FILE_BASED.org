@@ -1,0 +1,1286 @@
+* COMMENT SAMPLE
+
+** git worker
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+#+end_src
+
+** nix
+#+begin_src nix :tangle ./shell.nix
+#+end_src
+
+** Cargo
+#+begin_src conf :tangle ./Cargo.toml
+#+end_src
+
+** Dockerfile
+#+begin_src conf :tangle ./Dockerfile
+#+end_src
+
+** Script to build
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+#+end_src
+
+** Script to run
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
+#+end_src
+
+** start
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+#+end_src
+
+** infer
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+#+end_src
+
+** Text file to define docker commands
+#+begin_src conf :tangle ./host.docker_run.txt
+#+end_src
+
+** Text file to define docker image name
+#+begin_src conf :tangle ./image_name.txt
+#+end_src
+
+* Introduction
+The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
+This README file contains code for:
+- Cargo.toml
+- Dockerfile
+- Scripts for building and running the docker image.
+For running the inference on both CPU and GPU.
+
+* Define the image name
+#+begin_src conf :tangle ./image_name.txt
+  onnxrust
+#+end_src
+
+* General dependencies
+
+** Cargo
+
+*** Package details
+#+begin_src conf :tangle ./Cargo.toml
+  [package]
+  name = "onnxdeploy"
+  version = "0.1.0"
+  edition = "2024"
+#+end_src
+
+*** Dependencies
+#+begin_src conf :tangle ./Cargo.toml
+  [dependencies]
+  actix-multipart = "0.7.2"
+  actix-web = "4.11.0"
+  bincode = { version = "2.0.1", features = ["serde"] }
+  env_logger = "0.11.8"
+  futures = "0.3.31"
+  futures-util = "0.3.31"
+  gxhash = "3.5.0"
+  image = { version = "0.25.6", features = ["serde", "nasm"] }
+  lockfree = "0.5.1"
+  log = "0.4.27"
+  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+  serde = { version = "1.0.219", features = ["derive"] }
+  thiserror = "2.0.15"
+  tokio = { version = "1.47.1", features = ["full"] }
+#+end_src
+
+* ORT Related
+- Define ORT dependencies and features for GPU (CUDA) or CPU (OpenVino).
+- Define docker base image for GPU or CPU.
+- Definne nvidia gpu capabilities if using CUDA.
+
+** COMMENT CUDA
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.toml
+  ort = { version = "2.0.0-rc.10", features = ["cuda"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rust
+#+end_src
+
+*** env
+#+begin_src conf :tangle ./Dockerfile
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+#+end_src
+
+** COMMENT WebGPU
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.toml
+  ort = { version = "2.0.0-rc.10", features = ["webgpu"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM ubuntu:24.04 AS rust
+#+end_src
+
+** OpenVino
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.toml
+  ort = { version = "2.0.0-rc.10", features = ["openvino"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM openvino/ubuntu24_dev:latest AS rust
+#+end_src
+
+* Basic configs
+Define important environment variables and working dir for apt and rust.
+#+begin_src conf :tangle ./Dockerfile
+  ENV HOME='/root'
+  ENV DEBIAN_FRONTEND='noninteractive'
+  WORKDIR '/root'
+  ENV RUSTUP_HOME=/usr/local/rustup \
+      CARGO_HOME=/usr/local/cargo \
+      PATH=/usr/local/cargo/bin:$PATH \
+      RUST_VERSION=1.88.0
+#+end_src
+
+* Prepare basic packages
+
+** Important apt install stuff
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'aria2' \
+          'build-essential' \
+          'cmake' \
+          'curl' \
+          'git' \
+          'git-lfs' \
+          'libfontconfig-dev' \
+          'libssl-dev' \
+          'make' \
+          'nasm' \
+          'pkg-config' \
+          'wget' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+** Download rust 
+Downloaad and install rust. Code taken from https://github.com/rust-lang/docker-rust
+#+begin_src conf :tangle ./Dockerfile
+  RUN set -eux; \
+      dpkgArch="$(dpkg --print-architecture)"; \
+      rustArch='x86_64-unknown-linux-gnu'; \
+      rustupSha256='20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c' ; \
+      url="https://static.rust-lang.org/rustup/archive/1.28.2/${rustArch}/rustup-init"; \
+      wget "$url"; \
+      echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
+      chmod +x rustup-init; \
+      ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host ${rustArch}; \
+      rm rustup-init; \
+      chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+      rustup --version; \
+      cargo --version; \
+      rustc --version;
+#+end_src
+
+* Prepare with base system packages for rust
+Build the main image
+
+** Base image
+#+begin_src conf :tangle ./Dockerfile
+  FROM rust
+#+end_src
+
+** Important apt install stuff
+Install the remaining apt packages
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'aria2' \
+          'build-essential' \
+          'cmake' \
+          'curl' \
+          'ffmpeg' \
+          'fish' \
+          'git' \
+          'git-lfs' \
+          'ipython3' \
+          'libcairo2-dev' \
+          'libfontconfig-dev' \
+          'libopenblas64-dev' \
+          'libopenblas-dev' \
+          'libssl-dev' \
+          'make' \
+          'nasm' \
+          'neovim' \
+          'ninja-build' \
+          'pkg-config' \
+          'python3-cairo-dev' \
+          'python3-dev' \
+          'python3-opencv' \
+          'python3-pip' \
+          'python3-setuptools' \
+          'unzip' \
+          'wget' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+* Expose a network port
+Port on which the rest api listens to
+#+begin_src conf :tangle ./Dockerfile
+  EXPOSE 8000/tcp
+#+end_src
+
+* Script to run the docker image
+
+** Main template
+
+*** Change dir
+#+begin_src conf :tangle ./host.docker_run.txt
+  cd "$('dirname' -- "${0}")" ;
+#+end_src
+
+*** Main command
+
+**** COMMENT docker
+#+begin_src conf :tangle ./host.docker_run.txt
+  sudo -A
+  docker
+#+end_src
+
+**** podman
+#+begin_src conf :tangle ./host.docker_run.txt
+  podman
+#+end_src
+
+*** run
+#+begin_src conf :tangle ./host.docker_run.txt
+  run
+#+end_src
+
+*** Interactive
+#+begin_src conf :tangle ./host.docker_run.txt
+  --tty
+  --interactive
+  --rm
+#+end_src
+
+*** COMMENT CUDA
+#+begin_src conf :tangle ./host.docker_run.txt
+  --gpus 'all,"capabilities=compute,utility,video"'
+#+end_src
+
+*** IPC and shm sizes
+
+**** IPC
+#+begin_src conf :tangle ./host.docker_run.txt
+  --ipc host
+#+end_src
+
+**** COMMENT shm size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --shm-size 107374182400
+#+end_src
+
+*** MOUNTS
+#+begin_src conf :tangle ./host.docker_run.txt
+  --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
+  -v "$(realpath .):/data/input"
+  -v "CACHE:/usr/local/cargo/registry"
+  -v "CACHE:/root/.cache"
+#+end_src
+
+*** Network port
+#+begin_src conf :tangle ./host.docker_run.txt
+  -p '0.0.0.0:8000:8000/tcp'
+#+end_src
+
+*** memory size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --ulimit memlock=-1
+  --ulimit stack=67108864
+#+end_src
+
+*** Image name and command
+#+begin_src conf :tangle ./host.docker_run.txt
+  "$('cat' './image_name.txt')"
+#+end_src
+
+*** Final command
+
+**** start the server
+#+begin_src conf :tangle ./host.docker_run.txt
+  '/data/input/start.sh' ;
+#+end_src
+
+**** COMMENT fish
+#+begin_src conf :tangle ./host.docker_run.txt
+  'fish' ;
+#+end_src
+
+** Prepare the main script from the template
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
+  cd "$('dirname' -- "${0}")"
+  cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
+  sh './host.docker_run_main.sh'
+#+end_src
+
+* Script to build
+
+** Change directory
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  cd "$('dirname' '--' "${0}")"
+#+end_src
+
+** Actual build command
+
+*** COMMENT using docker
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  sudo -A docker build -t onnxrust .
+#+end_src
+
+*** using podman
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  podman build -t "$('cat' './image_name.txt')" .
+#+end_src
+
+* Main nix shell code
+
+** Main nix code
+
+*** Function inputs
+#+begin_src nix :tangle ./shell.nix
+  {pkgs ? import <nixpkgs> {}} :
+#+end_src
+
+*** Start convenience definitions
+
+**** begin
+#+begin_src nix :tangle ./shell.nix
+  let
+#+end_src
+
+***** Package list
+
+****** begin
+#+begin_src nix :tangle ./shell.nix
+  mylist = with pkgs; [
+#+end_src
+
+****** main
+
+******* generic packages
+#+begin_src nix :tangle ./shell.nix
+  bc
+  bison
+  blend2d
+  cargo
+  cargo-info
+  ffmpeg
+  ffmpeg.dev
+  fish
+  flex
+  fontconfig
+  fontconfig.dev
+  fontconfig.lib
+  gnumake
+  libelf
+  nasm
+  openssl
+  openssl.dev
+  pkg-config
+  python313Full
+  udev
+  zsh
+  zstd
+#+end_src
+
+****** end
+#+begin_src nix :tangle ./shell.nix
+  ] ;
+#+end_src
+
+**** end
+#+begin_src nix :tangle ./shell.nix
+  in
+#+end_src
+
+*** Function outputs for regular shell
+
+**** Header
+#+begin_src nix :tangle ./shell.nix
+  (pkgs.mkShell {
+#+end_src
+
+***** Name
+#+begin_src nix :tangle ./shell.nix
+  name = "good_rust_env";
+#+end_src
+
+***** Packages
+#+begin_src nix :tangle ./shell.nix
+  packages = mylist;
+#+end_src
+
+***** Main shell command
+#+begin_src nix :tangle ./shell.nix
+  runScript = "fish";
+#+end_src
+
+**** Trailer
+#+begin_src nix :tangle ./shell.nix
+  })
+#+end_src
+
+* Script to start server
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+  cd "$(dirname -- "${0}")"
+  export RUSTFLAGS="-C target-cpu=native"
+  cargo run --release
+#+end_src
+
+* Script to infer
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.png"
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
+#+end_src
+
+* Main code
+
+** External libraries
+
+*** COMMENT holding for reference
+#+begin_src rust :tangle ./src,main.rs
+  use actix_web::Responder;
+  use image::GenericImageView;
+  use ort::session::SessionOutputs;
+  use std::fs::read_dir;
+  use std::io::Write;
+  use std::sync::Mutex;
+#+end_src
+
+*** Actually used
+#+begin_src rust :tangle ./src,main.rs
+  use actix_multipart::Multipart;
+  use actix_web::App;
+  use actix_web::Error;
+  use actix_web::HttpResponse;
+  use actix_web::HttpServer;
+  use actix_web::web;
+  use bincode::config;
+  use bincode::Decode;
+  use bincode::Encode;
+  use futures::future::join_all;
+  use futures_util::TryStreamExt;
+  use gxhash;
+  use image::DynamicImage;
+  use image::imageops;
+  use ndarray::Array;
+  use ndarray::Axis;
+  use ndarray::Ix4;
+  use ort::execution_providers::CUDAExecutionProvider;
+  use ort::execution_providers::OpenVINOExecutionProvider;
+  use ort::execution_providers::WebGPUExecutionProvider;
+  use ort::inputs;
+  use ort::session::builder::GraphOptimizationLevel;
+  use ort::session::Session;
+  use ort::value::TensorRef;
+  use serde::Deserialize;
+  use serde::Serialize;
+  use std::fs;
+  use std::ops::Index;
+  use std::path::Path;
+  use std::time::SystemTime;
+  use tokio;
+  use tokio::fs::create_dir_all;
+  use tokio::fs::read;
+  use tokio::fs::read_dir;
+  use tokio::fs::remove_file;
+  use tokio::fs::write;
+  use tokio::sync::Mutex;
+#+end_src
+
+** Important configuration
+
+*** Paths for model checkpoint and temporary locations
+#+begin_src rust :tangle ./src,main.rs
+  const MODEL_PATH: &str = "./model.onnx";
+  const PATH_DIR_IMAGE: &str = "/tmp/image/";
+  const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
+  const PATH_DIR_OUT: &str = "/tmp/out/";
+#+end_src
+
+*** Image resolution
+#+begin_src rust :tangle ./src,main.rs
+  const IMAGE_RESOLUTION: u32 = 448;
+#+end_src
+
+*** Number of output classes and output vector dimensions
+#+begin_src rust :tangle ./src,main.rs
+  const num_features: usize = 3;
+  const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
+#+end_src
+
+** Structure to hold prediction results
+
+*** Actual structure
+#+begin_src rust :tangle ./src,main.rs
+  #[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
+  struct prediction_probabilities {
+      ps: [f32; num_features],
+  }
+#+end_src
+
+*** Function to construct the structure as junk
+#+begin_src rust :tangle ./src,main.rs
+  fn get_prediction_probabilities_junk() -> prediction_probabilities {
+      let mut ret = prediction_probabilities {
+          ps: [0.0; num_features],
+      };
+
+      ret.ps[num_features - 1] = 1.0;
+
+      return ret;
+  }
+#+end_src
+
+*** Function to construct the structure from indexed input
+#+begin_src rust :tangle ./src,main.rs
+  fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
+  where
+      T: Index<usize, Output = f32>,
+  {
+      let mut ret = prediction_probabilities {
+          ps: [0.0; num_features],
+      };
+
+      for i in 0..num_features {
+          ret.ps[i] = input[i];
+      }
+
+      return ret;
+  }
+#+end_src
+
+** Structure to hold return results
+
+*** Structure to hold reply results
+#+begin_src rust :tangle ./src,main.rs
+  #[derive(Serialize)]
+  struct prediction_probabilities_reply {
+      p1: String,
+      p2: String,
+      p3: String,
+      mj: String,
+  }
+#+end_src
+
+*** Function to convert inference results to reply results
+#+begin_src rust :tangle ./src,main.rs
+  fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_probabilities_reply {
+      let mut max_index: usize = 0;
+
+      for i in 1..3 {
+          if input.ps[i] > input.ps[max_index] {
+              max_index = i;
+          }
+      }
+
+      return prediction_probabilities_reply {
+          p1: input.ps[0].to_string(),
+          p2: input.ps[1].to_string(),
+          p3: input.ps[2].to_string(),
+          mj: CLASS_LABELS[max_index].to_string(),
+      };
+  }
+#+end_src
+
+** Function to create all important directories to hold temporary files
+#+begin_src rust :tangle ./src,main.rs
+  async fn create_all_directories() {
+      let mut futures = Vec::with_capacity(3);
+      futures.push(create_dir_all(PATH_DIR_IMAGE));
+      futures.push(create_dir_all(PATH_DIR_INCOMPLETE));
+      futures.push(create_dir_all(PATH_DIR_OUT));
+      let res = join_all(futures).await;
+
+      match &res[0] {
+          Err(e) => {
+              eprintln!("Failed to create directory {}", PATH_DIR_IMAGE);
+          }
+          Ok(_) => {
+              eprintln!("Successfully created directory {}", PATH_DIR_IMAGE);
+          }
+      };
+
+      match &res[1] {
+          Err(e) => {
+              eprintln!("Failed to create directory {}", PATH_DIR_INCOMPLETE);
+          }
+          Ok(_) => {
+              eprintln!("Successfully created directory {}", PATH_DIR_INCOMPLETE);
+          }
+      };
+
+      match &res[2] {
+          Err(e) => {
+              eprintln!("Failed to create directory {}", PATH_DIR_OUT);
+          }
+          Ok(_) => {
+              eprintln!("Successfully created directory {}", PATH_DIR_OUT);
+          }
+      };
+  }
+#+end_src
+
+** Functions to save and load model prediction results
+
+*** Function to save predictions
+#+begin_src rust :tangle ./src,main.rs
+  async fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
+      match bincode::encode_to_vec(&result, config::standard()) {
+          Ok(encoded) => {
+              let s1: String = String::from(PATH_DIR_OUT);
+              let s2: String = s1 + hash_key;
+              match write(&s2, encoded).await {
+                  Ok(_) => {
+                      eprintln!("Wrote prediction to file {}", &s2);
+                      return Ok(());
+                  }
+                  Err(e) => {
+                      eprintln!("Failed to write predictions into {} due to {}", &s2, e);
+                      return Err(e.into());
+                  }
+              }
+          }
+          Err(e) => {
+              eprintln!("Failed encoding the result {}", e);
+              return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
+          }
+      }
+  }
+#+end_src
+
+*** Function to load predictions
+#+begin_src rust :tangle ./src,main.rs
+  async fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
+      let s1: String = String::from(PATH_DIR_OUT);
+      let s2: String = s1 + hash_key;
+      match read(s2).await {
+          Ok(encoded) => match bincode::decode_from_slice(&encoded[..], config::standard()) {
+              Ok(res) => {
+                  let (decoded, _len): (prediction_probabilities, usize) = res;
+                  return Ok(decoded);
+              }
+              Err(e) => {
+                  return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
+              }
+          },
+          Err(e) => {
+              return Err(e.into());
+          }
+      }
+  }
+#+end_src
+
+** Functions to save and load images
+
+*** Save the image data
+#+begin_src rust :tangle ./src,main.rs
+  async fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
+      let s1: String = String::from(PATH_DIR_INCOMPLETE);
+      let s2: String = s1 + name_image;
+      match write(&s2, image_data).await {
+          Ok(_) => {
+              let s1: String = String::from(PATH_DIR_IMAGE);
+              let s3: String = s1 + name_image;
+              match fs::rename(&s2, &s3) {
+                  Ok(_) => Ok(()),
+                  Err(e) => {
+                      eprintln!(
+                          "Failed to rename the temporary file {} to {} due to {}",
+                          s2, s3, e
+                      );
+                      Err(e.into())
+                  }
+              }
+          }
+          Err(e) => {
+              eprintln!("Failed to write the temporary file {} due to {}", s2, e);
+              Err(e.into())
+          }
+      }
+  }
+#+end_src
+
+*** load the image data
+#+begin_src rust :tangle ./src,main.rs
+  async fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
+      match read(path_file_input).await {
+          Ok(image_data) => match image::load_from_memory(&image_data) {
+              Ok(original_image) => {
+                  return Ok(original_image);
+              }
+              Err(e) => {
+                  eprintln!("Failed to decode image due to {}.", e);
+                  return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
+              }
+          },
+          Err(e) => {
+              eprintln!("Unable to read the file {} due to {}", path_file_input, e);
+              return Err(e.into());
+          }
+      }
+  }
+#+end_src
+
+** Function to process image
+
+*** Process the image
+#+begin_src rust :tangle ./src,main.rs
+  /// # **Preprocesses the image before inference.**
+  ///
+  /// This function crops the image to a square and resizes it to the required resolution.
+  fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
+      let (width, height) = (original_img.width(), original_img.height());
+      let size = width.min(height);
+      let x = (width - size) / 2;
+      let y = (height - size) / 2;
+      let cropped_img = imageops::crop_imm(&original_img, x, y, size, size).to_image();
+      imageops::resize(
+          &cropped_img,
+          IMAGE_RESOLUTION,
+          IMAGE_RESOLUTION,
+          imageops::FilterType::CatmullRom,
+      )
+  }
+#+end_src
+
+*** Read and process the image
+#+begin_src rust :tangle ./src,main.rs
+  async fn read_and_process_image(path_file_input: &str) -> Result<image::RgbaImage, Error> {
+      match read_image(path_file_input).await {
+          Ok(original_image) => {
+              return Ok(preprocess_image(original_image));
+          }
+          Err(e) => {
+              eprintln!("Unable to read the file {} due to {}", path_file_input, e);
+              return Err(e.into());
+          }
+      }
+  }
+#+end_src
+
+** hash input data
+#+begin_src rust :tangle ./src,main.rs
+  fn hash_image_content(image_data: &Vec<u8>) -> String {
+      let seed = 123456789;
+      format!("{:x}", gxhash::gxhash128(&image_data, seed))
+  }
+#+end_src
+
+** COMMENT Function to get time from some specified reference
+#+begin_src rust :tangle ./src,main.rs
+  fn get_time_from_epoch() -> Result<u64, String> {
+      match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+          Err(_) => {
+              return Err("Failed to get time".to_string());
+          },
+          Ok(n) => {
+              return Ok(n.as_secs());
+          },
+      }
+  }
+#+end_src
+
+** Function to read all files under a dir
+#+begin_src rust :tangle ./src,main.rs
+  async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
+      match read_dir(path_dir_input).await {
+          Ok(mut list_entry) => {
+              let mut ret: Vec<String> = vec![];
+              while let Some(i) = list_entry.next_entry().await? {
+                  ret.push(i.path().display().to_string());
+              }
+              Ok(ret)
+          }
+          Err(e) => {
+              eprintln!("Failed to read directory: {}", e);
+              Err(e.into())
+          }
+      }
+  }
+#+end_src
+
+** Function to clean all files older than certain time
+
+*** Checking and removing each file
+#+begin_src rust :tangle ./src,main.rs
+  async fn clean_if_old(i: String, time_now: SystemTime, timeout: u64) {
+      match tokio::fs::metadata(i.as_str()).await {
+          Err(e) => {
+              println!("Failed to get metadata due to {}", e);
+          }
+          Ok(metadata) => match metadata.created() {
+              Err(e) => {
+                  println!("Failed to get creation time due to {}", e);
+              }
+              Ok(creation_time) => match time_now.duration_since(creation_time) {
+                  Err(e) => {
+                      println!("Duration failed {}", e);
+                  }
+                  Ok(n) => {
+                      if n.as_secs() > timeout {
+                          match tokio::fs::remove_file(Path::new(i.as_str())).await {
+                              Err(e) => {
+                                  println!("Failed to remove old file {} due to {}", i, e);
+                              }
+                              Ok(_) => {
+                                  println!("Removed old file {}", i);
+                              }
+                          }
+                      } else {
+                          println!("Not removing {} as its not old", i);
+                      }
+                  }
+              },
+          },
+      }
+  }
+#+end_src
+
+*** Run it on all files pereodically
+#+begin_src rust :tangle ./src,main.rs
+  async fn clean_old_out(timeout: u64) {
+      loop {
+          let time_now = SystemTime::now();
+
+          match get_list_files_under_dir(PATH_DIR_OUT).await {
+              Err(e) => {
+                  println!("Failed to get list of files {}", e);
+              }
+              Ok(list_entry) => {
+                  let mut futures = Vec::with_capacity(list_entry.len());
+                  for i in list_entry {
+                      futures.push(clean_if_old(i, time_now, timeout));
+                  }
+                  let _ = join_all(futures).await;
+              }
+          }
+
+          tokio::time::sleep(tokio::time::Duration::new(timeout, 0)).await;
+      }
+  }
+#+end_src
+
+** Main function to do batched inference
+#+begin_src rust :tangle ./src,main.rs
+  async fn do_batched_infer_on_list_file_under_dir(
+      model: &web::Data<Mutex<Session>>,
+      img_hash: &str,
+  ) -> Result<(), Error> {
+      let mut session = model.lock().await; // .unwrap();
+
+      if check_existance_of_predictions(&img_hash) {
+          eprintln!("Already inferred, nothing to be done");
+          return Ok(());
+      }
+
+      match get_list_files_under_dir(PATH_DIR_IMAGE).await {
+          Ok(list_file) => {
+              let batch_size = list_file.len();
+              if batch_size > 0 {
+                  eprintln!("Inferring with batch_size = {}", batch_size);
+
+                  let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
+
+                  let mut input = Array::<u8, Ix4>::zeros((
+                      batch_size,
+                      IMAGE_RESOLUTION as usize,
+                      IMAGE_RESOLUTION as usize,
+                      3,
+                  ));
+
+                  for i in 0..batch_size {
+                      keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
+                  }
+
+                  {
+                      let mut futures = Vec::with_capacity(batch_size);
+
+                      for i in 0..batch_size {
+                          futures.push(read_and_process_image(list_file[i].as_str()));
+                      }
+
+                      let images = join_all(futures).await;
+
+                      for i in 0..batch_size {
+                          match &images[i] {
+                              Ok(preprocessed_image) => {
+                                  for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
+                                      let [r, g, b, _] = pixel.0;
+                                      input[[i as usize, y as usize, x as usize, 0]] = r;
+                                      input[[i as usize, y as usize, x as usize, 1]] = g;
+                                      input[[i as usize, y as usize, x as usize, 2]] = b;
+                                  }
+                              }
+                              Err(e) => {
+                                  eprintln!("Unable to read image {} due to {}.", list_file[i], e);
+                              }
+                          }
+                      }
+                  }
+
+                  {
+                      let mut futures = Vec::with_capacity(batch_size);
+                      for i in 0..batch_size {
+                          futures.push(remove_file(Path::new(list_file[i].as_str())));
+                      }
+
+                      let results = join_all(futures).await;
+
+                      for i in 0..batch_size {
+                          match &results[i] {
+                              Ok(_) => {
+                                  eprintln!(
+                                      "Removed image file {} after reading it.",
+                                      list_file[i].as_str()
+                                  );
+                              }
+                              Err(e) => {
+                                  eprintln!(
+                                      "Failed to remove file {} after reading it due to {}.",
+                                      list_file[i].as_str(),
+                                      e
+                                  );
+                              }
+                          }
+                      }
+                  }
+
+                  let outputs = session
+                      .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
+                      .unwrap();
+
+                  let output = outputs["output"]
+                      .try_extract_array::<f32>()
+                      .unwrap()
+                      .t()
+                      .into_owned();
+
+                  println!("output => {:?}", output);
+
+                  for (index, row) in output.axis_iter(Axis(1)).enumerate() {
+
+                      let result = get_prediction_probabilities(row);
+
+                      eprintln!("Inside prediction results: {:?}", result);
+                      match save_predictions(&result, keys[index]).await {
+                          Ok(_) => {}
+                          Err(_) => {}
+                      }
+                  }
+              }
+              // eprintln!("Done inferring, now returning");
+              // return Ok(());
+          }
+          Err(e) => {
+              eprintln!("Failed reading dir: {}", e);
+              return Err(e.into());
+          }
+      }
+
+      eprintln!("Done inferring, now returning");
+      return Ok(());
+  }
+#+end_src
+
+** Function to check if the required prediction is already there
+#+begin_src rust :tangle ./src,main.rs
+  fn check_existance_of_predictions(hash_key: &str) -> bool {
+      let s1: String = String::from(PATH_DIR_OUT);
+      let s2: String = s1 + hash_key;
+      return Path::new(&s2).exists();
+  }
+#+end_src
+
+** The main inference function called by the rest server
+**Handles the inference request.**
+This function takes the multipart request, extracts the image, preprocesses it,
+runs the inference, and returns the JSON response.
+#+begin_src rust :tangle ./src,main.rs
+  async fn infer(
+      mut payload: Multipart,
+      model: web::Data<Mutex<Session>>,
+  ) -> Result<HttpResponse, Error> {
+      // Isolate the image data from the multipart payload
+      let mut image_data = Vec::new();
+      while let Some(mut field) = payload.try_next().await? {
+          if field
+              .content_disposition()
+              .expect("Failed to get content disposition")
+              .get_name()
+              == Some("file")
+          {
+              while let Some(chunk) = field.try_next().await? {
+                  image_data.extend_from_slice(&chunk);
+              }
+          }
+      }
+
+      if image_data.is_empty() {
+          return Ok(HttpResponse::BadRequest().body("Image data not provided."));
+      }
+
+      let img_hash = hash_image_content(&image_data);
+
+      if !check_existance_of_predictions(&img_hash) {
+          let _ = save_image(&image_data, &img_hash).await;
+
+          match do_batched_infer_on_list_file_under_dir(&model, &img_hash).await {
+              Ok(_) => {
+                  eprintln!("Done with inference");
+              }
+              Err(e) => {
+                  eprintln!("Failed at inference due to {}", e);
+              }
+          }
+      }
+
+      match load_predictions(&img_hash).await {
+          Ok(preds) => {
+              eprintln!("Predictions inside the web function: {:?}", preds);
+
+              return Ok(HttpResponse::Ok().json(get_prediction_for_reply(preds)));
+          }
+          Err(e) => {
+              eprintln!("Failed in loading predictions from the cache due to {}", e);
+
+              let tmp = get_prediction_probabilities_junk();
+
+              return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
+          }
+      }
+  }
+
+#+end_src
+
+** Function to get models
+
+*** Main slave functions
+
+**** For cuda
+#+begin_src rust :tangle ./src,main.rs
+  fn get_cuda_model() -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([CUDAExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+              println!("Constructed onnx with CUDA support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with CUDA support");
+              return Err("Failed to construct model with CUDA support".to_string());
+          }
+      }
+  }
+#+end_src
+
+**** For web gpu
+#+begin_src rust :tangle ./src,main.rs
+  fn get_webgpu_model() -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([WebGPUExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+              println!("Constructed onnx with CUDA support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with WebGPU support");
+              return Err("Failed to construct model with WebGPU support".to_string());
+          }
+      }
+  }
+#+end_src
+
+**** For open vino
+#+begin_src rust :tangle ./src,main.rs
+  fn get_openvino_model() -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([OpenVINOExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+              println!("Constructed onnx with openvino support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with openvino support");
+              return Err("Failed to construct model with openvino support".to_string());
+          }
+      }
+  }
+#+end_src
+
+*** Wrapper function which gets the right model depending on env
+#+begin_src rust :tangle ./src,main.rs
+  fn get_model() -> Session {
+      match get_cuda_model() {
+          Ok(model) => {
+              return model;
+          }
+          Err(_) => {
+              return get_openvino_model().unwrap();
+          }
+      }
+  }
+#+end_src
+
+** The main function
+#+begin_src rust :tangle ./src,main.rs
+  #[actix_web::main]
+  async fn main() -> std::io::Result<()> {
+      let model = web::Data::new(Mutex::new(get_model()));
+
+      create_all_directories().await;
+
+      eprintln!("🚀 Server started at http://0.0.0.0:8000");
+
+      let res1 = clean_old_out(86400);
+
+      // Start the HTTP server
+      let res2 = HttpServer::new(move || {
+          App::new()
+              .app_data(model.clone()) // Share the model session with the handlers
+              .route("/infer", web::post().to(infer))
+      })
+      .bind(("0.0.0.0", 8000))?
+      .run();
+
+      let (_, ret) = tokio::join!(res1, res2);
+
+      return ret;
+  }
+#+end_src
+
+* GIT Ignore stuff
+#+begin_src conf :tangle ./.gitignore
+  /image.jpg
+  /image.png
+  /IMAGES/
+  /infer2.sh
+  /model.onnx
+  /target/
+#+end_src
+
+* WORK SPACE
+
+** git worker
+
+*** Functions
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  G () {
+      git add "./${1}"
+  }
+
+  C(){
+      rm -vf -- "./${1}"
+  }
+
+  M () {
+      git commit -m "${1}"
+  }
+#+end_src
+
+*** Prepare the main rust file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  mkdir ./src/
+  mv -vf -- ./src,main.rs ./src/main.rs
+#+end_src
+
+*** Add files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  G 'Cargo.lock'
+  G 'Cargo.toml'
+  G 'Dockerfile'
+  G '.gitignore'
+  G 'host.docker_build.sh'
+  G 'host.docker_run_main.sh'
+  G 'host.docker_run.sh'
+  G 'host.docker_run.txt'
+  G 'image_name.txt'
+  G 'infer.sh'
+  G 'README.org'
+  G 'shell.nix'
+  G 'src/main.rs'
+  G 'start.sh'
+#+end_src
+
+*** Clean files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  C '.git.sh'
+  C 'README.org~'
+  C '#shell.nix#'
+  C 'shell.nix~'
+  C 'tmp.sh'
+#+end_src
+
+*** Commit the changes
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  M 'Added function to construct prediction probabilities from row'
+#+end_src
+
+** COMMENT elisp
+#+begin_src emacs-lisp :results silent
+  (save-buffer)
+  (org-babel-tangle)
+  (async-shell-command "
+          # find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
+          './.git.sh'
+          git status
+      " "log" "err")
+#+end_src
+
+** COMMENT Pushing
+
+*** Prepare ssh key and push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
+      ~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh
+      git push
+  " "log" "err")
+#+end_src
+
+*** Just push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
+      git push
+  " "log" "err")
+#+end_src
