@@ -556,7 +556,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
   where
-      T: Index<usize>,
+      T: Index<usize, Output = f32>,
   {
       let mut ret = prediction_probabilities {
           ps: [0.0; num_features],

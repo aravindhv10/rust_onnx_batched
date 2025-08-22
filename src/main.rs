@@ -63,7 +63,7 @@ fn get_prediction_probabilities_junk() -> prediction_probabilities {
 
 fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
 where
-    T: Index<usize>,
+    T: Index<usize, Output = f32>,
 {
     let mut ret = prediction_probabilities {
         ps: [0.0; num_features],
