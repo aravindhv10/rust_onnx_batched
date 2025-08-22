@@ -61,7 +61,7 @@ fn get_prediction_probabilities_junk() -> prediction_probabilities {
     return ret;
 }
 
-fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
+fn get_prediction_probabilities<T, I>(input: T) -> prediction_probabilities
 where
     T: Index<I>,
 {
