@@ -203,10 +203,15 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
             .t()
             .into_owned();
 
-        for (i, row) in output.axis_iter(Axis(1)).enumerate() {
+        // for (i, row) in output.axis_iter(Axis(1)).enumerate() {
+        //     let result = get_prediction_probabilities(row);
+        //     let _ = batch[i].resp_tx.send(Ok(result));
+        // }
+        for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
             let result = get_prediction_probabilities(row);
-            let _ = batch[i].resp_tx.send(Ok(result));
+            let _ = req.resp_tx.send(Ok(result));
         }
+
     }
 }
 

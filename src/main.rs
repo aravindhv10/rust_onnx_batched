@@ -4,9 +4,9 @@ use actix_web::Error;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::web;
-use bincode::config;
 use bincode::Decode;
 use bincode::Encode;
+use bincode::config;
 use futures::future::join_all;
 use futures_util::TryStreamExt;
 use gxhash;
@@ -19,14 +19,15 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
 use std::ops::Index;
 use std::path::Path;
+use std::time::Duration;
 use std::time::SystemTime;
 use tokio;
 use tokio::fs::create_dir_all;
@@ -35,6 +36,8 @@ use tokio::fs::read_dir;
 use tokio::fs::remove_file;
 use tokio::fs::write;
 use tokio::sync::Mutex;
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 
 const MODEL_PATH: &str = "./model.onnx";
 const PATH_DIR_IMAGE: &str = "/tmp/image/";
@@ -101,135 +104,18 @@ fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_proba
     };
 }
 
-async fn create_all_directories() {
-    let mut futures = Vec::with_capacity(3);
-    futures.push(create_dir_all(PATH_DIR_IMAGE));
-    futures.push(create_dir_all(PATH_DIR_INCOMPLETE));
-    futures.push(create_dir_all(PATH_DIR_OUT));
-    let res = join_all(futures).await;
-
-    match &res[0] {
-        Err(e) => {
-            eprintln!("Failed to create directory {}", PATH_DIR_IMAGE);
-        }
-        Ok(_) => {
-            eprintln!("Successfully created directory {}", PATH_DIR_IMAGE);
-        }
-    };
-
-    match &res[1] {
-        Err(e) => {
-            eprintln!("Failed to create directory {}", PATH_DIR_INCOMPLETE);
-        }
-        Ok(_) => {
-            eprintln!("Successfully created directory {}", PATH_DIR_INCOMPLETE);
-        }
-    };
-
-    match &res[2] {
-        Err(e) => {
-            eprintln!("Failed to create directory {}", PATH_DIR_OUT);
-        }
-        Ok(_) => {
-            eprintln!("Successfully created directory {}", PATH_DIR_OUT);
-        }
-    };
+// === Request to inference thread ===
+struct InferRequest {
+    img: DynamicImage,
+    resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
 }
 
-async fn save_predictions(result: &prediction_probabilities, hash_key: &str) -> Result<(), Error> {
-    match bincode::encode_to_vec(&result, config::standard()) {
-        Ok(encoded) => {
-            let s1: String = String::from(PATH_DIR_OUT);
-            let s2: String = s1 + hash_key;
-            match write(&s2, encoded).await {
-                Ok(_) => {
-                    eprintln!("Wrote prediction to file {}", &s2);
-                    return Ok(());
-                }
-                Err(e) => {
-                    eprintln!("Failed to write predictions into {} due to {}", &s2, e);
-                    return Err(e.into());
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Failed encoding the result {}", e);
-            return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
-        }
-    }
-}
-
-async fn load_predictions(hash_key: &str) -> Result<prediction_probabilities, Error> {
-    let s1: String = String::from(PATH_DIR_OUT);
-    let s2: String = s1 + hash_key;
-    match read(s2).await {
-        Ok(encoded) => match bincode::decode_from_slice(&encoded[..], config::standard()) {
-            Ok(res) => {
-                let (decoded, _len): (prediction_probabilities, usize) = res;
-                return Ok(decoded);
-            }
-            Err(e) => {
-                return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
-            }
-        },
-        Err(e) => {
-            return Err(e.into());
-        }
-    }
-}
-
-async fn save_image(image_data: &Vec<u8>, name_image: &str) -> Result<(), Error> {
-    let s1: String = String::from(PATH_DIR_INCOMPLETE);
-    let s2: String = s1 + name_image;
-    match write(&s2, image_data).await {
-        Ok(_) => {
-            let s1: String = String::from(PATH_DIR_IMAGE);
-            let s3: String = s1 + name_image;
-            match fs::rename(&s2, &s3) {
-                Ok(_) => Ok(()),
-                Err(e) => {
-                    eprintln!(
-                        "Failed to rename the temporary file {} to {} due to {}",
-                        s2, s3, e
-                    );
-                    Err(e.into())
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Failed to write the temporary file {} due to {}", s2, e);
-            Err(e.into())
-        }
-    }
-}
-
-async fn read_image(path_file_input: &str) -> Result<DynamicImage, Error> {
-    match read(path_file_input).await {
-        Ok(image_data) => match image::load_from_memory(&image_data) {
-            Ok(original_image) => {
-                return Ok(original_image);
-            }
-            Err(e) => {
-                eprintln!("Failed to decode image due to {}.", e);
-                return Err(actix_web::error::ErrorInternalServerError(e.to_string()));
-            }
-        },
-        Err(e) => {
-            eprintln!("Unable to read the file {} due to {}", path_file_input, e);
-            return Err(e.into());
-        }
-    }
-}
-
-/// # **Preprocesses the image before inference.**
-///
-/// This function crops the image to a square and resizes it to the required resolution.
-fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
-    let (width, height) = (original_img.width(), original_img.height());
+fn preprocess(img: DynamicImage) -> image::RgbaImage {
+    let (width, height) = (img.width(), img.height());
     let size = width.min(height);
     let x = (width - size) / 2;
     let y = (height - size) / 2;
-    let cropped_img = imageops::crop_imm(&original_img, x, y, size, size).to_image();
+    let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
     imageops::resize(
         &cropped_img,
         IMAGE_RESOLUTION,
@@ -238,268 +124,94 @@ fn preprocess_image(original_img: DynamicImage) -> image::RgbaImage {
     )
 }
 
-async fn read_and_process_image(path_file_input: &str) -> Result<image::RgbaImage, Error> {
-    match read_image(path_file_input).await {
-        Ok(original_image) => {
-            return Ok(preprocess_image(original_image));
-        }
-        Err(e) => {
-            eprintln!("Unable to read the file {} due to {}", path_file_input, e);
-            return Err(e.into());
-        }
-    }
-}
-
-fn hash_image_content(image_data: &Vec<u8>) -> String {
-    let seed = 123456789;
-    format!("{:x}", gxhash::gxhash128(&image_data, seed))
-}
-
-async fn get_list_files_under_dir(path_dir_input: &str) -> Result<Vec<String>, Error> {
-    match read_dir(path_dir_input).await {
-        Ok(mut list_entry) => {
-            let mut ret: Vec<String> = vec![];
-            while let Some(i) = list_entry.next_entry().await? {
-                ret.push(i.path().display().to_string());
-            }
-            Ok(ret)
-        }
-        Err(e) => {
-            eprintln!("Failed to read directory: {}", e);
-            Err(e.into())
-        }
-    }
-}
-
-async fn clean_if_old(i: String, time_now: SystemTime, timeout: u64) {
-    match tokio::fs::metadata(i.as_str()).await {
-        Err(e) => {
-            println!("Failed to get metadata due to {}", e);
-        }
-        Ok(metadata) => match metadata.created() {
-            Err(e) => {
-                println!("Failed to get creation time due to {}", e);
-            }
-            Ok(creation_time) => match time_now.duration_since(creation_time) {
-                Err(e) => {
-                    println!("Duration failed {}", e);
-                }
-                Ok(n) => {
-                    if n.as_secs() > timeout {
-                        match tokio::fs::remove_file(Path::new(i.as_str())).await {
-                            Err(e) => {
-                                println!("Failed to remove old file {} due to {}", i, e);
-                            }
-                            Ok(_) => {
-                                println!("Removed old file {}", i);
-                            }
-                        }
-                    } else {
-                        println!("Not removing {} as its not old", i);
-                    }
-                }
-            },
-        },
-    }
-}
-
-async fn clean_old_out(timeout: u64) {
-    loop {
-        let time_now = SystemTime::now();
-
-        match get_list_files_under_dir(PATH_DIR_OUT).await {
-            Err(e) => {
-                println!("Failed to get list of files {}", e);
-            }
-            Ok(list_entry) => {
-                let mut futures = Vec::with_capacity(list_entry.len());
-                for i in list_entry {
-                    futures.push(clean_if_old(i, time_now, timeout));
-                }
-                let _ = join_all(futures).await;
-            }
-        }
-
-        tokio::time::sleep(tokio::time::Duration::new(timeout, 0)).await;
-    }
-}
-
-async fn do_batched_infer_on_list_file_under_dir(
-    model: &web::Data<Mutex<Session>>,
-    img_hash: &str,
-) -> Result<(), Error> {
-    let mut session = model.lock().await; // .unwrap();
-
-    if check_existance_of_predictions(&img_hash) {
-        eprintln!("Already inferred, nothing to be done");
-        return Ok(());
-    }
-
-    match get_list_files_under_dir(PATH_DIR_IMAGE).await {
-        Ok(list_file) => {
-            let batch_size = list_file.len();
-            if batch_size > 0 {
-                eprintln!("Inferring with batch_size = {}", batch_size);
-
-                let mut keys: Vec<&str> = Vec::with_capacity(batch_size);
-
-                let mut input = Array::<u8, Ix4>::zeros((
-                    batch_size,
-                    IMAGE_RESOLUTION as usize,
-                    IMAGE_RESOLUTION as usize,
-                    3,
-                ));
-
-                for i in 0..batch_size {
-                    keys.push(&list_file[i][PATH_DIR_IMAGE.len()..]);
-                }
-
-                {
-                    let mut futures = Vec::with_capacity(batch_size);
-
-                    for i in 0..batch_size {
-                        futures.push(read_and_process_image(list_file[i].as_str()));
-                    }
-
-                    let images = join_all(futures).await;
-
-                    for i in 0..batch_size {
-                        match &images[i] {
-                            Ok(preprocessed_image) => {
-                                for (x, y, pixel) in preprocessed_image.enumerate_pixels() {
-                                    let [r, g, b, _] = pixel.0;
-                                    input[[i as usize, y as usize, x as usize, 0]] = r;
-                                    input[[i as usize, y as usize, x as usize, 1]] = g;
-                                    input[[i as usize, y as usize, x as usize, 2]] = b;
-                                }
-                            }
-                            Err(e) => {
-                                eprintln!("Unable to read image {} due to {}.", list_file[i], e);
-                            }
-                        }
-                    }
-                }
-
-                {
-                    let mut futures = Vec::with_capacity(batch_size);
-                    for i in 0..batch_size {
-                        futures.push(remove_file(Path::new(list_file[i].as_str())));
-                    }
-
-                    let results = join_all(futures).await;
-
-                    for i in 0..batch_size {
-                        match &results[i] {
-                            Ok(_) => {
-                                eprintln!(
-                                    "Removed image file {} after reading it.",
-                                    list_file[i].as_str()
-                                );
-                            }
-                            Err(e) => {
-                                eprintln!(
-                                    "Failed to remove file {} after reading it due to {}.",
-                                    list_file[i].as_str(),
-                                    e
-                                );
-                            }
-                        }
-                    }
-                }
-
-                let outputs = session
-                    .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
-                    .unwrap();
-
-                let output = outputs["output"]
-                    .try_extract_array::<f32>()
-                    .unwrap()
-                    .t()
-                    .into_owned();
-
-                println!("output => {:?}", output);
-
-                for (index, row) in output.axis_iter(Axis(1)).enumerate() {
-
-                    let result = get_prediction_probabilities(row);
-
-                    eprintln!("Inside prediction results: {:?}", result);
-                    match save_predictions(&result, keys[index]).await {
-                        Ok(_) => {}
-                        Err(_) => {}
-                    }
-                }
-            }
-            // eprintln!("Done inferring, now returning");
-            // return Ok(());
-        }
-        Err(e) => {
-            eprintln!("Failed reading dir: {}", e);
-            return Err(e.into());
-        }
-    }
-
-    eprintln!("Done inferring, now returning");
-    return Ok(());
-}
-
-fn check_existance_of_predictions(hash_key: &str) -> bool {
-    let s1: String = String::from(PATH_DIR_OUT);
-    let s2: String = s1 + hash_key;
-    return Path::new(&s2).exists();
-}
-
-async fn infer(
+async fn infer_handler(
     mut payload: Multipart,
-    model: web::Data<Mutex<Session>>,
+    tx: web::Data<mpsc::Sender<InferRequest>>,
 ) -> Result<HttpResponse, Error> {
-    // Isolate the image data from the multipart payload
-    let mut image_data = Vec::new();
+    let mut data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
-        if field
-            .content_disposition()
-            .expect("Failed to get content disposition")
-            .get_name()
-            == Some("file")
-        {
-            while let Some(chunk) = field.try_next().await? {
-                image_data.extend_from_slice(&chunk);
-            }
+        while let Some(chunk) = field.try_next().await? {
+            data.extend_from_slice(&chunk);
         }
     }
-
-    if image_data.is_empty() {
-        return Ok(HttpResponse::BadRequest().body("Image data not provided."));
+    if data.is_empty() {
+        return Ok(HttpResponse::BadRequest().body("No image data"));
     }
 
-    let img_hash = hash_image_content(&image_data);
+    let img = image::load_from_memory(&data)
+        .map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
 
-    if !check_existance_of_predictions(&img_hash) {
-        let _ = save_image(&image_data, &img_hash).await;
+    let (resp_tx, resp_rx) = oneshot::channel();
+    tx.send(InferRequest { img, resp_tx })
+        .await
+        .map_err(|_| actix_web::error::ErrorInternalServerError("inference queue closed"))?;
 
-        match do_batched_infer_on_list_file_under_dir(&model, &img_hash).await {
-            Ok(_) => {
-                eprintln!("Done with inference");
-            }
-            Err(e) => {
-                eprintln!("Failed at inference due to {}", e);
-            }
-        }
+    match resp_rx.await {
+        Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(get_prediction_for_reply(pred))),
+        Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
+        Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
     }
+}
 
-    match load_predictions(&img_hash).await {
-        Ok(preds) => {
-            eprintln!("Predictions inside the web function: {:?}", preds);
+async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
+    const MAX_BATCH: usize = 16;
+    const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
 
-            return Ok(HttpResponse::Ok().json(get_prediction_for_reply(preds)));
+    while let Some(first) = rx.recv().await {
+        let mut batch = vec![first];
+        // try to build up batch quickly
+        let start = tokio::time::Instant::now();
+        while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
+            match rx.try_recv() {
+                Ok(req) => batch.push(req),
+                Err(_) => break,
+            }
         }
-        Err(e) => {
-            eprintln!("Failed in loading predictions from the cache due to {}", e);
 
-            let tmp = get_prediction_probabilities_junk();
+        let batch_size = batch.len();
+        let mut input = Array::<u8, Ix4>::zeros((
+            batch_size,
+            IMAGE_RESOLUTION as usize,
+            IMAGE_RESOLUTION as usize,
+            3,
+        ));
 
-            return Ok(HttpResponse::Ok().json(get_prediction_for_reply(tmp)));
+        for (i, req) in batch.iter().enumerate() {
+            let img = preprocess(req.img.clone());
+            for (x, y, pixel) in img.enumerate_pixels() {
+                let [r, g, b, _] = pixel.0;
+                input[[i, y as usize, x as usize, 0]] = r;
+                input[[i, y as usize, x as usize, 1]] = g;
+                input[[i, y as usize, x as usize, 2]] = b;
+            }
         }
+
+        let outputs =
+            match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
+                Ok(o) => o,
+                Err(e) => {
+                    for req in batch {
+                        let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
+                    }
+                    continue;
+                }
+            };
+
+        let output = outputs["output"]
+            .try_extract_array::<f32>()
+            .unwrap()
+            .t()
+            .into_owned();
+
+        // for (i, row) in output.axis_iter(Axis(1)).enumerate() {
+        //     let result = get_prediction_probabilities(row);
+        //     let _ = batch[i].resp_tx.send(Ok(result));
+        // }
+        for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
+            let result = get_prediction_probabilities(row);
+            let _ = req.resp_tx.send(Ok(result));
+        }
+
     }
 }
 
@@ -579,24 +291,17 @@ fn get_model() -> Session {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let model = web::Data::new(Mutex::new(get_model()));
+    let model = get_model();
+    let (tx, rx) = mpsc::channel::<InferRequest>(1000);
 
-    create_all_directories().await;
+    tokio::spawn(infer_loop(rx, model));
 
-    eprintln!("🚀 Server started at http://0.0.0.0:8000");
-
-    let res1 = clean_old_out(86400);
-
-    // Start the HTTP server
-    let res2 = HttpServer::new(move || {
+    HttpServer::new(move || {
         App::new()
-            .app_data(model.clone()) // Share the model session with the handlers
-            .route("/infer", web::post().to(infer))
+            .app_data(web::Data::new(tx.clone()))
+            .route("/infer", web::post().to(infer_handler))
     })
     .bind(("0.0.0.0", 8000))?
-    .run();
-
-    let (_, ret) = tokio::join!(res1, res2);
-
-    return ret;
+    .run()
+    .await
 }
