@@ -25,6 +25,7 @@ use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
+use std::ops::Index;
 use std::path::Path;
 use std::time::SystemTime;
 use tokio;
@@ -56,6 +57,21 @@ fn get_prediction_probabilities_junk() -> prediction_probabilities {
     };
 
     ret.ps[num_features - 1] = 1.0;
+
+    return ret;
+}
+
+fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
+where
+    T: Index<I>,
+{
+    let mut ret = prediction_probabilities {
+        ps: [0.0; num_features],
+    };
+
+    for i in 0..num_features {
+        ret.ps[i] = input[i];
+    }
 
     return ret;
 }

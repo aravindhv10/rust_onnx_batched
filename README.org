@@ -453,7 +453,6 @@ Port on which the rest api listens to
   curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
 #+end_src
 
-
 * Main code
 
 ** External libraries
@@ -497,6 +496,7 @@ Port on which the rest api listens to
   use serde::Deserialize;
   use serde::Serialize;
   use std::fs;
+  use std::ops::Index;
   use std::path::Path;
   use std::time::SystemTime;
   use tokio;
@@ -551,6 +551,33 @@ Port on which the rest api listens to
       return ret;
   }
 #+end_src
+
+*** Function to construct the structure from indexed input
+#+begin_src rust :tangle ./src,main.rs
+  fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
+  where
+      T: Index<I>,
+  {
+      let mut ret = prediction_probabilities {
+          ps: [0.0; num_features],
+      };
+
+      for i in 0..num_features {
+          ret.ps[i] = input[i];
+      }
+
+      return ret;
+  }
+#+end_src
+fn process_indexed_data<T, I>(data: &T, index: I)
+    where
+        T: Index<I>, // T must implement Index for type I
+        I: std::fmt::Debug, // Added for demonstration printing
+        T::Output: std::fmt::Debug, // Added for demonstration printing
+    {
+        println!("Value at index {:?}: {:?}", index, &data[index]);
+    }
+
 
 ** Structure to hold return results
 
@@ -1237,7 +1264,7 @@ runs the inference, and returns the JSON response.
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'More updates to doc and reorg'
+  M 'Added function to construct prediction probabilities from row'
 #+end_src
 
 ** COMMENT elisp
