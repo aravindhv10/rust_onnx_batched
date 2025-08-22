@@ -420,9 +420,11 @@ async fn do_batched_infer_on_list_file_under_dir(
                 println!("output => {:?}", output);
 
                 for (index, row) in output.axis_iter(Axis(1)).enumerate() {
-                    let result = prediction_probabilities {
-                        ps: [row[0], row[1], row[2]],
-                    };
+                    // let result = prediction_probabilities {
+                    //     ps: [row[0], row[1], row[2]],
+                    // };
+
+                    let result = get_prediction_probabilities(row);
 
                     eprintln!("Inside prediction results: {:?}", result);
                     match save_predictions(&result, keys[index]).await {
