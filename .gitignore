@@ -4,3 +4,4 @@
 /infer2.sh
 /model.onnx
 /target/
+/tmp/

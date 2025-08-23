@@ -801,6 +801,7 @@ Port on which the rest api listens to
   /infer2.sh
   /model.onnx
   /target/
+  /tmp/
 #+end_src
 
 * WORK SPACE
@@ -855,6 +856,9 @@ Port on which the rest api listens to
   C '#shell.nix#'
   C 'shell.nix~'
   C 'tmp.sh'
+
+  C 'TRUE_QUEUE.org~'
+  C 'indent.log'
 #+end_src
 
 *** Commit the changes
