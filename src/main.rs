@@ -25,18 +25,13 @@ use tokio;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
-const MODEL_PATH: &str = "./model.onnx";
-const PATH_DIR_IMAGE: &str = "/tmp/image/";
-const PATH_DIR_INCOMPLETE: &str = "/tmp/incomplete/";
-const PATH_DIR_OUT: &str = "/tmp/out/";
-
-const IMAGE_RESOLUTION: u32 = 448;
-
-const num_features: usize = 3;
-const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
-
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
+const MODEL_PATH: &str = "./model.onnx";
+
+const IMAGE_RESOLUTION: u32 = 448;
+const num_features: usize = 3;
+const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 
 struct prediction_probabilities {
     ps: [f32; num_features],
@@ -58,44 +53,37 @@ impl prediction_probabilities {
     }
 }
 
-fn get_prediction_probabilities<T>(input: T) -> prediction_probabilities
-where
-    T: Index<usize, Output = f32>,
-{
-    let mut ret = prediction_probabilities {
-        ps: [0.0; num_features],
-    };
-
-    for i in 0..num_features {
-        ret.ps[i] = input[i];
-    }
-
-    return ret;
-}
-
 #[derive(Serialize)]
 struct prediction_probabilities_reply {
-    p1: String,
-    p2: String,
-    p3: String,
+    ps: [String; num_features],
     mj: String,
 }
 
-fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_probabilities_reply {
-    let mut max_index: usize = 0;
-
-    for i in 1..3 {
-        if input.ps[i] > input.ps[max_index] {
-            max_index = i;
+impl prediction_probabilities_reply {
+    fn new() -> prediction_probabilities_reply {
+        prediction_probabilities_reply {
+            ps: ["0"; num_features],
+            mj: "0",
         }
     }
 
-    return prediction_probabilities_reply {
-        p1: input.ps[0].to_string(),
-        p2: input.ps[1].to_string(),
-        p3: input.ps[2].to_string(),
-        mj: CLASS_LABELS[max_index].to_string(),
-    };
+    fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
+        let mut max_index: usize = 0;
+
+        for i in 1..num_features {
+            if input.ps[i] > input.ps[max_index] {
+                max_index = i;
+            }
+        }
+
+        let mut ret = prediction_probabilities_reply::new();
+
+        for i in 0..num_features {
+            ret.ps[i] = input.ps[i].to_string();
+        }
+
+        ret
+    }
 }
 
 // === Request to inference thread ===
@@ -141,7 +129,7 @@ async fn infer_handler(
         .map_err(|_| actix_web::error::ErrorInternalServerError("inference queue closed"))?;
 
     match resp_rx.await {
-        Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(get_prediction_for_reply(pred))),
+        Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
         Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
         Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
     }
