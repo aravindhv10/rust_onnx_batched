@@ -458,6 +458,28 @@ Port on which the rest api listens to
 #+end_src
 
 * Main code
+
+** Importing external libraries
+
+*** COMMENT Disabled parts
+#+begin_src rust :tangle ./src,main.rs
+  use bincode::Decode;
+  use bincode::Encode;
+  use bincode::config;
+  use futures::future::join_all;
+  use gxhash;
+  use std::fs;
+  use std::path::Path;
+  use std::time::SystemTime;
+  use tokio::fs::create_dir_all;
+  use tokio::fs::read;
+  use tokio::fs::read_dir;
+  use tokio::fs::remove_file;
+  use tokio::fs::write;
+  use tokio::sync::Mutex;
+#+end_src
+
+*** Main parts
 #+begin_src rust :tangle ./src,main.rs
   use actix_multipart::Multipart;
   use actix_web::App;
@@ -465,12 +487,7 @@ Port on which the rest api listens to
   use actix_web::HttpResponse;
   use actix_web::HttpServer;
   use actix_web::web;
-  use bincode::Decode;
-  use bincode::Encode;
-  use bincode::config;
-  use futures::future::join_all;
   use futures_util::TryStreamExt;
-  use gxhash;
   use image::DynamicImage;
   use image::imageops;
   use ndarray::Array;
@@ -485,18 +502,9 @@ Port on which the rest api listens to
   use ort::value::TensorRef;
   use serde::Deserialize;
   use serde::Serialize;
-  use std::fs;
   use std::ops::Index;
-  use std::path::Path;
   use std::time::Duration;
-  use std::time::SystemTime;
   use tokio;
-  use tokio::fs::create_dir_all;
-  use tokio::fs::read;
-  use tokio::fs::read_dir;
-  use tokio::fs::remove_file;
-  use tokio::fs::write;
-  use tokio::sync::Mutex;
   use tokio::sync::mpsc;
   use tokio::sync::oneshot;
 #+end_src
@@ -863,7 +871,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Wrote true queue based approach'
+  M 'Cleanup of unusedd imports'
 #+end_src
 
 ** COMMENT elisp
