@@ -45,7 +45,13 @@ struct prediction_probabilities {
 impl prediction_probabilities {
     fn new() -> prediction_probabilities {
         prediction_probabilities {
-            ps: [0.0; num_features]
+            ps: [0.0; num_features],
+        }
+    }
+
+    fn from<T: Index<usize, Output = f32>>(input: T) -> prediction_probabilities {
+        prediction_probabilities {
+            ps: [0.0; num_features],
         }
     }
 }
@@ -191,8 +197,10 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
         //     let result = get_prediction_probabilities(row);
         //     let _ = batch[i].resp_tx.send(Ok(result));
         // }
+
         for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
-            let result = get_prediction_probabilities(row);
+            // get_prediction_probabilities(row);
+            let result = prediction_probabilities::from(row);
             let _ = req.resp_tx.send(Ok(result));
         }
 
