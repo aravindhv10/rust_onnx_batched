@@ -38,7 +38,6 @@ const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
 
-#[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
 struct prediction_probabilities {
     ps: [f32; num_features],
 }

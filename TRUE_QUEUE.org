@@ -524,12 +524,22 @@ Port on which the rest api listens to
   const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
 #+end_src
 
+** Main struct for holding inference results
+
+*** COMMENT Binary serialization
 #+begin_src rust :tangle ./src,main.rs
   #[derive(Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
+#+end_src
+
+*** Main struct
+#+begin_src rust :tangle ./src,main.rs
   struct prediction_probabilities {
       ps: [f32; num_features],
   }
+#+end_src
 
+*** Functions for constructing the struct
+#+begin_src rust :tangle ./src,main.rs
   fn get_prediction_probabilities_junk() -> prediction_probabilities {
       let mut ret = prediction_probabilities {
           ps: [0.0; num_features],
