@@ -576,7 +576,7 @@ Port on which the rest api listens to
               }
           }
 
-          let mut ret = prediction_probabilities_reply {
+          let ret = prediction_probabilities_reply {
               ps: [
                   input.ps[0].to_string(),
                   input.ps[1].to_string(),
@@ -590,27 +590,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** COMMENT Previous function
-#+begin_src rust :tangle ./src,main.rs
-  fn get_prediction_for_reply(input: prediction_probabilities) -> prediction_probabilities_reply {
-      let mut max_index: usize = 0;
-
-      for i in 1..3 {
-          if input.ps[i] > input.ps[max_index] {
-              max_index = i;
-          }
-      }
-
-      return prediction_probabilities_reply {
-          p1: input.ps[0].to_string(),
-          p2: input.ps[1].to_string(),
-          p3: input.ps[2].to_string(),
-          mj: CLASS_LABELS[max_index].to_string(),
-      };
-  }
-#+end_src
-
-** TOSORT
+** Struct for sending the inference request to the inferring thread
 #+begin_src rust :tangle ./src,main.rs
   // === Request to inference thread ===
   struct InferRequest {
@@ -619,6 +599,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** Function to preprocess the image (center cropping, resizing, ...)
 #+begin_src rust :tangle ./src,main.rs
   fn preprocess(img: DynamicImage) -> image::RgbaImage {
       let (width, height) = (img.width(), img.height());
@@ -635,6 +616,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** Main function which gets run by actix for inference
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_handler(
       mut payload: Multipart,
@@ -666,12 +648,11 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** Main function to run the inference loops
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
-
       while let Some(first) = rx.recv().await {
           let mut batch = vec![first];
-          // try to build up batch quickly
           let start = tokio::time::Instant::now();
           while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
               match rx.try_recv() {
@@ -715,21 +696,19 @@ Port on which the rest api listens to
               .t()
               .into_owned();
 
-          // for (i, row) in output.axis_iter(Axis(1)).enumerate() {
-          //     let result = get_prediction_probabilities(row);
-          //     let _ = batch[i].resp_tx.send(Ok(result));
-          // }
-
           for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
-              // get_prediction_probabilities(row);
               let result = prediction_probabilities::from(row);
               let _ = req.resp_tx.send(Ok(result));
           }
-
       }
   }
 #+end_src
 
+** Function to construct the models
+
+*** Main function to get the models for various execution providers
+
+**** cuda
 #+begin_src rust :tangle ./src,main.rs
   fn get_cuda_model() -> Result<Session, String> {
       let res1 = Session::builder()
@@ -753,6 +732,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
+**** webgpu
 #+begin_src rust :tangle ./src,main.rs
   fn get_webgpu_model() -> Result<Session, String> {
       let res1 = Session::builder()
@@ -776,6 +756,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
+**** openvino
 #+begin_src rust :tangle ./src,main.rs
   fn get_openvino_model() -> Result<Session, String> {
       let res1 = Session::builder()
@@ -799,6 +780,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
+*** Wrapper function to get the model
 #+begin_src rust :tangle ./src,main.rs
   fn get_model() -> Session {
       match get_cuda_model() {
@@ -812,6 +794,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** The main function
 #+begin_src rust :tangle ./src,main.rs
   #[actix_web::main]
   async fn main() -> std::io::Result<()> {
@@ -901,7 +884,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'UNVERIFIED: Migrated to impl methods'
+  M 'WORKING: Better doc and streamlined code'
 #+end_src
 
 ** COMMENT elisp

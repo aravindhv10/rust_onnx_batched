@@ -69,7 +69,7 @@ impl prediction_probabilities_reply {
             }
         }
 
-        let mut ret = prediction_probabilities_reply {
+        let ret = prediction_probabilities_reply {
             ps: [
                 input.ps[0].to_string(),
                 input.ps[1].to_string(),
@@ -132,10 +132,8 @@ async fn infer_handler(
 }
 
 async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
-
     while let Some(first) = rx.recv().await {
         let mut batch = vec![first];
-        // try to build up batch quickly
         let start = tokio::time::Instant::now();
         while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
             match rx.try_recv() {
@@ -179,17 +177,10 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
             .t()
             .into_owned();
 
-        // for (i, row) in output.axis_iter(Axis(1)).enumerate() {
-        //     let result = get_prediction_probabilities(row);
-        //     let _ = batch[i].resp_tx.send(Ok(result));
-        // }
-
         for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
-            // get_prediction_probabilities(row);
             let result = prediction_probabilities::from(row);
             let _ = req.resp_tx.send(Ok(result));
         }
-
     }
 }
 
