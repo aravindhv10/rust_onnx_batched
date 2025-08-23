@@ -873,13 +873,14 @@ Port on which the rest api listens to
 *** Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   C '.git.sh'
+  C 'indent.log'
   C 'README.org~'
   C '#shell.nix#'
   C 'shell.nix~'
+  C 'src/#main.rs#'
+  C 'src/.#main.rs'
   C 'tmp.sh'
-
   C 'TRUE_QUEUE.org~'
-  C 'indent.log'
 #+end_src
 
 *** Commit the changes
