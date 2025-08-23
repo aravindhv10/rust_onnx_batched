@@ -538,7 +538,18 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** Functions for constructing the struct
+*** Implementations for the structure
+#+begin_src rust :tangle ./src,main.rs
+  impl prediction_probabilities {
+      fn new() -> prediction_probabilities {
+          prediction_probabilities {
+              ps: [0.0; num_features]
+          }
+      }
+  }
+#+end_src
+
+*** COMMENT Functions for constructing the struct
 #+begin_src rust :tangle ./src,main.rs
   fn get_prediction_probabilities_junk() -> prediction_probabilities {
       let mut ret = prediction_probabilities {
@@ -881,7 +892,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'Cleanup of unusedd imports'
+  M 'UNVERIFIED: Started implementing functions for the prediction structure'
 #+end_src
 
 ** COMMENT elisp
