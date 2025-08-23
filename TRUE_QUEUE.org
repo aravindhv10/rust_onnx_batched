@@ -569,7 +569,7 @@ Port on which the rest api listens to
   impl prediction_probabilities_reply {
       fn new() -> prediction_probabilities_reply {
           prediction_probabilities_reply {
-              ps: ["0".to_string(); num_features],
+              ps: [String::new("0"); num_features],
               mj: "0".to_string(),
           }
       }
@@ -583,11 +583,14 @@ Port on which the rest api listens to
               }
           }
 
-          let mut ret = prediction_probabilities_reply::new();
-
-          for i in 0..num_features {
-              ret.ps[i] = input.ps[i].to_string();
-          }
+          let mut ret = prediction_probabilities_reply {
+              ps: [
+                  input.ps[0].to_string(),
+                  input.ps[1].to_string(),
+                  input.ps[2].to_string(),
+              ],
+              mj: CLASS_LABELS[max_index].to_string(),
+          };
 
           ret
       }
