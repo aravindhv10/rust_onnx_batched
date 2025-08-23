@@ -50,9 +50,11 @@ impl prediction_probabilities {
     }
 
     fn from<T: Index<usize, Output = f32>>(input: T) -> prediction_probabilities {
-        prediction_probabilities {
-            ps: [0.0; num_features],
+        let mut ret = prediction_probabilities::new();
+        for i in 0..num_features {
+            ret.ps[i] = input[i];
         }
+        ret
     }
 }
 
