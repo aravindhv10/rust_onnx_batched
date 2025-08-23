@@ -60,13 +60,6 @@ struct prediction_probabilities_reply {
 }
 
 impl prediction_probabilities_reply {
-    fn new() -> prediction_probabilities_reply {
-        prediction_probabilities_reply {
-            ps: [String::new("0"); num_features],
-            mj: "0".to_string(),
-        }
-    }
-
     fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
         let mut max_index: usize = 0;
 
