@@ -62,8 +62,8 @@ struct prediction_probabilities_reply {
 impl prediction_probabilities_reply {
     fn new() -> prediction_probabilities_reply {
         prediction_probabilities_reply {
-            ps: ["0"; num_features],
-            mj: "0",
+            ps: ["0".to_string(); num_features],
+            mj: "0".to_string(),
         }
     }
 
