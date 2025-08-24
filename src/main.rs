@@ -26,7 +26,7 @@ use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 const MAX_BATCH: usize = 16;
-const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
+const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
 const MODEL_PATH: &str = "./model.onnx";
 
 const IMAGE_RESOLUTION: u32 = 448;

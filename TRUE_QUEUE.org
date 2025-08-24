@@ -514,7 +514,7 @@ Port on which the rest api listens to
 **** Generic
 #+begin_src rust :tangle ./src,main.rs
   const MAX_BATCH: usize = 16;
-  const BATCH_TIMEOUT: Duration = Duration::from_millis(20);
+  const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
   const MODEL_PATH: &str = "./model.onnx";
 #+end_src
 
@@ -831,61 +831,66 @@ Port on which the rest api listens to
 
 *** Functions
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  G () {
+  GITADD () {
       git add "./${1}"
   }
 
-  C(){
+  CLEAN(){
       rm -vf -- "./${1}"
   }
 
-  M () {
+  GITCOMMIT () {
       git commit -m "${1}"
+  }
+
+  SETFILE () {
+      D="$('dirname' '--' "./${2}")"
+      'mkdir' '-pv' '--' "${D}"
+      'mv' '-vf' '--' "${1}" "${2}"
   }
 #+end_src
 
 *** Prepare the main rust file
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  mkdir ./src/
-  mv -vf -- ./src,main.rs ./src/main.rs
+  SETFILE 'src,main.rs' 'src/main.rs'
 #+end_src
 
 *** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  G 'Cargo.lock'
-  G 'Cargo.toml'
-  G 'Dockerfile'
-  G 'FILE_BASED.org'
-  G '.gitignore'
-  G 'host.docker_build.sh'
-  G 'host.docker_run_main.sh'
-  G 'host.docker_run.sh'
-  G 'host.docker_run.txt'
-  G 'image_name.txt'
-  G 'infer.sh'
-  G 'README.org'
-  G 'shell.nix'
-  G 'src/main.rs'
-  G 'start.sh'
-  G 'TRUE_QUEUE.org'
+  GITADD 'Cargo.lock'
+  GITADD 'Cargo.toml'
+  GITADD 'Dockerfile'
+  GITADD 'FILE_BASED.org'
+  GITADD '.gitignore'
+  GITADD 'host.docker_build.sh'
+  GITADD 'host.docker_run_main.sh'
+  GITADD 'host.docker_run.sh'
+  GITADD 'host.docker_run.txt'
+  GITADD 'image_name.txt'
+  GITADD 'infer.sh'
+  GITADD 'README.org'
+  GITADD 'shell.nix'
+  GITADD 'src/main.rs'
+  GITADD 'start.sh'
+  GITADD 'TRUE_QUEUE.org'
 #+end_src
 
 *** Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  C '.git.sh'
-  C 'indent.log'
-  C 'README.org~'
-  C '#shell.nix#'
-  C 'shell.nix~'
-  C 'src/#main.rs#'
-  C 'src/.#main.rs'
-  C 'tmp.sh'
-  C 'TRUE_QUEUE.org~'
+  CLEAN '.git.sh'
+  CLEAN 'indent.log'
+  CLEAN 'README.org~'
+  CLEAN '#shell.nix#'
+  CLEAN 'shell.nix~'
+  CLEAN 'src/#main.rs#'
+  CLEAN 'src/.#main.rs'
+  CLEAN 'tmp.sh'
+  CLEAN 'TRUE_QUEUE.org~'
 #+end_src
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  M 'WORKING: Better doc and streamlined code'
+  GITCOMMIT 'WORKING: Better doc and streamlined code'
 #+end_src
 
 ** COMMENT elisp
