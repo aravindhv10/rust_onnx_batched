@@ -875,6 +875,12 @@ Port on which the rest api listens to
   SETFILE 'src,main.rs' 'src/main.rs'
 #+end_src
 
+*** Format the nix code and rust
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
+  'cargo' 'fmt'
+#+end_src
+
 *** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'Cargo.lock'
@@ -910,7 +916,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'VERIFIED: Working with new rewrite of main function'
+  GITCOMMIT 'VERIFIED: More significant doc reorg'
 #+end_src
 
 ** COMMENT elisp
@@ -918,7 +924,6 @@ Port on which the rest api listens to
   (save-buffer)
   (org-babel-tangle)
   (async-shell-command "
-          # find ./ -type f | grep '\.nix$' | sed 's@^@alejandra \"@g ; s@$@\"@g' | sh
           './.git.sh'
           git status
       " "log" "err")
