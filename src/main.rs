@@ -263,14 +263,34 @@ async fn main() -> std::io::Result<()> {
     let model = get_model();
     let (tx, rx) = mpsc::channel::<InferRequest>(512);
 
-    tokio::spawn(infer_loop(rx, model));
+    let future1 = infer_loop(rx, model);
 
-    HttpServer::new(move || {
+    match HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(tx.clone()))
             .route("/infer", web::post().to(infer_handler))
     })
-    .bind(("0.0.0.0", 8000))?
-    .run()
-    .await
+    .bind(("0.0.0.0", 8000))
+    {
+        Ok(ret) => {
+            let future2 = ret.run();
+
+            let (_, second) = tokio::join!(future1, future2);
+
+            match second {
+                Ok(_) => {
+                    println!("Server executed and stopped successfully");
+                }
+                Err(e) => {
+                    println!("Encountered error in starting the server due to {}.", e);
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to bind to port");
+            return Err(e.into());
+        }
+    }
+
+    Ok(())
 }
