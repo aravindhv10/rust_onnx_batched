@@ -261,7 +261,7 @@ fn get_model() -> Session {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let model = get_model();
-    let (tx, rx) = mpsc::channel::<InferRequest>(1000);
+    let (tx, rx) = mpsc::channel::<InferRequest>(512);
 
     tokio::spawn(infer_loop(rx, model));
 

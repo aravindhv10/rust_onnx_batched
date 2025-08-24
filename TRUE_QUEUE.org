@@ -799,7 +799,7 @@ Port on which the rest api listens to
   #[actix_web::main]
   async fn main() -> std::io::Result<()> {
       let model = get_model();
-      let (tx, rx) = mpsc::channel::<InferRequest>(1000);
+      let (tx, rx) = mpsc::channel::<InferRequest>(512);
 
       tokio::spawn(infer_loop(rx, model));
 
@@ -890,7 +890,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Better doc and streamlined code'
+  GITCOMMIT 'WORKING: Updated channel size'
 #+end_src
 
 ** COMMENT elisp
