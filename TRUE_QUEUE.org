@@ -915,7 +915,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'VERIFIED: More significant doc reorg'
+  GITCOMMIT 'VERIFIED: Some cleanups and more elegant initialization'
 #+end_src
 
 ** COMMENT elisp
