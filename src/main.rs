@@ -38,13 +38,13 @@ struct prediction_probabilities {
 }
 
 impl prediction_probabilities {
-    fn new() -> prediction_probabilities {
+    fn new() -> Self {
         prediction_probabilities {
             ps: [0.0; num_features],
         }
     }
 
-    fn from<T: Index<usize, Output = f32>>(input: T) -> prediction_probabilities {
+    fn from<T: Index<usize, Output = f32>>(input: T) -> Self {
         let mut ret = prediction_probabilities::new();
         for i in 0..num_features {
             ret.ps[i] = input[i];
@@ -62,8 +62,8 @@ struct prediction_probabilities_reply {
 impl prediction_probabilities_reply {
     fn new() -> Self {
         prediction_probabilities_reply {
-            ps: [String::from(""); num_features],
-            mj: String::from(""),
+            ps: std::array::from_fn(|_| String::new()),
+            mj: String::new(),
         }
     }
 
@@ -74,7 +74,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        let ret = prediction_probabilities_reply {
+        let mut ret = prediction_probabilities_reply {
             ps: [
                 input.ps[0].to_string(),
                 input.ps[1].to_string(),
