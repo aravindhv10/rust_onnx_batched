@@ -60,15 +60,20 @@ struct prediction_probabilities_reply {
 }
 
 impl prediction_probabilities_reply {
+    fn new() -> Self {
+        prediction_probabilities_reply {
+            ps: [String::from(""); num_features],
+            mj: String::from(""),
+        }
+    }
+
     fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
         let mut max_index: usize = 0;
-
         for i in 1..num_features {
             if input.ps[i] > input.ps[max_index] {
                 max_index = i;
             }
         }
-
         let ret = prediction_probabilities_reply {
             ps: [
                 input.ps[0].to_string(),
@@ -77,7 +82,6 @@ impl prediction_probabilities_reply {
             ],
             mj: CLASS_LABELS[max_index].to_string(),
         };
-
         ret
     }
 }
