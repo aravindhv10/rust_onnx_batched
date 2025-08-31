@@ -576,19 +576,14 @@ Port on which the rest api listens to
 
       fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
           let mut max_index: usize = 0;
+          let mut ret = prediction_probabilities_reply::new();
           for i in 1..num_features {
+              ret.ps[i] = input.ps[i].to_string();
               if input.ps[i] > input.ps[max_index] {
                   max_index = i;
               }
           }
-          let mut ret = prediction_probabilities_reply {
-              ps: [
-                  input.ps[0].to_string(),
-                  input.ps[1].to_string(),
-                  input.ps[2].to_string(),
-              ],
-              mj: CLASS_LABELS[max_index].to_string(),
-          };
+          ret.mj: CLASS_LABELS[max_index].to_string()
           ret
       }
   }
