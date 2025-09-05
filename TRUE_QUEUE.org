@@ -146,6 +146,12 @@ For running the inference on both CPU and GPU.
   edition = "2024"
 #+end_src
 
+*** build-dependencies
+#+begin_src conf :tangle ./Cargo.toml
+  [build-dependencies]
+  tonic-prost-build = "0.14.2"
+#+end_src
+
 *** dependencies
 #+begin_src conf :tangle ./Cargo.toml
   [dependencies]
@@ -165,11 +171,6 @@ For running the inference on both CPU and GPU.
   tokio = { version = "1.47.1", features = ["full"] }
 #+end_src
 
-*** build-dependencies
-#+begin_src conf :tangle ./Cargo.toml
-  [build-dependencies]
-  tonic-prost-build = "0.14.2"
-#+end_src
 
 * ORT Related
 - Define ORT dependencies and features for GPU (CUDA) or CPU (OpenVino).
