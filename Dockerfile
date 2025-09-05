@@ -10,6 +10,7 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 
 RUN \
     echo 'START apt-get stuff' \
+    && mkdir -pv -- '/var/lib/apt/lists/partial' \
     && apt-get -y update \
     && apt-get install -y \
         'aria2' \
