@@ -44,6 +44,14 @@
 #+begin_src rust :tangle ./src,main.rs
 #+end_src
 
+** Build file
+#+begin_src rust :tangle ./build.rs
+#+end_src
+
+** proto file
+#+begin_src rust :tangle ./infer.proto
+#+end_src
+
 * Introduction
 The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
 This README file contains code for:
@@ -833,6 +841,31 @@ Port on which the rest api listens to
   }
 #+end_src
 
+* Build file
+#+begin_src rust :tangle ./build.rs
+#+end_src
+
+* proto file
+#+begin_src rust :tangle ./infer.proto
+  syntax = "proto3";
+
+  package onnxdeploy;
+
+  message Image {
+      bytes image_data = 1;
+  }
+
+  message Prediction {
+      float ps1 = 1;
+      float ps2 = 2;
+      float ps3 = 3;
+  }
+
+  service Infer {
+    rpc doInfer(Image) returns (Prediction) {}
+  }
+#+end_src
+
 * GIT Ignore stuff
 #+begin_src conf :tangle ./.gitignore
   /image.jpg
@@ -898,6 +931,8 @@ Port on which the rest api listens to
   GITADD 'src/main.rs'
   GITADD 'start.sh'
   GITADD 'TRUE_QUEUE.org'
+  GITADD 'build.rs'
+  GITADD 'infer.proto'
 #+end_src
 
 *** Clean files
@@ -915,7 +950,7 @@ Port on which the rest api listens to
 
 *** Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'VERIFIED: Some cleanups and more elegant initialization'
+  GITCOMMIT 'Started writing protobuf sources'
 #+end_src
 
 ** COMMENT elisp

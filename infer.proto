@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package onnxdeploy;
+
+message Image {
+    bytes image_data = 1;
+}
+
+message Prediction {
+    float ps1 = 1;
+    float ps2 = 2;
+    float ps3 = 3;
+}
+
+service Infer {
+  rpc doInfer(Image) returns (Prediction) {}
+}
