@@ -60,6 +60,75 @@ This README file contains code for:
 - Scripts for building and running the docker image.
 For running the inference on both CPU and GPU.
 
+* Script for managing git
+
+** Functions
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD () {
+      git add "./${1}"
+  }
+
+  CLEAN(){
+      rm -vf -- "./${1}"
+  }
+
+  GITCOMMIT () {
+      git commit -m "${1}"
+  }
+
+  SETFILE () {
+      D="$('dirname' '--' "./${2}")"
+      'mkdir' '-pv' '--' "${D}"
+      'mv' '-vf' '--' "${1}" "${2}"
+  }
+#+end_src
+
+** Prepare the main rust file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,main.rs' 'src/main.rs'
+#+end_src
+
+** Format the nix code and rust
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
+  'cargo' 'fmt'
+#+end_src
+
+** Add files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'Cargo.lock'
+  GITADD 'Cargo.toml'
+  GITADD 'Dockerfile'
+  GITADD 'FILE_BASED.org'
+  GITADD '.gitignore'
+  GITADD 'host.docker_build.sh'
+  GITADD 'host.docker_run_main.sh'
+  GITADD 'host.docker_run.sh'
+  GITADD 'host.docker_run.txt'
+  GITADD 'image_name.txt'
+  GITADD 'infer.sh'
+  GITADD 'README.org'
+  GITADD 'shell.nix'
+  GITADD 'src/main.rs'
+  GITADD 'start.sh'
+  GITADD 'TRUE_QUEUE.org'
+  GITADD 'build.rs'
+  GITADD 'infer.proto'
+#+end_src
+
+** Clean files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN '.git.sh'
+  CLEAN 'indent.log'
+  CLEAN 'README.org~'
+  CLEAN '#shell.nix#'
+  CLEAN 'shell.nix~'
+  CLEAN 'src/#main.rs#'
+  CLEAN 'src/.#main.rs'
+  CLEAN 'tmp.sh'
+  CLEAN 'TRUE_QUEUE.org~'
+#+end_src
+
 * Define the image name
 #+begin_src conf :tangle ./image_name.txt
   onnxrust
@@ -465,6 +534,27 @@ Port on which the rest api listens to
   curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
 #+end_src
 
+* proto file
+#+begin_src rust :tangle ./infer.proto
+  syntax = "proto3";
+
+  package onnxdeploy;
+
+  message Image {
+      bytes image_data = 1;
+  }
+
+  message Prediction {
+      float ps1 = 1;
+      float ps2 = 2;
+      float ps3 = 3;
+  }
+
+  service Infer {
+    rpc doInfer(Image) returns (Prediction) {}
+  }
+#+end_src
+
 * Main code
 
 ** Importing external libraries
@@ -845,27 +935,6 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./build.rs
 #+end_src
 
-* proto file
-#+begin_src rust :tangle ./infer.proto
-  syntax = "proto3";
-
-  package onnxdeploy;
-
-  message Image {
-      bytes image_data = 1;
-  }
-
-  message Prediction {
-      float ps1 = 1;
-      float ps2 = 2;
-      float ps3 = 3;
-  }
-
-  service Infer {
-    rpc doInfer(Image) returns (Prediction) {}
-  }
-#+end_src
-
 * GIT Ignore stuff
 #+begin_src conf :tangle ./.gitignore
   /image.jpg
@@ -877,80 +946,9 @@ Port on which the rest api listens to
   /tmp/
 #+end_src
 
-* WORK SPACE
-
-** git worker
-
-*** Functions
+* Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD () {
-      git add "./${1}"
-  }
-
-  CLEAN(){
-      rm -vf -- "./${1}"
-  }
-
-  GITCOMMIT () {
-      git commit -m "${1}"
-  }
-
-  SETFILE () {
-      D="$('dirname' '--' "./${2}")"
-      'mkdir' '-pv' '--' "${D}"
-      'mv' '-vf' '--' "${1}" "${2}"
-  }
-#+end_src
-
-*** Prepare the main rust file
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  SETFILE 'src,main.rs' 'src/main.rs'
-#+end_src
-
-*** Format the nix code and rust
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
-  'cargo' 'fmt'
-#+end_src
-
-*** Add files
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'Cargo.lock'
-  GITADD 'Cargo.toml'
-  GITADD 'Dockerfile'
-  GITADD 'FILE_BASED.org'
-  GITADD '.gitignore'
-  GITADD 'host.docker_build.sh'
-  GITADD 'host.docker_run_main.sh'
-  GITADD 'host.docker_run.sh'
-  GITADD 'host.docker_run.txt'
-  GITADD 'image_name.txt'
-  GITADD 'infer.sh'
-  GITADD 'README.org'
-  GITADD 'shell.nix'
-  GITADD 'src/main.rs'
-  GITADD 'start.sh'
-  GITADD 'TRUE_QUEUE.org'
-  GITADD 'build.rs'
-  GITADD 'infer.proto'
-#+end_src
-
-*** Clean files
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  CLEAN '.git.sh'
-  CLEAN 'indent.log'
-  CLEAN 'README.org~'
-  CLEAN '#shell.nix#'
-  CLEAN 'shell.nix~'
-  CLEAN 'src/#main.rs#'
-  CLEAN 'src/.#main.rs'
-  CLEAN 'tmp.sh'
-  CLEAN 'TRUE_QUEUE.org~'
-#+end_src
-
-*** Commit the changes
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Started writing protobuf sources'
+  GITCOMMIT 'Some cleanups of management scripts'
 #+end_src
 
 ** COMMENT elisp
