@@ -341,13 +341,13 @@ Port on which the rest api listens to
 
 *** Main command
 
-**** docker
+**** COMMENT docker
 #+begin_src conf :tangle ./host.docker_run.txt
   sudo -A
   docker
 #+end_src
 
-**** COMMENT podman
+**** podman
 #+begin_src conf :tangle ./host.docker_run.txt
   podman
 #+end_src
