@@ -77,6 +77,8 @@ RUN \
         'python3-setuptools' \
         'unzip' \
         'wget' \
+        'protobuf-compiler' \
+        'libprotobuf-dev' \
     && echo 'DONE apt-get stuff' ;
 
 EXPOSE 8000/tcp

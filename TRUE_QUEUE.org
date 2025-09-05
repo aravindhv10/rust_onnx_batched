@@ -317,6 +317,8 @@ Install the remaining apt packages
           'python3-setuptools' \
           'unzip' \
           'wget' \
+          'protobuf-compiler' \
+          'libprotobuf-dev' \
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
