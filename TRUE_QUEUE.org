@@ -169,6 +169,7 @@ For running the inference on both CPU and GPU.
   serde = { version = "1.0.219", features = ["derive"] }
   thiserror = "2.0.15"
   tokio = { version = "1.47.1", features = ["full"] }
+  tonic = { version = "0.14.2", features = ["zstd"] }
 #+end_src
 
 
@@ -969,7 +970,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'VERIFIED: Got buildah stuff working'
+  GITCOMMIT 'Added tonic dependency'
 #+end_src
 
 * Work space
