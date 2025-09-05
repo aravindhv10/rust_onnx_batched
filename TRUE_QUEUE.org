@@ -969,7 +969,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Some cleanups of management scripts'
+  GITCOMMIT 'VERIFIED: Got buildah stuff working'
 #+end_src
 
 * Work space
