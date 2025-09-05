@@ -236,7 +236,6 @@ Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
       echo 'START apt-get stuff' \
-      && mkdir -pv -- '/var/lib/apt/lists/partial' \
       && apt-get -y update \
       && apt-get install -y \
           'aria2' \
@@ -285,10 +284,7 @@ Build the main image
 Install the remaining apt packages
 #+begin_src conf :tangle ./Dockerfile
   RUN \
-      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-      --mount=target=/var/cache/apt,type=cache,sharing=locked \
       echo 'START apt-get stuff' \
-      && mkdir -pv -- '/var/lib/apt/lists/partial' \
       && apt-get -y update \
       && apt-get install -y \
           'aria2' \

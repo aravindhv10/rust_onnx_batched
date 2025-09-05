@@ -10,7 +10,6 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 
 RUN \
     echo 'START apt-get stuff' \
-    && mkdir -pv -- '/var/lib/apt/lists/partial' \
     && apt-get -y update \
     && apt-get install -y \
         'aria2' \
@@ -45,10 +44,7 @@ RUN set -eux; \
 FROM rust
 
 RUN \
-    --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-    --mount=target=/var/cache/apt,type=cache,sharing=locked \
     echo 'START apt-get stuff' \
-    && mkdir -pv -- '/var/lib/apt/lists/partial' \
     && apt-get -y update \
     && apt-get install -y \
         'aria2' \
