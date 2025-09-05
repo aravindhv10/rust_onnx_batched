@@ -10,6 +10,8 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 
 USER root
 RUN \
+    --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
     echo 'START apt-get stuff' \
     && apt-get -y update \
     && apt-get install -y \
@@ -46,6 +48,8 @@ FROM rust
 
 USER root
 RUN \
+    --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
     echo 'START apt-get stuff' \
     && apt-get -y update \
     && apt-get install -y \
