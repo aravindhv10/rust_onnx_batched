@@ -138,7 +138,7 @@ For running the inference on both CPU and GPU.
 
 ** Cargo
 
-*** Package details
+*** package
 #+begin_src conf :tangle ./Cargo.toml
   [package]
   name = "onnxdeploy"
@@ -146,7 +146,7 @@ For running the inference on both CPU and GPU.
   edition = "2024"
 #+end_src
 
-*** Dependencies
+*** dependencies
 #+begin_src conf :tangle ./Cargo.toml
   [dependencies]
   actix-multipart = "0.7.2"
@@ -163,6 +163,12 @@ For running the inference on both CPU and GPU.
   serde = { version = "1.0.219", features = ["derive"] }
   thiserror = "2.0.15"
   tokio = { version = "1.47.1", features = ["full"] }
+#+end_src
+
+*** build-dependencies
+#+begin_src conf :tangle ./Cargo.toml
+  [build-dependencies]
+  tonic-prost-build = "0.14.2"
 #+end_src
 
 * ORT Related
@@ -933,6 +939,11 @@ Port on which the rest api listens to
 
 * Build file
 #+begin_src rust :tangle ./build.rs
+  use std::{env, path::PathBuf};
+
+  fn main() {
+      tonic_prost_build::compile_protos("./infer.proto").unwrap();
+  }
 #+end_src
 
 * GIT Ignore stuff
@@ -951,7 +962,9 @@ Port on which the rest api listens to
   GITCOMMIT 'Some cleanups of management scripts'
 #+end_src
 
-** COMMENT elisp
+* Work space
+
+** COMMENT Everything
 #+begin_src emacs-lisp :results silent
   (save-buffer)
   (org-babel-tangle)
