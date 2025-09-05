@@ -8,6 +8,7 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH \
     RUST_VERSION=1.88.0
 
+USER root
 RUN \
     echo 'START apt-get stuff' \
     && apt-get -y update \
@@ -43,6 +44,7 @@ RUN set -eux; \
 
 FROM rust
 
+USER root
 RUN \
     echo 'START apt-get stuff' \
     && apt-get -y update \

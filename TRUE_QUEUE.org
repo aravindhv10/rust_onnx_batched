@@ -234,6 +234,7 @@ Define important environment variables and working dir for apt and rust.
 ** Important apt install stuff
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
+  USER root
   RUN \
       echo 'START apt-get stuff' \
       && apt-get -y update \
@@ -283,6 +284,7 @@ Build the main image
 ** Important apt install stuff
 Install the remaining apt packages
 #+begin_src conf :tangle ./Dockerfile
+  USER root
   RUN \
       echo 'START apt-get stuff' \
       && apt-get -y update \
