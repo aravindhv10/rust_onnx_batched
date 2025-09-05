@@ -235,8 +235,8 @@ Define important environment variables and working dir for apt and rust.
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
-      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      # --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      # --mount=target=/var/cache/apt,type=cache,sharing=locked \
       echo 'START apt-get stuff' \
       && apt-get -y update \
       && apt-get install -y \
