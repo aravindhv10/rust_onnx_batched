@@ -9,8 +9,6 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     RUST_VERSION=1.88.0
 
 RUN \
-    # --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-    # --mount=target=/var/cache/apt,type=cache,sharing=locked \
     echo 'START apt-get stuff' \
     && apt-get -y update \
     && apt-get install -y \
@@ -64,12 +62,14 @@ RUN \
         'libfontconfig-dev' \
         'libopenblas64-dev' \
         'libopenblas-dev' \
+        'libprotobuf-dev' \
         'libssl-dev' \
         'make' \
         'nasm' \
         'neovim' \
         'ninja-build' \
         'pkg-config' \
+        'protobuf-compiler' \
         'python3-cairo-dev' \
         'python3-dev' \
         'python3-opencv' \
@@ -77,8 +77,6 @@ RUN \
         'python3-setuptools' \
         'unzip' \
         'wget' \
-        'protobuf-compiler' \
-        'libprotobuf-dev' \
     && echo 'DONE apt-get stuff' ;
 
 EXPOSE 8000/tcp
