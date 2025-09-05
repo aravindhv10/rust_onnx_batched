@@ -432,9 +432,14 @@ Port on which the rest api listens to
   sudo -A docker build -t onnxrust .
 #+end_src
 
-*** using podman
+*** COMMENT using podman
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   podman build -t "$('cat' './image_name.txt')" .
+#+end_src
+
+*** using buildah
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  buildah build -t "$('cat' './image_name.txt')" .
 #+end_src
 
 * Main nix shell code
