@@ -108,8 +108,8 @@ For running the inference on both CPU and GPU.
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   cat \
           './Cargo.package.toml' \
-          './Cargo.build-dependencies.toml' \
           './Cargo.dependencies.toml' \
+          './Cargo.build-dependencies.toml' \
       > './Cargo.toml' \
   ;
 #+end_src
@@ -162,7 +162,7 @@ For running the inference on both CPU and GPU.
 ** Cargo
 
 *** package
-#+begin_src conf :tangle ./Cargo.toml
+#+begin_src conf :tangle ./Cargo.package.toml
   [package]
   name = "onnxdeploy"
   version = "0.1.0"
@@ -170,13 +170,13 @@ For running the inference on both CPU and GPU.
 #+end_src
 
 *** build-dependencies
-#+begin_src conf :tangle ./Cargo.toml
+#+begin_src conf :tangle ./Cargo.build-dependencies.toml
   [build-dependencies]
   tonic-prost-build = "0.14.2"
 #+end_src
 
 *** dependencies
-#+begin_src conf :tangle ./Cargo.toml
+#+begin_src conf :tangle ./Cargo.dependencies.toml
   [dependencies]
   actix-multipart = "0.7.2"
   actix-web = "4.11.0"
@@ -194,7 +194,6 @@ For running the inference on both CPU and GPU.
   tokio = { version = "1.47.1", features = ["full"] }
   tonic = { version = "0.14.2", features = ["zstd"] }
 #+end_src
-
 
 * ORT Related
 - Define ORT dependencies and features for GPU (CUDA) or CPU (OpenVino).
@@ -993,7 +992,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Added tonic dependency'
+  GITCOMMIT 'Reorg of cargo files'
 #+end_src
 
 * Work space
