@@ -9,7 +9,17 @@
 #+end_src
 
 ** Cargo
-#+begin_src conf :tangle ./Cargo.toml
+
+*** package
+#+begin_src conf :tangle ./Cargo.package.toml
+#+end_src
+
+*** build-dependencies
+#+begin_src conf :tangle ./Cargo.build-dependencies.toml
+#+end_src
+
+*** dependencies
+#+begin_src conf :tangle ./Cargo.dependencies.toml
 #+end_src
 
 ** Dockerfile
@@ -94,6 +104,16 @@ For running the inference on both CPU and GPU.
   'cargo' 'fmt'
 #+end_src
 
+** Prepare the cargo file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  cat \
+          './Cargo.package.toml' \
+          './Cargo.build-dependencies.toml' \
+          './Cargo.dependencies.toml' \
+      > './Cargo.toml' \
+  ;
+#+end_src
+
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'Cargo.lock'
@@ -118,6 +138,9 @@ For running the inference on both CPU and GPU.
 
 ** Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN 'Cargo.build-dependencies.toml'
+  CLEAN 'Cargo.dependencies.toml'
+  CLEAN 'Cargo.package.toml'
   CLEAN '.git.sh'
   CLEAN 'indent.log'
   CLEAN 'README.org~'
