@@ -578,7 +578,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./infer.proto
   syntax = "proto3";
 
-  package onnxdeploy;
+  package infer;
 
   message Image {
       bytes image_data = 1;
@@ -635,8 +635,8 @@ Port on which the rest api listens to
   use ort::execution_providers::OpenVINOExecutionProvider;
   use ort::execution_providers::WebGPUExecutionProvider;
   use ort::inputs;
-  use ort::session::Session;
   use ort::session::builder::GraphOptimizationLevel;
+  use ort::session::Session;
   use ort::value::TensorRef;
   use serde::Deserialize;
   use serde::Serialize;
@@ -645,6 +645,17 @@ Port on which the rest api listens to
   use tokio;
   use tokio::sync::mpsc;
   use tokio::sync::oneshot;
+  use tonic::Request;
+  use tonic::Response;
+  use tonic::Status;
+  use tonic::transport::Server;
+
+  pub mod infer_messages {
+      tonic::include_proto!("infer"); // The string specified here must match the proto package name
+  }
+
+  // use hello_world::greeter_server::{Greeter, GreeterServer};
+  // use hello_world::{HelloReply, HelloRequest};
 #+end_src
 
 *** Important parameters
@@ -1003,10 +1014,9 @@ Port on which the rest api listens to
 
 * Build file
 #+begin_src rust :tangle ./build.rs
-  use std::{env, path::PathBuf};
-
-  fn main() {
-      tonic_prost_build::compile_protos("./infer.proto").unwrap();
+  fn main() -> Result<(), Box<dyn std::error::Error>> {
+      tonic_prost_build::compile_protos("./infer.proto")?;
+      Ok(())
   }
 #+end_src
 
@@ -1029,17 +1039,14 @@ Port on which the rest api listens to
 
 * Work space
 
-** COMMENT Everything
-#+begin_src emacs-lisp :results silent
-  (save-buffer)
-  (org-babel-tangle)
-  (async-shell-command "
-          './.git.sh'
-          git status
-      " "log" "err")
-#+end_src
-
 ** COMMENT Pushing
+
+*** Just push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
+      git push
+  " "log" "err")
+#+end_src
 
 *** Prepare ssh key and push
 #+begin_src emacs-lisp :results silent
@@ -1049,9 +1056,12 @@ Port on which the rest api listens to
   " "log" "err")
 #+end_src
 
-*** Just push
+** COMMENT Everything
 #+begin_src emacs-lisp :results silent
+  (save-buffer)
+  (org-babel-tangle)
   (async-shell-command "
-      git push
-  " "log" "err")
+          './.git.sh'
+          git status
+      " "log" "err")
 #+end_src
