@@ -772,7 +772,7 @@ Port on which the rest api listens to
               return Ok(preprocess(img));
           } ,
           Err(e) => {
-              return actix_web::error::ErrorBadRequest(format!("decode error: {}", e);
+              return actix_web::error::ErrorBadRequest(format!("decode error: {}", e));
           }
       } ;
   }

@@ -76,7 +76,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string() ;
+        ret.mj = CLASS_LABELS[max_index].to_string();
         ret
     }
 }
@@ -105,11 +105,11 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     match image::load_from_memory(&data) {
         Ok(img) => {
             return Ok(preprocess(img));
-        } ,
-        Err(e) => {
-            return actix_web::error::ErrorBadRequest(format!("decode error: {}", e);
         }
-    } ;
+        Err(e) => {
+            return actix_web::error::ErrorBadRequest(format!("decode error: {}", e));
+        }
+    };
 }
 
 async fn infer_handler(
