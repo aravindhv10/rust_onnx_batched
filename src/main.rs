@@ -33,10 +33,10 @@ pub mod infer_messages {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
 
-use infer::infer_server::Image;
-use infer::infer_server::Infer;
-use infer::infer_server::InferServer;
-use infer::infer_server::Prediction;
+use Infer::infer_server::Image;
+use Infer::infer_server::Infer;
+use Infer::infer_server::InferServer;
+use Infer::infer_server::Prediction;
 
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
