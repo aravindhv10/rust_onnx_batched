@@ -76,7 +76,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string() ;
+        ret.mj = CLASS_LABELS[max_index].to_string();
         ret
     }
 }

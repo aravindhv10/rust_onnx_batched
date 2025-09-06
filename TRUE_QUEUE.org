@@ -204,7 +204,7 @@ For running the inference on both CPU and GPU.
 ** COMMENT CUDA
 
 *** Cargo
-#+begin_src conf :tangle ./Cargo.toml
+#+begin_src conf :tangle ./Cargo.dependencies.toml
   ort = { version = "2.0.0-rc.10", features = ["cuda"] }
 #+end_src
 
@@ -221,7 +221,7 @@ For running the inference on both CPU and GPU.
 ** COMMENT WebGPU
 
 *** Cargo
-#+begin_src conf :tangle ./Cargo.toml
+#+begin_src conf :tangle ./Cargo.dependencies.toml
   ort = { version = "2.0.0-rc.10", features = ["webgpu"] }
 #+end_src
 
@@ -233,7 +233,7 @@ For running the inference on both CPU and GPU.
 ** OpenVino
 
 *** Cargo
-#+begin_src conf :tangle ./Cargo.toml
+#+begin_src conf :tangle ./Cargo.dependencies.toml
   ort = { version = "2.0.0-rc.10", features = ["openvino"] }
 #+end_src
 
