@@ -33,8 +33,6 @@ pub mod infergrpc {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
 
-use infergrpc;
-
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
 const MODEL_PATH: &str = "./model.onnx";
