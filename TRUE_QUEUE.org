@@ -620,6 +620,8 @@ Port on which the rest api listens to
 #+end_src
 
 *** Main parts
+
+**** Simple imports
 #+begin_src rust :tangle ./src,main.rs
   use actix_multipart::Multipart;
   use actix_web::App;
@@ -651,13 +653,18 @@ Port on which the rest api listens to
   use tonic::Response;
   use tonic::Status;
   use tonic::transport::Server;
+#+end_src
 
+**** Tonic parts
+#+begin_src rust :tangle ./src,main.rs
   pub mod infer_messages {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
 
-  // use hello_world::greeter_server::{Greeter, GreeterServer};
-  // use hello_world::{HelloReply, HelloRequest};
+  use infer::infer_server::Image;
+  use infer::infer_server::Infer;
+  use infer::infer_server::InferServer;
+  use infer::infer_server::Prediction;
 #+end_src
 
 *** Important parameters
