@@ -728,6 +728,17 @@ Port on which the rest api listens to
 #+end_src
 
 ** Struct for sending the inference request to the inferring thread
+
+*** New
+#+begin_src rust :tangle ./src,main.rs
+  // === Request to inference thread ===
+  struct InferRequest {
+      img: image::RgbaImage,
+      resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
+  }
+#+end_src
+
+*** COMMENT Original
 #+begin_src rust :tangle ./src,main.rs
   // === Request to inference thread ===
   struct InferRequest {
@@ -750,6 +761,14 @@ Port on which the rest api listens to
           IMAGE_RESOLUTION,
           imageops::FilterType::CatmullRom,
       )
+  }
+#+end_src
+
+** Function to decode and pre-process
+#+begin_src rust :tangle ./src,main.rs
+  fn decode_and_preprocess(data: Vec<u8>) -> image::RgbaImage {
+      let img = image::load_from_memory(&data).map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
+      preprocess(img)
   }
 #+end_src
 

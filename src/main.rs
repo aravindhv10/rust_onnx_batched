@@ -83,7 +83,7 @@ impl prediction_probabilities_reply {
 
 // === Request to inference thread ===
 struct InferRequest {
-    img: DynamicImage,
+    img: image::RgbaImage,
     resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
 }
 
@@ -99,6 +99,12 @@ fn preprocess(img: DynamicImage) -> image::RgbaImage {
         IMAGE_RESOLUTION,
         imageops::FilterType::CatmullRom,
     )
+}
+
+fn decode_and_preprocess(data: Vec<u8>) -> image::RgbaImage {
+    let img = image::load_from_memory(&data)
+        .map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
+    preprocess(img)
 }
 
 async fn infer_handler(
