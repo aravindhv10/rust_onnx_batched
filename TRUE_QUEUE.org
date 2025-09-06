@@ -661,10 +661,7 @@ Port on which the rest api listens to
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
 
-  use infergrpc::Image;
-  use infergrpc::Infer;
-  use infergrpc::InferServer;
-  use infergrpc::Prediction;
+  use infergrpc;
 #+end_src
 
 *** Important parameters
