@@ -107,7 +107,10 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
             return Ok(preprocess(img));
         }
         Err(e) => {
-            return actix_web::error::ErrorBadRequest(format!("decode error: {}", e));
+            return Err(actix_web::error::ErrorBadRequest(format!(
+                "decode error: {}",
+                e
+            )));
         }
     };
 }
