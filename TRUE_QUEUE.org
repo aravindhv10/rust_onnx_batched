@@ -141,6 +141,7 @@ For running the inference on both CPU and GPU.
   CLEAN 'Cargo.build-dependencies.toml'
   CLEAN 'Cargo.dependencies.toml'
   CLEAN 'Cargo.package.toml'
+  CLEAN '#Cargo.toml#'
   CLEAN '.git.sh'
   CLEAN 'indent.log'
   CLEAN 'README.org~'
