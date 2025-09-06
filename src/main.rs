@@ -33,8 +33,10 @@ const IMAGE_RESOLUTION: u32 = 448;
 const num_features: usize = 3;
 const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 
+type outtype = f32;
+
 struct prediction_probabilities {
-    ps: [f32; num_features],
+    ps: [outtype; num_features],
 }
 
 impl prediction_probabilities {
@@ -44,7 +46,7 @@ impl prediction_probabilities {
         }
     }
 
-    fn from<T: Index<usize, Output = f32>>(input: T) -> Self {
+    fn from<T: Index<usize, Output = outtype>>(input: T) -> Self {
         let mut ret = prediction_probabilities::new();
         for i in 0..num_features {
             ret.ps[i] = input[i];
@@ -129,9 +131,6 @@ async fn infer_handler(
         return Ok(HttpResponse::BadRequest().body("No image data"));
     }
 
-    // let img = image::load_from_memory(&data)
-    //     .map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
-
     let img = decode_and_preprocess(data)?;
 
     let (resp_tx, resp_rx) = oneshot::channel();
@@ -188,7 +187,7 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
             };
 
         let output = outputs["output"]
-            .try_extract_array::<f32>()
+            .try_extract_array::<outtype>()
             .unwrap()
             .t()
             .into_owned();

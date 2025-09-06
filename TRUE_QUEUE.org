@@ -663,12 +663,17 @@ Port on which the rest api listens to
   const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 #+end_src
 
+**** Main output type
+#+begin_src rust :tangle ./src,main.rs
+  type outtype = f32;
+#+end_src
+
 ** Main struct for holding inference results
 
 *** Main struct
 #+begin_src rust :tangle ./src,main.rs
   struct prediction_probabilities {
-      ps: [f32; num_features],
+      ps: [outtype; num_features],
   }
 #+end_src
 
@@ -681,7 +686,7 @@ Port on which the rest api listens to
           }
       }
 
-      fn from<T: Index<usize, Output = f32>>(input: T) -> Self {
+      fn from<T: Index<usize, Output = outtype>>(input: T) -> Self {
           let mut ret = prediction_probabilities::new();
           for i in 0..num_features {
               ret.ps[i] = input[i];
@@ -794,10 +799,6 @@ Port on which the rest api listens to
           return Ok(HttpResponse::BadRequest().body("No image data"));
       }
 
-      // let img = image::load_from_memory(&data)
-      //     .map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
-
-
       let img = decode_and_preprocess(data)?;
 
       let (resp_tx, resp_rx) = oneshot::channel();
@@ -857,7 +858,7 @@ Port on which the rest api listens to
               };
 
           let output = outputs["output"]
-              .try_extract_array::<f32>()
+              .try_extract_array::<outtype>()
               .unwrap()
               .t()
               .into_owned();
