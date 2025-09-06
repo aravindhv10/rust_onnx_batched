@@ -1019,11 +1019,12 @@ Port on which the rest api listens to
   /model.onnx
   /target/
   /tmp/
+  /proto/
 #+end_src
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Reorg of cargo files'
+  GITCOMMIT 'WORKING: Significant cleanups'
 #+end_src
 
 * Work space
