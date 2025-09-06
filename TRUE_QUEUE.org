@@ -662,6 +662,8 @@ Port on which the rest api listens to
   }
 
   use infergrpc::Image;
+  use infergrpc::Prediction;
+  use infergrpc::InferServer;
 #+end_src
 
 *** Important parameters
