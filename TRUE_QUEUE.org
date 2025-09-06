@@ -660,6 +660,8 @@ Port on which the rest api listens to
   pub mod infergrpc {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
+
+  use infergrpc::Image;
 #+end_src
 
 *** Important parameters
