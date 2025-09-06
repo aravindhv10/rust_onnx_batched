@@ -83,7 +83,7 @@ impl prediction_probabilities_reply {
 
 // === Request to inference thread ===
 struct InferRequest {
-    img: DynamicImage,
+    img: image::RgbaImage,
     resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
 }
 
@@ -129,8 +129,10 @@ async fn infer_handler(
         return Ok(HttpResponse::BadRequest().body("No image data"));
     }
 
-    let img = image::load_from_memory(&data)
-        .map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
+    // let img = image::load_from_memory(&data)
+    //     .map_err(|e| actix_web::error::ErrorBadRequest(format!("decode error: {}", e)))?;
+
+    let img = decode_and_preprocess(data)?;
 
     let (resp_tx, resp_rx) = oneshot::channel();
     tx.send(InferRequest { img, resp_tx })
@@ -164,8 +166,9 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
         ));
 
         for (i, req) in batch.iter().enumerate() {
-            let img = preprocess(req.img.clone());
-            for (x, y, pixel) in img.enumerate_pixels() {
+            // let img = preprocess(req.img.clone());
+            // for (x, y, pixel) in img.enumerate_pixels() {
+            for (x, y, pixel) in req.img.enumerate_pixels() {
                 let [r, g, b, _] = pixel.0;
                 input[[i, y as usize, x as usize, 0]] = r;
                 input[[i, y as usize, x as usize, 1]] = g;
