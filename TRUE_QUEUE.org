@@ -729,7 +729,7 @@ Port on which the rest api listens to
 
 ** Struct for sending the inference request to the inferring thread
 
-*** New
+*** COMMENT New
 #+begin_src rust :tangle ./src,main.rs
   // === Request to inference thread ===
   struct InferRequest {
@@ -738,7 +738,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** COMMENT Original
+*** Original
 #+begin_src rust :tangle ./src,main.rs
   // === Request to inference thread ===
   struct InferRequest {

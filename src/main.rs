@@ -83,7 +83,7 @@ impl prediction_probabilities_reply {
 
 // === Request to inference thread ===
 struct InferRequest {
-    img: image::RgbaImage,
+    img: DynamicImage,
     resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
 }
 
