@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package infer;
+package infergrpc;
 
 message Image {
     bytes image_data = 1;

@@ -29,14 +29,14 @@ use tonic::Response;
 use tonic::Status;
 use tonic::transport::Server;
 
-pub mod infer_messages {
+pub mod infergrpc {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
 
-use Infer::infer_server::Image;
-use Infer::infer_server::Infer;
-use Infer::infer_server::InferServer;
-use Infer::infer_server::Prediction;
+use infergrpc::Image;
+use infergrpc::Infer;
+use infergrpc::InferServer;
+use infergrpc::Prediction;
 
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(200);

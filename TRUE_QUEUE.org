@@ -580,7 +580,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./infer.proto
   syntax = "proto3";
 
-  package infer;
+  package infergrpc;
 
   message Image {
       bytes image_data = 1;
@@ -657,14 +657,14 @@ Port on which the rest api listens to
 
 **** Tonic parts
 #+begin_src rust :tangle ./src,main.rs
-  pub mod infer_messages {
+  pub mod infergrpc {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
 
-  use Infer::infer_server::Image;
-  use Infer::infer_server::Infer;
-  use Infer::infer_server::InferServer;
-  use Infer::infer_server::Prediction;
+  use infergrpc::Image;
+  use infergrpc::Infer;
+  use infergrpc::InferServer;
+  use infergrpc::Prediction;
 #+end_src
 
 *** Important parameters
