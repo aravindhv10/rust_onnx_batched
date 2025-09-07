@@ -515,11 +515,13 @@ Port on which the rest api listens to
   fontconfig.dev
   fontconfig.lib
   gnumake
+  grpc-tools
   libelf
   nasm
   openssl
   openssl.dev
   pkg-config
+  protobuf
   python313Full
   udev
   zsh
@@ -621,7 +623,7 @@ Port on which the rest api listens to
 
 *** Main parts
 
-**** Simple imports
+**** actix parts
 #+begin_src rust :tangle ./src,main.rs
   use actix_multipart::Multipart;
   use actix_web::App;
@@ -629,12 +631,10 @@ Port on which the rest api listens to
   use actix_web::HttpResponse;
   use actix_web::HttpServer;
   use actix_web::web;
-  use futures_util::TryStreamExt;
-  use image::DynamicImage;
-  use image::imageops;
-  use ndarray::Array;
-  use ndarray::Axis;
-  use ndarray::Ix4;
+#+end_src
+
+**** ort parts
+#+begin_src rust :tangle ./src,main.rs
   use ort::execution_providers::CUDAExecutionProvider;
   use ort::execution_providers::OpenVINOExecutionProvider;
   use ort::execution_providers::WebGPUExecutionProvider;
@@ -642,28 +642,44 @@ Port on which the rest api listens to
   use ort::session::builder::GraphOptimizationLevel;
   use ort::session::Session;
   use ort::value::TensorRef;
+#+end_src
+
+**** tokio parts
+#+begin_src rust :tangle ./src,main.rs
+  use tokio;
+  use tokio::sync::mpsc;
+  use tokio::sync::oneshot;
+#+end_src
+
+**** generic parts
+#+begin_src rust :tangle ./src,main.rs
+  use futures_util::TryStreamExt;
+  use image::DynamicImage;
+  use image::imageops;
+  use ndarray::Array;
+  use ndarray::Axis;
+  use ndarray::Ix4;
   use serde::Deserialize;
   use serde::Serialize;
   use std::ops::Index;
   use std::time::Duration;
-  use tokio;
-  use tokio::sync::mpsc;
-  use tokio::sync::oneshot;
+#+end_src
+
+**** Tonic parts
+
+***** Main library
+#+begin_src rust :tangle ./src,main.rs
   use tonic::Request;
   use tonic::Response;
   use tonic::Status;
   use tonic::transport::Server;
 #+end_src
 
-**** Tonic parts
+***** proto parts
 #+begin_src rust :tangle ./src,main.rs
   pub mod infergrpc {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
-
-  use infergrpc::Image;
-  use infergrpc::Prediction;
-  // use infergrpc::InferServer;
 #+end_src
 
 *** Important parameters
@@ -890,6 +906,67 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** Implementation for gRPC
+
+*** Declare the structure
+#+begin_src rust :tangle ./src,main.rs
+  pub struct MyInferer {
+      tx: mpsc::Sender<InferRequest>,
+  }
+#+end_src
+
+#+begin_src rust :tangle ./src,main.rs
+  #[tonic::async_trait]
+  impl Infer for MyInferer {
+      async fn infer(&self, request: Request<infergrpc::Image>) -> Result<Response<infergrpc::Prediction>, Status> {
+          println!("Received gRPC request");
+          let image_data = request.into_inner().data;
+
+          // Load the image from the received bytes.
+          let img = decode_and_preprocess(image_data).map_err(|e| {
+              Status::invalid_argument(format!("Failed to decode image: {}", e))
+          })?;
+
+          // Create a channel for the inference response.
+          let (resp_tx, resp_rx) = oneshot::channel();
+          let req = InferRequest {
+              img,
+              resp_tx,
+          };
+
+          // Send the request to the inference loop.
+          self.tx.send(req).await.map_err(|_| {
+              Status::internal("Inference queue is closed")
+          })?;
+
+          // Wait for the inference result.
+          match resp_rx.await {
+              Ok(Ok(pred)) => {
+                  let mut probabilities = HashMap::new();
+                  let mut max_prob = 0.0;
+                  let mut major_class = String::new();
+
+                  let reply = infergrpc::Prediction {
+                      pred.ps[0],
+                      pred.ps[1],
+                      pred.ps[2],
+                  };
+
+                  Ok(Response::new(reply))
+              },
+
+              Ok(Err(e)) => Err(Status::internal(e)),
+
+              Err(_) => Err(Status::internal("Inference request dropped")),
+          }
+      }
+  }
+#+end_src
+
+
+
+
+
 ** Function to construct the models
 
 *** Main function to get the models for various execution providers
@@ -1061,7 +1138,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Removed some imports temporarily'
+  GITCOMMIT 'Started adding protobuf to nix'
 #+end_src
 
 ** Run the work script

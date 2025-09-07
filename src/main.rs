@@ -4,26 +4,30 @@ use actix_web::Error;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::web;
+
+use ort::execution_providers::CUDAExecutionProvider;
+use ort::execution_providers::OpenVINOExecutionProvider;
+use ort::execution_providers::WebGPUExecutionProvider;
+use ort::inputs;
+use ort::session::builder::GraphOptimizationLevel;
+use ort::session::Session;
+use ort::value::TensorRef;
+
+use tokio;
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
+
 use futures_util::TryStreamExt;
 use image::DynamicImage;
 use image::imageops;
 use ndarray::Array;
 use ndarray::Axis;
 use ndarray::Ix4;
-use ort::execution_providers::CUDAExecutionProvider;
-use ort::execution_providers::OpenVINOExecutionProvider;
-use ort::execution_providers::WebGPUExecutionProvider;
-use ort::inputs;
-use ort::session::Session;
-use ort::session::builder::GraphOptimizationLevel;
-use ort::value::TensorRef;
 use serde::Deserialize;
 use serde::Serialize;
 use std::ops::Index;
 use std::time::Duration;
-use tokio;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
+
 use tonic::Request;
 use tonic::Response;
 use tonic::Status;
@@ -32,10 +36,6 @@ use tonic::transport::Server;
 pub mod infergrpc {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
-
-use infergrpc::Image;
-use infergrpc::Prediction;
-// use infergrpc::InferServer;
 
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
@@ -90,7 +90,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string();
+        ret.mj = CLASS_LABELS[max_index].to_string() ;
         ret
     }
 }
@@ -119,14 +119,11 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     match image::load_from_memory(&data) {
         Ok(img) => {
             return Ok(preprocess(img));
-        }
+        } ,
         Err(e) => {
-            return Err(actix_web::error::ErrorBadRequest(format!(
-                "decode error: {}",
-                e
-            )));
+            return Err(actix_web::error::ErrorBadRequest(format!("decode error: {}", e)));
         }
-    };
+    } ;
 }
 
 async fn infer_handler(
@@ -207,6 +204,56 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
         for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
             let result = prediction_probabilities::from(row);
             let _ = req.resp_tx.send(Ok(result));
+        }
+    }
+}
+
+pub struct MyInferer {
+    tx: mpsc::Sender<InferRequest>,
+}
+
+#[tonic::async_trait]
+impl Infer for MyInferer {
+    async fn infer(&self, request: Request<infergrpc::Image>) -> Result<Response<infergrpc::Prediction>, Status> {
+        println!("Received gRPC request");
+        let image_data = request.into_inner().data;
+
+        // Load the image from the received bytes.
+        let img = decode_and_preprocess(image_data).map_err(|e| {
+            Status::invalid_argument(format!("Failed to decode image: {}", e))
+        })?;
+
+        // Create a channel for the inference response.
+        let (resp_tx, resp_rx) = oneshot::channel();
+        let req = InferRequest {
+            img,
+            resp_tx,
+        };
+
+        // Send the request to the inference loop.
+        self.tx.send(req).await.map_err(|_| {
+            Status::internal("Inference queue is closed")
+        })?;
+
+        // Wait for the inference result.
+        match resp_rx.await {
+            Ok(Ok(pred)) => {
+                let mut probabilities = HashMap::new();
+                let mut max_prob = 0.0;
+                let mut major_class = String::new();
+
+                let reply = infergrpc::Prediction {
+                    pred.ps[0],
+                    pred.ps[1],
+                    pred.ps[2],
+                };
+
+                Ok(Response::new(reply))
+            },
+
+            Ok(Err(e)) => Err(Status::internal(e)),
+
+            Err(_) => Err(Status::internal("Inference request dropped")),
         }
     }
 }

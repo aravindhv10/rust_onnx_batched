@@ -13,11 +13,13 @@
     fontconfig.dev
     fontconfig.lib
     gnumake
+    grpc-tools
     libelf
     nasm
     openssl
     openssl.dev
     pkg-config
+    protobuf
     python313Full
     udev
     zsh
