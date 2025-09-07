@@ -917,7 +917,7 @@ Port on which the rest api listens to
 
 #+begin_src rust :tangle ./src,main.rs
   #[tonic::async_trait]
-  impl Infer for MyInferer {
+  impl infer::Infer for MyInferer {
       async fn infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
           println!("Received gRPC request");
           let image_data = request.into_inner().data;
