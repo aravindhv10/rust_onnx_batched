@@ -9,8 +9,8 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 
 use tokio;
@@ -90,7 +90,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string() ;
+        ret.mj = CLASS_LABELS[max_index].to_string();
         ret
     }
 }
@@ -119,11 +119,14 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     match image::load_from_memory(&data) {
         Ok(img) => {
             return Ok(preprocess(img));
-        } ,
-        Err(e) => {
-            return Err(actix_web::error::ErrorBadRequest(format!("decode error: {}", e)));
         }
-    } ;
+        Err(e) => {
+            return Err(actix_web::error::ErrorBadRequest(format!(
+                "decode error: {}",
+                e
+            )));
+        }
+    };
 }
 
 async fn infer_handler(
@@ -214,42 +217,38 @@ pub struct MyInferer {
 
 #[tonic::async_trait]
 impl Infer for MyInferer {
-    async fn infer(&self, request: Request<infergrpc::Image>) -> Result<Response<infergrpc::Prediction>, Status> {
+    async fn infer(
+        &self,
+        request: Request<infergrpc::Image>,
+    ) -> Result<Response<infergrpc::Prediction>, Status> {
         println!("Received gRPC request");
         let image_data = request.into_inner().data;
 
         // Load the image from the received bytes.
-        let img = decode_and_preprocess(image_data).map_err(|e| {
-            Status::invalid_argument(format!("Failed to decode image: {}", e))
-        })?;
+        let img = decode_and_preprocess(image_data)
+            .map_err(|e| Status::invalid_argument(format!("Failed to decode image: {}", e)))?;
 
         // Create a channel for the inference response.
         let (resp_tx, resp_rx) = oneshot::channel();
-        let req = InferRequest {
-            img,
-            resp_tx,
-        };
+        let req = InferRequest { img, resp_tx };
 
         // Send the request to the inference loop.
-        self.tx.send(req).await.map_err(|_| {
-            Status::internal("Inference queue is closed")
-        })?;
+        self.tx
+            .send(req)
+            .await
+            .map_err(|_| Status::internal("Inference queue is closed"))?;
 
         // Wait for the inference result.
         match resp_rx.await {
             Ok(Ok(pred)) => {
-                let mut probabilities = HashMap::new();
-                let mut max_prob = 0.0;
-                let mut major_class = String::new();
-
                 let reply = infergrpc::Prediction {
-                    pred.ps[0],
-                    pred.ps[1],
-                    pred.ps[2],
+                    ps1: pred.ps[0],
+                    ps2: pred.ps[1],
+                    ps3: pred.ps[2],
                 };
 
                 Ok(Response::new(reply))
-            },
+            }
 
             Ok(Err(e)) => Err(Status::internal(e)),
 

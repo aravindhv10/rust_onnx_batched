@@ -942,14 +942,10 @@ Port on which the rest api listens to
           // Wait for the inference result.
           match resp_rx.await {
               Ok(Ok(pred)) => {
-                  let mut probabilities = HashMap::new();
-                  let mut max_prob = 0.0;
-                  let mut major_class = String::new();
-
                   let reply = infergrpc::Prediction {
-                      pred.ps[0],
-                      pred.ps[1],
-                      pred.ps[2],
+                      ps1: pred.ps[0],
+                      ps2: pred.ps[1],
+                      ps3: pred.ps[2],
                   };
 
                   Ok(Response::new(reply))
