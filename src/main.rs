@@ -222,7 +222,7 @@ impl infer::infer_server::Infer for MyInferer {
         request: Request<infer::Image>,
     ) -> Result<Response<infer::Prediction>, Status> {
         println!("Received gRPC request");
-        let image_data = request.into_inner().data;
+        let image_data = request.into_inner().image_data;
 
         // Load the image from the received bytes.
         let img = decode_and_preprocess(image_data)

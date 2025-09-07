@@ -920,7 +920,7 @@ Port on which the rest api listens to
   impl infer::infer_server::Infer for MyInferer {
       async fn do_infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
           println!("Received gRPC request");
-          let image_data = request.into_inner().data;
+          let image_data = request.into_inner().image_data;
 
           // Load the image from the received bytes.
           let img = decode_and_preprocess(image_data).map_err(|e| {
