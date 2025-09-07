@@ -33,7 +33,7 @@ use tonic::Response;
 use tonic::Status;
 use tonic::transport::Server;
 
-pub mod infergrpc {
+pub mod infer {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
 
@@ -219,8 +219,8 @@ pub struct MyInferer {
 impl Infer for MyInferer {
     async fn infer(
         &self,
-        request: Request<infergrpc::Image>,
-    ) -> Result<Response<infergrpc::Prediction>, Status> {
+        request: Request<infer::Image>,
+    ) -> Result<Response<infer::Prediction>, Status> {
         println!("Received gRPC request");
         let image_data = request.into_inner().data;
 
@@ -241,7 +241,7 @@ impl Infer for MyInferer {
         // Wait for the inference result.
         match resp_rx.await {
             Ok(Ok(pred)) => {
-                let reply = infergrpc::Prediction {
+                let reply = infer::Prediction {
                     ps1: pred.ps[0],
                     ps2: pred.ps[1],
                     ps3: pred.ps[2],

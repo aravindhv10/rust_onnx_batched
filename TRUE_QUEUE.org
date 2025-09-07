@@ -582,7 +582,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./infer.proto
   syntax = "proto3";
 
-  package infergrpc;
+  package infer;
 
   message Image {
       bytes image_data = 1;
@@ -677,7 +677,7 @@ Port on which the rest api listens to
 
 ***** proto parts
 #+begin_src rust :tangle ./src,main.rs
-  pub mod infergrpc {
+  pub mod infer {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
 #+end_src
@@ -918,7 +918,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   #[tonic::async_trait]
   impl Infer for MyInferer {
-      async fn infer(&self, request: Request<infergrpc::Image>) -> Result<Response<infergrpc::Prediction>, Status> {
+      async fn infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
           println!("Received gRPC request");
           let image_data = request.into_inner().data;
 
@@ -942,7 +942,7 @@ Port on which the rest api listens to
           // Wait for the inference result.
           match resp_rx.await {
               Ok(Ok(pred)) => {
-                  let reply = infergrpc::Prediction {
+                  let reply = infer::Prediction {
                       ps1: pred.ps[0],
                       ps2: pred.ps[1],
                       ps3: pred.ps[2],
@@ -958,10 +958,6 @@ Port on which the rest api listens to
       }
   }
 #+end_src
-
-
-
-
 
 ** Function to construct the models
 
