@@ -216,7 +216,7 @@ pub struct MyInferer {
 }
 
 #[tonic::async_trait]
-impl infer::Infer for MyInferer {
+impl infer::infer_server::Infer for MyInferer {
     async fn infer(
         &self,
         request: Request<infer::Image>,
