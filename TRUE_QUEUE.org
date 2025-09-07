@@ -663,7 +663,7 @@ Port on which the rest api listens to
 
   use infergrpc::Image;
   use infergrpc::Prediction;
-  use infergrpc::InferServer;
+  // use infergrpc::InferServer;
 #+end_src
 
 *** Important parameters
@@ -1040,23 +1040,16 @@ Port on which the rest api listens to
   /proto/
 #+end_src
 
-* Commit the changes
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Significant cleanups'
-#+end_src
+* COMMENT Pushing
 
-* Work space
-
-** COMMENT Pushing
-
-*** Just push
+** Just push
 #+begin_src emacs-lisp :results silent
   (async-shell-command "
       git push
   " "log" "err")
 #+end_src
 
-*** Prepare ssh key and push
+** Prepare ssh key and push
 #+begin_src emacs-lisp :results silent
   (async-shell-command "
       ~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh
@@ -1064,7 +1057,14 @@ Port on which the rest api listens to
   " "log" "err")
 #+end_src
 
-** COMMENT Everything
+* Commit the changes
+
+** Configure Message
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITCOMMIT 'Removed some imports temporarily'
+#+end_src
+
+** Run the work script
 #+begin_src emacs-lisp :results silent
   (save-buffer)
   (org-babel-tangle)
