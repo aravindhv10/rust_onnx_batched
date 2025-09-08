@@ -9,4 +9,5 @@ use std::fs;
 async fn main() -> std::io::Result<(), Error> {
     let mut client = infer::infer_client::InferClient::connect("0.0.0.0:8001").await?;
     let data = fs::read("./image.png");
+    return Ok(());
 }
