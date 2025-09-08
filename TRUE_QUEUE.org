@@ -1065,11 +1065,13 @@ Port on which the rest api listens to
       let (tx, rx) = mpsc::channel::<InferRequest>(512);
       let tx_p = Arc::new(tx);
 
+      
+
       let future1 = infer_loop(rx, model);
 
       match HttpServer::new(move || {
           App::new()
-              .app_data(web::Data::new(*tx_p))
+              .app_data(web::Data::new(   Arc::clone(&tx_p)   ))
               .route("/infer", web::post().to(infer_handler))
       })
       .bind(("0.0.0.0", 8000))
@@ -1080,7 +1082,7 @@ Port on which the rest api listens to
               let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
               let addr = SocketAddr::new(ip_v4, 8001);
               // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
-              let inferer_service = MyInferer{tx:*tx_p};
+              let inferer_service = MyInferer{tx: Arc::clone(&tx_p) };
               let future3 = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
 
               let (_, second, third) = tokio::join!(future1, future2, future3);
