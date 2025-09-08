@@ -348,11 +348,26 @@ async fn main() -> std::io::Result<()> {
         Ok(ret) => {
             let future2 = ret.run();
 
-            let (_, second) = tokio::join!(future1, future2);
+            let addr = "0.0.0.0:8001".parse()?;
+            let inferer_service = MyInferer { tx };
+            let future3 = tonic::transport::Server::builder()
+                .add_service(InfererServer::new(inferer_service))
+                .serve(addr);
+
+            let (_, second, third) = tokio::join!(future1, future2, future3);
 
             match second {
                 Ok(_) => {
-                    println!("Server executed and stopped successfully");
+                    println!("REST server executed and stopped successfully");
+                }
+                Err(e) => {
+                    println!("Encountered error in starting the server due to {}.", e);
+                }
+            }
+
+            match third {
+                Ok(_) => {
+                    println!("GRPC server executed and stopped successfully");
                 }
                 Err(e) => {
                     println!("Encountered error in starting the server due to {}.", e);

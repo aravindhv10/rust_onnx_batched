@@ -1068,11 +1068,24 @@ Port on which the rest api listens to
           Ok(ret) => {
               let future2 = ret.run();
 
-              let (_, second) = tokio::join!(future1, future2);
+              let addr = "0.0.0.0:8001".parse()?;
+              let inferer_service = MyInferer { tx };
+              let future3 = tonic::transport::Server::builder().add_service(InfererServer::new(inferer_service)).serve(addr);
+
+              let (_, second, third) = tokio::join!(future1, future2, future3);
 
               match second {
                   Ok(_) => {
-                      println!("Server executed and stopped successfully");
+                      println!("REST server executed and stopped successfully");
+                  }
+                  Err(e) => {
+                      println!("Encountered error in starting the server due to {}.", e);
+                  }
+              }
+
+              match third {
+                  Ok(_) => {
+                      println!("GRPC server executed and stopped successfully");
                   }
                   Err(e) => {
                       println!("Encountered error in starting the server due to {}.", e);
@@ -1088,6 +1101,29 @@ Port on which the rest api listens to
       Ok(())
   }
 #+end_src
+
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let model = get_model();
+    let (tx, rx) = mpsc::channel::<InferRequest>(512);
+
+    // Start the inference loop in a separate task.
+    tokio::spawn(infer_loop(rx, model));
+
+    // Create the gRPC service and start the server.
+    let inferer_service = MyInferer { tx };
+    println!("gRPC server listening on {}", addr);
+
+    tonic::transport::Server::builder()
+        .add_service(InfererServer::new(inferer_service))
+        .serve(addr)
+        .await?;
+
+    Ok(())
+}
+
+
 
 * Build file
 #+begin_src rust :tangle ./build.rs
