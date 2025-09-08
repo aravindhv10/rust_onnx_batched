@@ -7,9 +7,9 @@ edition = "2024"
 name = "infer-server"
 path = "src/main.rs"
 
-# [[bin]] # Bin to run the HelloWorld gRPC client
-# name = "helloworld-client"
-# path = "src/client.rs"
+[[bin]] # Bin to run the HelloWorld gRPC client
+name = "infer-client"
+path = "src/client.rs"
 [dependencies]
 actix-multipart = "0.7.2"
 actix-web = "4.11.0"

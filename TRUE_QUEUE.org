@@ -51,7 +51,13 @@
 #+end_src
 
 ** Main rust code
+
+*** For server
 #+begin_src rust :tangle ./src,main.rs
+#+end_src
+
+*** For client
+#+begin_src rust :tangle ./src,client.rs
 #+end_src
 
 ** Build file
@@ -96,6 +102,7 @@ For running the inference on both CPU and GPU.
 ** Prepare the main rust file
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   SETFILE 'src,main.rs' 'src/main.rs'
+  SETFILE 'src,client.rs' 'src/client.rs'
 #+end_src
 
 ** Format the nix code and rust
@@ -178,9 +185,9 @@ For running the inference on both CPU and GPU.
   name = "infer-server"
   path = "src/main.rs"
 
-  # [[bin]] # Bin to run the HelloWorld gRPC client
-  # name = "helloworld-client"
-  # path = "src/client.rs"
+  [[bin]] # Bin to run the HelloWorld gRPC client
+  name = "infer-client"
+  path = "src/client.rs"
 #+end_src
 
 *** build-dependencies
@@ -703,6 +710,13 @@ Port on which the rest api listens to
   }
 #+end_src
 
+***** For client
+#+begin_src rust :tangle ./src,client.rs
+  pub mod infer {
+      tonic::include_proto!("infer"); // The string specified here must match the proto package name
+  }
+#+end_src
+
 *** Important parameters
 
 **** Generic
@@ -1071,6 +1085,16 @@ Port on which the rest api listens to
 #+end_src
 
 ** The main function
+
+*** Client
+#+begin_src rust :tangle ./src,client.rs
+  #[actix_web::main]
+  async fn main() -> std::io::Result<()> {
+      let mut client = infer::infer_client::InferClient::connect("0.0.0.0:8001").await?;
+  }
+#+end_src
+
+*** Server
 #+begin_src rust :tangle ./src,main.rs
   #[actix_web::main]
   async fn main() -> std::io::Result<()> {
@@ -1128,7 +1152,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model = get_model();
@@ -1148,8 +1171,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-
 
 * Build file
 #+begin_src rust :tangle ./build.rs
