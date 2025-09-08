@@ -163,11 +163,24 @@ For running the inference on both CPU and GPU.
 ** Cargo
 
 *** package
+
+**** Details
 #+begin_src conf :tangle ./Cargo.package.toml
   [package]
   name = "onnxdeploy"
   version = "0.1.0"
   edition = "2024"
+#+end_src
+
+**** binary files
+#+begin_src conf :tangle ./Cargo.package.toml
+  [[bin]]
+  name = "infer-server"
+  path = "src/server.rs"
+
+  # [[bin]] # Bin to run the HelloWorld gRPC client
+  # name = "helloworld-client"
+  # path = "src/client.rs"
 #+end_src
 
 *** build-dependencies
