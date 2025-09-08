@@ -10,6 +10,7 @@ async fn main() -> Result<(), tonic::transport::Error> {
     let data = fs::read("./image.png").expect("Failed reading image file");
     let img = infer::Image { image_data: data };
     let mut client = infer::infer_client::InferClient::connect("http://127.0.0.1:8001").await?;
-    client.do_infer(img);
+    let res = client.do_infer(img).await?;
+    println!("{:?}", res);
     return Ok(());
 }
