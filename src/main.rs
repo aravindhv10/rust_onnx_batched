@@ -352,7 +352,7 @@ async fn main() -> std::io::Result<()> {
             let inferer_service = MyInferer { tx };
             let future3 = tonic::transport::Server::builder()
                 .add_service(infer::infer_server::InferServer::new(inferer_service))
-                .serve(addr);
+                .serve("0.0.0.0:8001");
 
             let (_, second, third) = tokio::join!(future1, future2, future3);
 
