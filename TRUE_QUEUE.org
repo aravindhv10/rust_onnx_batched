@@ -186,7 +186,7 @@ For running the inference on both CPU and GPU.
   name = "infer-server"
   path = "src/main.rs"
 
-  [[bin]] # Bin to run the HelloWorld gRPC client
+  [[bin]]
   name = "infer-client"
   path = "src/client.rs"
 #+end_src
@@ -389,13 +389,13 @@ Port on which the rest api listens to
 
 *** Main command
 
-**** docker
+**** COMMENT docker
 #+begin_src conf :tangle ./host.docker_run.txt
   sudo -A
   docker
 #+end_src
 
-**** COMMENT podman
+**** podman
 #+begin_src conf :tangle ./host.docker_run.txt
   podman
 #+end_src
@@ -1089,9 +1089,12 @@ Port on which the rest api listens to
 
 *** Client
 #+begin_src rust :tangle ./src,client.rs
+  use std::fs;
+
   #[actix_web::main]
   async fn main() -> std::io::Result<()> {
       let mut client = infer::infer_client::InferClient::connect("0.0.0.0:8001").await?;
+      let  data =  fs::read("./image.png")
   }
 #+end_src
 

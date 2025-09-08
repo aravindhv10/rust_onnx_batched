@@ -7,7 +7,7 @@ edition = "2024"
 name = "infer-server"
 path = "src/main.rs"
 
-[[bin]] # Bin to run the HelloWorld gRPC client
+[[bin]]
 name = "infer-client"
 path = "src/client.rs"
 [dependencies]

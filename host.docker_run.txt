@@ -1,7 +1,6 @@
 cd "$('dirname' -- "${0}")" ;
 
-sudo -A
-docker
+podman
 
 run
 
