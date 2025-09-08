@@ -1097,7 +1097,7 @@ Port on which the rest api listens to
 
   #[actix_web::main]
   async fn main() -> Result<(), tonic::transport::Error> {
-      let  data =  fs::read("./image.png")?;
+      let  data =  fs::read("./image.png").expect("Failed reading image file");
       let img = infer::Image{
           image_data: data
       };
