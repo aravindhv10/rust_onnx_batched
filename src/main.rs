@@ -344,7 +344,8 @@ async fn main() -> std::io::Result<()> {
 
     match HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(tx.clone()))
+            // .app_data(web::Data::new(tx.clone()))
+            .app_data(web::Data::new(&tx))
             .route("/infer", web::post().to(infer_handler))
     })
     .bind(("0.0.0.0", 8000))
