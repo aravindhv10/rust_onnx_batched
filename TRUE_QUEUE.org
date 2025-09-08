@@ -123,6 +123,7 @@ For running the inference on both CPU and GPU.
 
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'build.rs'
   GITADD 'Cargo.lock'
   GITADD 'Cargo.toml'
   GITADD 'Dockerfile'
@@ -133,14 +134,14 @@ For running the inference on both CPU and GPU.
   GITADD 'host.docker_run.sh'
   GITADD 'host.docker_run.txt'
   GITADD 'image_name.txt'
+  GITADD 'infer.proto'
   GITADD 'infer.sh'
   GITADD 'README.org'
   GITADD 'shell.nix'
+  GITADD 'src/client.rs'
   GITADD 'src/main.rs'
   GITADD 'start.sh'
   GITADD 'TRUE_QUEUE.org'
-  GITADD 'build.rs'
-  GITADD 'infer.proto'
 #+end_src
 
 ** Clean files
@@ -1213,7 +1214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Started implementing client'
+  GITCOMMIT 'Added client to git'
 #+end_src
 
 ** Run the work script
