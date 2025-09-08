@@ -133,7 +133,7 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
 
 async fn infer_handler(
     mut payload: Multipart,
-    tx: web::Data<mpsc::Sender<InferRequest>>,
+    tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
 ) -> Result<HttpResponse, Error> {
     println!("Came into infer handler");
     let mut data = Vec::new();
@@ -346,7 +346,7 @@ async fn main() -> std::io::Result<()> {
 
     match HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(   Arc::clone(&tx_p)   ))
+            .app_data(web::Data::new(Arc::clone(&tx_p)))
             .route("/infer", web::post().to(infer_handler))
     })
     .bind(("0.0.0.0", 8000))
