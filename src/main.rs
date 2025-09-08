@@ -25,6 +25,10 @@ use ndarray::Axis;
 use ndarray::Ix4;
 use serde::Deserialize;
 use serde::Serialize;
+
+use std::net::IpAddr;
+use std::net::Ipv4Addr;
+use std::net::SocketAddr;
 use std::ops::Index;
 use std::time::Duration;
 
@@ -348,11 +352,13 @@ async fn main() -> std::io::Result<()> {
         Ok(ret) => {
             let future2 = ret.run();
 
-            let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
+            let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+            let addr = SocketAddr::new(ip_v4, 8001);
+            // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
             let inferer_service = MyInferer { tx };
             let future3 = tonic::transport::Server::builder()
                 .add_service(infer::infer_server::InferServer::new(inferer_service))
-                .serve("0.0.0.0:8001");
+                .serve(addr);
 
             let (_, second, third) = tokio::join!(future1, future2, future3);
 
