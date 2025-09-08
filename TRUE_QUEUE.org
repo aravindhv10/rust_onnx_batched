@@ -1227,7 +1227,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Added client to git'
+  GITCOMMIT 'WORKING: Wrote fully working gRPC client'
 #+end_src
 
 ** Run the work script
