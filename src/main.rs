@@ -337,9 +337,9 @@ fn get_model() -> Session {
 async fn main() -> std::io::Result<()> {
     let model = get_model();
     let (tx, rx) = mpsc::channel::<InferRequest>(512);
-    let tx_p = Arc::new(tx);
 
-    
+    let tx_p = Arc::new(tx);
+    let tx_q = Arc::clone(&tx_p);
 
     let future1 = infer_loop(rx, model);
 
@@ -356,7 +356,7 @@ async fn main() -> std::io::Result<()> {
             let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
             let addr = SocketAddr::new(ip_v4, 8001);
             // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
-            let inferer_service = MyInferer{tx: Arc::clone(&tx_p) };
+            let inferer_service = MyInferer{tx: Arc::clone(&tx_q) };
             let future3 = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
 
             let (_, second, third) = tokio::join!(future1, future2, future3);
