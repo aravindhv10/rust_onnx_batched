@@ -1096,7 +1096,7 @@ Port on which the rest api listens to
   use std::error::Error;
 
   #[actix_web::main]
-  async fn main() -> Result<(), tonic::transport::Error> {
+  async fn main() -> Result<(), Box<dyn std::error::Error>> {
       let  data =  fs::read("./image.png").expect("Failed reading image file");
       let img = infer::Image{
           image_data: data
