@@ -135,7 +135,6 @@ async fn infer_handler(
     mut payload: Multipart,
     tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
 ) -> Result<HttpResponse, Error> {
-    println!("Came into infer handler");
     let mut data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
         while let Some(chunk) = field.try_next().await? {
