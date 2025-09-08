@@ -1179,7 +1179,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Got protobuf partly working'
+  GITCOMMIT 'BUILDING: Implemented Arc for both actix and grpc'
 #+end_src
 
 ** Run the work script
