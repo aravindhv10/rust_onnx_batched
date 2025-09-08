@@ -1091,6 +1091,7 @@ Port on which the rest api listens to
 *** Client
 #+begin_src rust :tangle ./src,client.rs
   use std::fs;
+  use std::error::Error;
 
   #[actix_web::main]
   async fn main() -> std::io::Result<(), Error> {
