@@ -669,6 +669,7 @@ Port on which the rest api listens to
   use std::net::Ipv4Addr;
   use std::net::SocketAddr;
   use std::ops::Index;
+  use std::sync::Arc;
   use std::time::Duration;
 #+end_src
 
