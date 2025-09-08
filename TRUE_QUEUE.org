@@ -919,7 +919,7 @@ Port on which the rest api listens to
 *** Declare the structure
 #+begin_src rust :tangle ./src,main.rs
   pub struct MyInferer {
-      tx: mpsc::Sender<InferRequest>,
+      tx: Arc<mpsc::Sender<InferRequest>>
   }
 #+end_src
 

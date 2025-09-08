@@ -214,7 +214,7 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
 }
 
 pub struct MyInferer {
-    tx: mpsc::Sender<InferRequest>,
+    tx: Arc<mpsc::Sender<InferRequest>>
 }
 
 #[tonic::async_trait]
