@@ -348,7 +348,7 @@ async fn main() -> std::io::Result<()> {
         Ok(ret) => {
             let future2 = ret.run();
 
-            let addr = "0.0.0.0:8001".parse()?;
+            let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
             let inferer_service = MyInferer { tx };
             let future3 = tonic::transport::Server::builder()
                 .add_service(infer::infer_server::InferServer::new(inferer_service))
