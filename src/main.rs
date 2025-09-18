@@ -100,6 +100,58 @@ impl prediction_probabilities_reply {
     }
 }
 
+async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
+    while let Some(first) = rx.recv().await {
+        let mut batch = vec![first];
+        let start = tokio::time::Instant::now();
+        while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
+            match rx.try_recv() {
+                Ok(req) => batch.push(req),
+                Err(_) => break,
+            }
+        }
+
+        let batch_size = batch.len();
+        let mut input = Array::<u8, Ix4>::zeros((
+            batch_size,
+            IMAGE_RESOLUTION as usize,
+            IMAGE_RESOLUTION as usize,
+            3,
+        ));
+
+        for (i, req) in batch.iter().enumerate() {
+            for (x, y, pixel) in req.img.enumerate_pixels() {
+                let [r, g, b, _] = pixel.0;
+                input[[i, y as usize, x as usize, 0]] = r;
+                input[[i, y as usize, x as usize, 1]] = g;
+                input[[i, y as usize, x as usize, 2]] = b;
+            }
+        }
+
+        let outputs =
+            match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
+                Ok(o) => o,
+                Err(e) => {
+                    for req in batch {
+                        let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
+                    }
+                    continue;
+                }
+            };
+
+        let output = outputs["output"]
+            .try_extract_array::<outtype>()
+            .unwrap()
+            .t()
+            .into_owned();
+
+        for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
+            let result = prediction_probabilities::from(row);
+            let _ = req.resp_tx.send(Ok(result));
+        }
+    }
+}
+
 // === Request to inference thread ===
 struct InferRequest {
     img: image::RgbaImage,
@@ -159,60 +211,6 @@ async fn infer_handler(
         Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
         Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
         Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
-    }
-}
-
-async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
-    while let Some(first) = rx.recv().await {
-        let mut batch = vec![first];
-        let start = tokio::time::Instant::now();
-        while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
-            match rx.try_recv() {
-                Ok(req) => batch.push(req),
-                Err(_) => break,
-            }
-        }
-
-        let batch_size = batch.len();
-        let mut input = Array::<u8, Ix4>::zeros((
-            batch_size,
-            IMAGE_RESOLUTION as usize,
-            IMAGE_RESOLUTION as usize,
-            3,
-        ));
-
-        for (i, req) in batch.iter().enumerate() {
-            // let img = preprocess(req.img.clone());
-            // for (x, y, pixel) in img.enumerate_pixels() {
-            for (x, y, pixel) in req.img.enumerate_pixels() {
-                let [r, g, b, _] = pixel.0;
-                input[[i, y as usize, x as usize, 0]] = r;
-                input[[i, y as usize, x as usize, 1]] = g;
-                input[[i, y as usize, x as usize, 2]] = b;
-            }
-        }
-
-        let outputs =
-            match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
-                Ok(o) => o,
-                Err(e) => {
-                    for req in batch {
-                        let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
-                    }
-                    continue;
-                }
-            };
-
-        let output = outputs["output"]
-            .try_extract_array::<outtype>()
-            .unwrap()
-            .t()
-            .into_owned();
-
-        for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
-            let result = prediction_probabilities::from(row);
-            let _ = req.resp_tx.send(Ok(result));
-        }
     }
 }
 
