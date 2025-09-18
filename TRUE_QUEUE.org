@@ -29,6 +29,21 @@ For running the inference on both CPU and GPU.
   }
 #+end_src
 
+* Add this file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'TRUE_QUEUE.org'
+#+end_src
+
+* Add the previous file based batch infer file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'FILE_BASED.org'
+#+end_src
+
+* Add the symbolic link
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'README.org'
+#+end_src
+
 * Main rust code
 
 ** For server
@@ -97,6 +112,7 @@ For running the inference on both CPU and GPU.
   CLEAN 'Cargo.dependencies.toml'
   CLEAN 'Cargo.package.toml'
   GITADD 'Cargo.toml'
+  GITADD 'Cargo.lock'
 #+end_src
 
 * Main nix code
@@ -199,6 +215,21 @@ For running the inference on both CPU and GPU.
   })
 #+end_src
 
+* Build file
+
+** Actual file
+#+begin_src rust :tangle ./build.rs
+  fn main() -> Result<(), Box<dyn std::error::Error>> {
+      tonic_prost_build::compile_protos("./infer.proto")?;
+      Ok(())
+  }
+#+end_src
+
+** Add to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'build.rs'
+#+end_src
+
 * COMMENT SAMPLE
 
 ** Dockerfile
@@ -241,10 +272,7 @@ For running the inference on both CPU and GPU.
 
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'build.rs'
-  GITADD 'Cargo.lock'
   GITADD 'Dockerfile'
-  GITADD 'FILE_BASED.org'
   GITADD '.gitignore'
   GITADD 'host.docker_build.sh'
   GITADD 'host.docker_run_main.sh'
@@ -253,7 +281,6 @@ For running the inference on both CPU and GPU.
   GITADD 'image_name.txt'
   GITADD 'infer.proto'
   GITADD 'infer.sh'
-  GITADD 'README.org'
   GITADD 'start.sh'
   GITADD 'TRUE_QUEUE.org'
 #+end_src
@@ -605,7 +632,6 @@ Port on which the rest api listens to
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   buildah build -t "$('cat' './image_name.txt')" .
 #+end_src
-
 
 * Script to start server
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
@@ -1206,14 +1232,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-* Build file
-#+begin_src rust :tangle ./build.rs
-  fn main() -> Result<(), Box<dyn std::error::Error>> {
-      tonic_prost_build::compile_protos("./infer.proto")?;
-      Ok(())
-  }
-#+end_src
 
 * GIT Ignore stuff
 #+begin_src conf :tangle ./.gitignore

@@ -1,5 +1,3 @@
-
-
 use actix_multipart::Multipart;
 use actix_web::App;
 use actix_web::Error;
@@ -11,8 +9,8 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 
 use tokio;
@@ -97,7 +95,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string() ;
+        ret.mj = CLASS_LABELS[max_index].to_string();
         ret
     }
 }
@@ -126,11 +124,14 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     match image::load_from_memory(&data) {
         Ok(img) => {
             return Ok(preprocess(img));
-        } ,
-        Err(e) => {
-            return Err(actix_web::error::ErrorBadRequest(format!("decode error: {}", e)));
         }
-    } ;
+        Err(e) => {
+            return Err(actix_web::error::ErrorBadRequest(format!(
+                "decode error: {}",
+                e
+            )));
+        }
+    };
 }
 
 async fn infer_handler(
@@ -216,31 +217,31 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
 }
 
 pub struct MyInferer {
-    tx: Arc<mpsc::Sender<InferRequest>>
+    tx: Arc<mpsc::Sender<InferRequest>>,
 }
 
 #[tonic::async_trait]
 impl infer::infer_server::Infer for MyInferer {
-    async fn do_infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
+    async fn do_infer(
+        &self,
+        request: Request<infer::Image>,
+    ) -> Result<Response<infer::Prediction>, Status> {
         println!("Received gRPC request");
         let image_data = request.into_inner().image_data;
 
         // Load the image from the received bytes.
-        let img = decode_and_preprocess(image_data).map_err(|e| {
-            Status::invalid_argument(format!("Failed to decode image: {}", e))
-        })?;
+        let img = decode_and_preprocess(image_data)
+            .map_err(|e| Status::invalid_argument(format!("Failed to decode image: {}", e)))?;
 
         // Create a channel for the inference response.
         let (resp_tx, resp_rx) = oneshot::channel();
-        let req = InferRequest {
-            img,
-            resp_tx,
-        };
+        let req = InferRequest { img, resp_tx };
 
         // Send the request to the inference loop.
-        self.tx.send(req).await.map_err(|_| {
-            Status::internal("Inference queue is closed")
-        })?;
+        self.tx
+            .send(req)
+            .await
+            .map_err(|_| Status::internal("Inference queue is closed"))?;
 
         // Wait for the inference result.
         match resp_rx.await {
@@ -252,7 +253,7 @@ impl infer::infer_server::Infer for MyInferer {
                 };
 
                 Ok(Response::new(reply))
-            },
+            }
 
             Ok(Err(e)) => Err(Status::internal(e)),
 
@@ -358,8 +359,12 @@ async fn main() -> std::io::Result<()> {
             let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
             let addr = SocketAddr::new(ip_v4, 8001);
             // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
-            let inferer_service = MyInferer{tx: Arc::clone(&tx_q) };
-            let future3 = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
+            let inferer_service = MyInferer {
+                tx: Arc::clone(&tx_q),
+            };
+            let future3 = tonic::transport::Server::builder()
+                .add_service(infer::infer_server::InferServer::new(inferer_service))
+                .serve(addr);
 
             let (_, second, third) = tokio::join!(future1, future2, future3);
 
