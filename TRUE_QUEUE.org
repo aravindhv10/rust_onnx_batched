@@ -485,12 +485,25 @@ For running the inference on both CPU and GPU.
 #+end_src
 
 * Basic configs
-Define important environment variables and working dir for apt and rust.
+
+** User and working dir
 #+begin_src conf :tangle ./Dockerfile
   USER root
+  WORKDIR '/root'
+#+end_src
+
+** Define important environment variables and working dir for apt
+#+begin_src conf :tangle ./Dockerfile
   ENV HOME='/root'
   ENV DEBIAN_FRONTEND='noninteractive'
-  WORKDIR '/root'
+  ENV RUSTUP_HOME='/usr/local/rustup'
+  ENV CARGO_HOME='/usr/local/cargo'
+  ENV RUST_VERSION='1.88.0'
+  ENV PATH="/usr/local/cargo/bin:${PATH}"
+#+end_src
+
+** COMMENT Prepare rust stuff
+#+begin_src conf :tangle ./Dockerfile
   ENV RUSTUP_HOME=/usr/local/rustup \
       CARGO_HOME=/usr/local/cargo \
       PATH=/usr/local/cargo/bin:$PATH \

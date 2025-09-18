@@ -3,13 +3,14 @@
 FROM openvino/ubuntu24_dev:latest AS rust
 
 USER root
+WORKDIR '/root'
+
 ENV HOME='/root'
 ENV DEBIAN_FRONTEND='noninteractive'
-WORKDIR '/root'
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH \
-    RUST_VERSION=1.88.0
+ENV RUSTUP_HOME='/usr/local/rustup'
+ENV CARGO_HOME='/usr/local/cargo'
+ENV RUST_VERSION='1.88.0'
+ENV PATH="/usr/local/cargo/bin:${PATH}"
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
