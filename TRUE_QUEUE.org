@@ -1,14 +1,72 @@
-* COMMENT SAMPLE
+* Introduction
+The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
+This README file contains code for:
+- Cargo.toml
+- Dockerfile
+- Scripts for building and running the docker image.
+For running the inference on both CPU and GPU.
 
-** git worker
+* Main functions for processing the files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN(){
+      rm -vf -- "./${1}"
+  }
+
+  GITCOMMIT () {
+      git commit -m "${1}"
+  }
+
+  GITADD () {
+      git add "./${1}"
+  }
+
+  SETFILE () {
+      D="$('dirname' '--' "./${2}")"
+      'mkdir' '-pv' '--' "${D}"
+      'mv' '-vf' '--' "${1}" "${2}"
+      'cargo' 'fmt'
+      GITADD "${2}"
+  }
 #+end_src
 
-** nix
-#+begin_src nix :tangle ./shell.nix
+* Main rust code
+
+** For server
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,main.rs
 #+end_src
 
-** Cargo
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,main.rs' 'src/main.rs'
+#+end_src
+
+** For client
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,client.rs
+#+end_src
+
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,client.rs' 'src/client.rs'
+#+end_src
+
+** Common lib
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,mylib.rs
+#+end_src
+
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,mylib.rs' 'src/mylib.rs'
+#+end_src
+
+* Main cargo code
+
+** The cargo files
 
 *** package
 #+begin_src conf :tangle ./Cargo.package.toml
@@ -20,6 +78,31 @@
 
 *** dependencies
 #+begin_src conf :tangle ./Cargo.dependencies.toml
+#+end_src
+
+** Prepare the cargo file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  echo 'Start unifying cargo files' \
+      && cat \
+          './Cargo.package.toml' \
+          './Cargo.dependencies.toml' \
+          './Cargo.build-dependencies.toml' \
+      > './Cargo.toml' \
+  && echo 'Done unifying cargo files' ;
+#+end_src
+
+** Add the files and clean up temporaries
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN 'Cargo.build-dependencies.toml'
+  CLEAN 'Cargo.dependencies.toml'
+  CLEAN 'Cargo.package.toml'
+  GITADD 'Cargo.toml'
+#+end_src
+
+* SAMPLE
+
+** nix
+#+begin_src nix :tangle ./shell.nix
 #+end_src
 
 ** Dockerfile
@@ -50,16 +133,6 @@
 #+begin_src conf :tangle ./image_name.txt
 #+end_src
 
-** Main rust code
-
-*** For server
-#+begin_src rust :tangle ./src,main.rs
-#+end_src
-
-*** For client
-#+begin_src rust :tangle ./src,client.rs
-#+end_src
-
 ** Build file
 #+begin_src rust :tangle ./build.rs
 #+end_src
@@ -68,64 +141,16 @@
 #+begin_src rust :tangle ./infer.proto
 #+end_src
 
-* Introduction
-The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
-This README file contains code for:
-- Cargo.toml
-- Dockerfile
-- Scripts for building and running the docker image.
-For running the inference on both CPU and GPU.
-
-* Script for managing git
-
-** Functions
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD () {
-      git add "./${1}"
-  }
-
-  CLEAN(){
-      rm -vf -- "./${1}"
-  }
-
-  GITCOMMIT () {
-      git commit -m "${1}"
-  }
-
-  SETFILE () {
-      D="$('dirname' '--' "./${2}")"
-      'mkdir' '-pv' '--' "${D}"
-      'mv' '-vf' '--' "${1}" "${2}"
-  }
-#+end_src
-
-** Prepare the main rust file
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  SETFILE 'src,main.rs' 'src/main.rs'
-  SETFILE 'src,client.rs' 'src/client.rs'
-#+end_src
-
-** Format the nix code and rust
+** COMMENT Format the nix code and rust
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
   'cargo' 'fmt'
-#+end_src
-
-** Prepare the cargo file
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  cat \
-          './Cargo.package.toml' \
-          './Cargo.dependencies.toml' \
-          './Cargo.build-dependencies.toml' \
-      > './Cargo.toml' \
-  ;
 #+end_src
 
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'build.rs'
   GITADD 'Cargo.lock'
-  GITADD 'Cargo.toml'
   GITADD 'Dockerfile'
   GITADD 'FILE_BASED.org'
   GITADD '.gitignore'
@@ -138,17 +163,12 @@ For running the inference on both CPU and GPU.
   GITADD 'infer.sh'
   GITADD 'README.org'
   GITADD 'shell.nix'
-  GITADD 'src/client.rs'
-  GITADD 'src/main.rs'
   GITADD 'start.sh'
   GITADD 'TRUE_QUEUE.org'
 #+end_src
 
 ** Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  CLEAN 'Cargo.build-dependencies.toml'
-  CLEAN 'Cargo.dependencies.toml'
-  CLEAN 'Cargo.package.toml'
   CLEAN '#Cargo.toml#'
   CLEAN '.git.sh'
   CLEAN 'indent.log'
@@ -1227,7 +1247,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Wrote fully working gRPC client'
+  GITCOMMIT 'Doc cleanups'
 #+end_src
 
 ** Run the work script
