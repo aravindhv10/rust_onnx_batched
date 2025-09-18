@@ -1,15 +1,8 @@
 * COMMENT SAMPLE
 
-** Script to build
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
-#+end_src
 
 ** Script to run
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
-#+end_src
-
-** start
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
 #+end_src
 
 ** infer
@@ -331,6 +324,17 @@ For running the inference on both CPU and GPU.
   }
 #+end_src
 
+* Prepare the docker build script
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'host.docker_build.sh'
+#+end_src
+
+** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+#+end_src
+
 * Prepare the Dockerfile
 
 ** Add the file to git
@@ -342,16 +346,43 @@ For running the inference on both CPU and GPU.
 #+begin_src conf :tangle ./Dockerfile
 #+end_src
 
+* Script to start server
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'start.sh'
+#+end_src
+
+** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+  cd "$(dirname -- "${0}")"
+  export RUSTFLAGS="-C target-cpu=native"
+  cargo run --release --bin 'infer-server' &
+  sleep 20 ; echo running inference ; cargo run --release --bin 'infer-client'
+  echo done inference
+  exit '0'
+#+end_src
+
+* Script to infer
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'infer.sh'
+#+end_src
+
+** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.png"
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
+#+end_src
+
 * Tosort
 
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'host.docker_build.sh'
   GITADD 'host.docker_run_main.sh'
   GITADD 'host.docker_run.sh'
   GITADD 'host.docker_run.txt'
-  GITADD 'infer.sh'
-  GITADD 'start.sh'
 #+end_src
 
 * General dependencies
@@ -664,41 +695,25 @@ Port on which the rest api listens to
 ** Change directory
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   cd "$('dirname' '--' "${0}")"
+  IMAGE_NAME="$(cat './image_name.txt')"
 #+end_src
 
 ** Actual build command
 
-*** using docker
+*** COMMENT using docker
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
-  sudo -A docker build -t onnxrust .
+  sudo -A docker build -t "${IMAGE_NAME}" .
 #+end_src
 
 *** COMMENT using podman
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
-  podman build -t "$('cat' './image_name.txt')" .
+  podman build -t "${IMAGE_NAME}" .
 #+end_src
 
-*** COMMENT using buildah
+*** using buildah
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
-  buildah build -t "$('cat' './image_name.txt')" .
+  buildah build -t "${IMAGE_NAME}" .
 #+end_src
-
-* Script to start server
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
-  cd "$(dirname -- "${0}")"
-  export RUSTFLAGS="-C target-cpu=native"
-  cargo run --release --bin 'infer-server' &
-  sleep 20 ; echo running inference ; cargo run --release --bin 'infer-client'
-  echo done inference
-  exit '0'
-#+end_src
-
-* Script to infer
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
-  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.png"
-  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
-#+end_src
-
 
 * Main code
 
