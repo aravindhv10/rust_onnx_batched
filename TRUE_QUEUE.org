@@ -5,10 +5,6 @@
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
 #+end_src
 
-** infer
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
-#+end_src
-
 ** Text file to define docker commands
 #+begin_src conf :tangle ./host.docker_run.txt
 #+end_src
@@ -116,10 +112,10 @@ For running the inference on both CPU and GPU.
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   echo 'Start unifying cargo files' \
       && cat \
-          './Cargo.package.toml' \
-          './Cargo.dependencies.toml' \
-          './Cargo.build-dependencies.toml' \
-      > './Cargo.toml' \
+              './Cargo.package.toml' \
+              './Cargo.dependencies.toml' \
+              './Cargo.build-dependencies.toml' \
+          > './Cargo.toml' \
   && echo 'Done unifying cargo files' ;
 #+end_src
 
