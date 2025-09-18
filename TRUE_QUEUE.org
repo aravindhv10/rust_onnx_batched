@@ -718,66 +718,6 @@ Port on which the rest api listens to
 
 * COMMENT Common parts
 #+begin_src rust :tangle ./src,mylib.rs
-  use tokio::sync::mpsc;
-
-  struct InferRequest {
-      img: image::RgbaImage,
-      resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
-  }
-
-  async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
-      while let Some(first) = rx.recv().await {
-          let mut batch = vec![first];
-          let start = tokio::time::Instant::now();
-          while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
-              match rx.try_recv() {
-                  Ok(req) => batch.push(req),
-                  Err(_) => break,
-              }
-          }
-
-          let batch_size = batch.len();
-          let mut input = Array::<u8, Ix4>::zeros((
-              batch_size,
-              IMAGE_RESOLUTION as usize,
-              IMAGE_RESOLUTION as usize,
-              3,
-          ));
-
-          for (i, req) in batch.iter().enumerate() {
-              // let img = preprocess(req.img.clone());
-              // for (x, y, pixel) in img.enumerate_pixels() {
-              for (x, y, pixel) in req.img.enumerate_pixels() {
-                  let [r, g, b, _] = pixel.0;
-                  input[[i, y as usize, x as usize, 0]] = r;
-                  input[[i, y as usize, x as usize, 1]] = g;
-                  input[[i, y as usize, x as usize, 2]] = b;
-              }
-          }
-
-          let outputs =
-              match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
-                  Ok(o) => o,
-                  Err(e) => {
-                      for req in batch {
-                          let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
-                      }
-                      continue;
-                  }
-              };
-
-          let output = outputs["output"]
-              .try_extract_array::<outtype>()
-              .unwrap()
-              .t()
-              .into_owned();
-
-          for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
-              let result = prediction_probabilities::from(row);
-              let _ = req.resp_tx.send(Ok(result));
-          }
-      }
-  }
 #+end_src
 
 * Main code
@@ -1026,7 +966,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-
 ** Function to preprocess the image (center cropping, resizing, ...)
 #+begin_src rust :tangle ./src,main.rs
   fn preprocess(img: DynamicImage) -> image::RgbaImage {
@@ -1088,7 +1027,6 @@ Port on which the rest api listens to
       }
   }
 #+end_src
-
 
 ** Implementation for gRPC
 
