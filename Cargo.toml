@@ -1,3 +1,5 @@
+
+
 [package]
 name = "onnxdeploy"
 version = "0.1.0"
@@ -10,6 +12,8 @@ path = "src/main.rs"
 [[bin]]
 name = "infer-client"
 path = "src/client.rs"
+
+
 [dependencies]
 actix-multipart = "0.7.2"
 actix-web = "4.11.0"
@@ -30,5 +34,7 @@ tonic-prost = "*"
 tonic = { version = "0.14.2", features = ["zstd"] }
 
 ort = { version = "2.0.0-rc.10", features = ["openvino"] }
+
+
 [build-dependencies]
 tonic-prost-build = "0.14.2"
