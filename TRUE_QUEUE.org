@@ -1,3 +1,25 @@
+* COMMENT SAMPLE
+
+** Script to build
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+#+end_src
+
+** Script to run
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
+#+end_src
+
+** start
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+#+end_src
+
+** infer
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+#+end_src
+
+** Text file to define docker commands
+#+begin_src conf :tangle ./host.docker_run.txt
+#+end_src
+
 * Introduction
 The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
 This README file contains code for:
@@ -44,42 +66,82 @@ For running the inference on both CPU and GPU.
   GITADD 'README.org'
 #+end_src
 
+* Clean files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN '#Cargo.toml#'
+  CLEAN '.git.sh'
+  CLEAN 'indent.log'
+  CLEAN 'README.org~'
+  CLEAN '#shell.nix#'
+  CLEAN 'shell.nix~'
+  CLEAN 'src/#main.rs#'
+  CLEAN 'src/.#main.rs'
+  CLEAN 'tmp.sh'
+  CLEAN 'TRUE_QUEUE.org~'
+#+end_src
+
 * Main rust code
 
 ** For server
-
-*** Create the temporary file
-#+begin_src rust :tangle ./src,main.rs
-#+end_src
 
 *** Move the temporary file and add it to git
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   SETFILE 'src,main.rs' 'src/main.rs'
 #+end_src
 
-** For client
-
 *** Create the temporary file
-#+begin_src rust :tangle ./src,client.rs
+#+begin_src rust :tangle ./src,main.rs
 #+end_src
+
+** For client
 
 *** Move the temporary file and add it to git
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   SETFILE 'src,client.rs' 'src/client.rs'
 #+end_src
 
-** Common lib
-
 *** Create the temporary file
-#+begin_src rust :tangle ./src,mylib.rs
+#+begin_src rust :tangle ./src,client.rs
 #+end_src
+
+** Common lib
 
 *** Move the temporary file and add it to git
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   SETFILE 'src,mylib.rs' 'src/mylib.rs'
 #+end_src
 
+*** Create the temporary file
+#+begin_src rust :tangle ./src,mylib.rs
+#+end_src
+
 * Main cargo code
+
+** Unify the file, clean temporaries and add it to git
+
+*** Prepare the cargo file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  echo 'Start unifying cargo files' \
+      && cat \
+          './Cargo.package.toml' \
+          './Cargo.dependencies.toml' \
+          './Cargo.build-dependencies.toml' \
+      > './Cargo.toml' \
+  && echo 'Done unifying cargo files' ;
+#+end_src
+
+*** Clean temp files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN 'Cargo.build-dependencies.toml'
+  CLEAN 'Cargo.dependencies.toml'
+  CLEAN 'Cargo.package.toml'
+#+end_src
+
+*** Add the files to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'Cargo.toml'
+  GITADD 'Cargo.lock'
+#+end_src
 
 ** The cargo files
 
@@ -93,26 +155,6 @@ For running the inference on both CPU and GPU.
 
 *** dependencies
 #+begin_src conf :tangle ./Cargo.dependencies.toml
-#+end_src
-
-** Prepare the cargo file
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  echo 'Start unifying cargo files' \
-      && cat \
-          './Cargo.package.toml' \
-          './Cargo.dependencies.toml' \
-          './Cargo.build-dependencies.toml' \
-      > './Cargo.toml' \
-  && echo 'Done unifying cargo files' ;
-#+end_src
-
-** Add the files and clean up temporaries
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  CLEAN 'Cargo.build-dependencies.toml'
-  CLEAN 'Cargo.dependencies.toml'
-  CLEAN 'Cargo.package.toml'
-  GITADD 'Cargo.toml'
-  GITADD 'Cargo.lock'
 #+end_src
 
 * Main nix code
@@ -217,6 +259,11 @@ For running the inference on both CPU and GPU.
 
 * Build file
 
+** Add to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'build.rs'
+#+end_src
+
 ** Actual file
 #+begin_src rust :tangle ./build.rs
   fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -225,83 +272,86 @@ For running the inference on both CPU and GPU.
   }
 #+end_src
 
-** Add to git
+* Define the image name
+
+** Add the file to git
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'build.rs'
+  GITADD 'image_name.txt'
 #+end_src
 
-* COMMENT SAMPLE
-
-** Dockerfile
-#+begin_src conf :tangle ./Dockerfile
-#+end_src
-
-** Script to build
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
-#+end_src
-
-** Script to run
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
-#+end_src
-
-** start
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
-#+end_src
-
-** infer
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
-#+end_src
-
-** Text file to define docker commands
-#+begin_src conf :tangle ./host.docker_run.txt
-#+end_src
-
-** Text file to define docker image name
+** Actual file having the name
 #+begin_src conf :tangle ./image_name.txt
+  onnxrust
 #+end_src
 
-** Build file
-#+begin_src rust :tangle ./build.rs
+* GIT Ignore stuff
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD '.gitignore'
 #+end_src
 
-** proto file
+** Actual file
+#+begin_src conf :tangle ./.gitignore
+  /image.jpg
+  /image.png
+  /IMAGES/
+  /infer2.sh
+  /model.onnx
+  /target/
+  /tmp/
+  /proto/
+#+end_src
+
+* proto file
+
+** Add the file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'infer.proto'
+#+end_src
+
+** Actual file
 #+begin_src rust :tangle ./infer.proto
+  syntax = "proto3";
+
+  package infer;
+
+  message Image {
+      bytes image_data = 1;
+  }
+
+  message Prediction {
+      float ps1 = 1;
+      float ps2 = 2;
+      float ps3 = 3;
+  }
+
+  service Infer {
+    rpc doInfer(Image) returns (Prediction) {}
+  }
+#+end_src
+
+* Prepare the Dockerfile
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'Dockerfile'
+#+end_src
+
+** Create the file
+#+begin_src conf :tangle ./Dockerfile
 #+end_src
 
 * Tosort
 
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'Dockerfile'
-  GITADD '.gitignore'
   GITADD 'host.docker_build.sh'
   GITADD 'host.docker_run_main.sh'
   GITADD 'host.docker_run.sh'
   GITADD 'host.docker_run.txt'
-  GITADD 'image_name.txt'
-  GITADD 'infer.proto'
   GITADD 'infer.sh'
   GITADD 'start.sh'
-  GITADD 'TRUE_QUEUE.org'
-#+end_src
-
-** Clean files
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  CLEAN '#Cargo.toml#'
-  CLEAN '.git.sh'
-  CLEAN 'indent.log'
-  CLEAN 'README.org~'
-  CLEAN '#shell.nix#'
-  CLEAN 'shell.nix~'
-  CLEAN 'src/#main.rs#'
-  CLEAN 'src/.#main.rs'
-  CLEAN 'tmp.sh'
-  CLEAN 'TRUE_QUEUE.org~'
-#+end_src
-
-* Define the image name
-#+begin_src conf :tangle ./image_name.txt
-  onnxrust
 #+end_src
 
 * General dependencies
@@ -649,26 +699,6 @@ Port on which the rest api listens to
   curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
 #+end_src
 
-* proto file
-#+begin_src rust :tangle ./infer.proto
-  syntax = "proto3";
-
-  package infer;
-
-  message Image {
-      bytes image_data = 1;
-  }
-
-  message Prediction {
-      float ps1 = 1;
-      float ps2 = 2;
-      float ps3 = 3;
-  }
-
-  service Infer {
-    rpc doInfer(Image) returns (Prediction) {}
-  }
-#+end_src
 
 * Main code
 
@@ -1233,17 +1263,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-* GIT Ignore stuff
-#+begin_src conf :tangle ./.gitignore
-  /image.jpg
-  /image.png
-  /IMAGES/
-  /infer2.sh
-  /model.onnx
-  /target/
-  /tmp/
-  /proto/
-#+end_src
 
 * COMMENT Pushing
 

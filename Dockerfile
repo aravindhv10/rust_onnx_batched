@@ -1,3 +1,5 @@
+
+
 FROM openvino/ubuntu24_dev:latest AS rust
 
 USER root
