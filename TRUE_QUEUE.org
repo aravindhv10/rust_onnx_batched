@@ -1,14 +1,3 @@
-* COMMENT SAMPLE
-
-
-** Script to run
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
-#+end_src
-
-** Text file to define docker commands
-#+begin_src conf :tangle ./host.docker_run.txt
-#+end_src
-
 * Introduction
 The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
 This README file contains code for:
@@ -372,15 +361,6 @@ For running the inference on both CPU and GPU.
   curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
 #+end_src
 
-* Tosort
-
-** Add files
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'host.docker_run_main.sh'
-  GITADD 'host.docker_run.sh'
-  GITADD 'host.docker_run.txt'
-#+end_src
-
 * General dependencies
 
 ** Cargo
@@ -609,6 +589,11 @@ Port on which the rest api listens to
 
 ** Main template
 
+*** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD host.docker_run.txt
+#+end_src
+
 *** Change dir
 #+begin_src conf :tangle ./host.docker_run.txt
   cd "$('dirname' -- "${0}")" ;
@@ -693,6 +678,13 @@ Port on which the rest api listens to
 #+end_src
 
 ** Prepare the main script from the template
+
+*** Add the file to git 
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD host.docker_run.txt
+#+end_src
+
+*** Actual file
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
   cd "$('dirname' -- "${0}")"
   cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
