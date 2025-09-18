@@ -1364,7 +1364,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'More doc cleanups'
+  GITCOMMIT 'WORKING: More doc cleanups'
 #+end_src
 
 ** Run the work script
