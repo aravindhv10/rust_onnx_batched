@@ -975,6 +975,14 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** Struct for sending the inference request to the inferring thread
+#+begin_src rust :tangle ./src,main.rs
+  struct InferRequest {
+      img: image::RgbaImage,
+      resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
+  }
+#+end_src
+
 ** Main function to run the inference loops
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
@@ -1030,16 +1038,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-** Struct for sending the inference request to the inferring thread
-
-*** New
-#+begin_src rust :tangle ./src,main.rs
-  // === Request to inference thread ===
-  struct InferRequest {
-      img: image::RgbaImage,
-      resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
-  }
-#+end_src
 
 ** Function to preprocess the image (center cropping, resizing, ...)
 #+begin_src rust :tangle ./src,main.rs

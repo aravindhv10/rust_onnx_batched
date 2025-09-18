@@ -100,6 +100,11 @@ impl prediction_probabilities_reply {
     }
 }
 
+struct InferRequest {
+    img: image::RgbaImage,
+    resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
+}
+
 async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
     while let Some(first) = rx.recv().await {
         let mut batch = vec![first];
@@ -150,12 +155,6 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
             let _ = req.resp_tx.send(Ok(result));
         }
     }
-}
-
-// === Request to inference thread ===
-struct InferRequest {
-    img: image::RgbaImage,
-    resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
 }
 
 fn preprocess(img: DynamicImage) -> image::RgbaImage {
