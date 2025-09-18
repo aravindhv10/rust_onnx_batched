@@ -99,11 +99,107 @@ For running the inference on both CPU and GPU.
   GITADD 'Cargo.toml'
 #+end_src
 
-* SAMPLE
+* Main nix code
 
-** nix
-#+begin_src nix :tangle ./shell.nix
+** Format the nix code
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
 #+end_src
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'shell.nix'
+#+end_src
+
+** Main nix code
+
+*** Function inputs
+#+begin_src nix :tangle ./shell.nix
+  {pkgs ? import <nixpkgs> {}} :
+#+end_src
+
+*** Start convenience definitions
+
+**** begin
+#+begin_src nix :tangle ./shell.nix
+  let
+#+end_src
+
+***** Package list
+
+****** begin
+#+begin_src nix :tangle ./shell.nix
+  mylist = with pkgs; [
+#+end_src
+
+****** main
+
+******* generic packages
+#+begin_src nix :tangle ./shell.nix
+  bc
+  bison
+  blend2d
+  cargo
+  cargo-info
+  ffmpeg
+  ffmpeg.dev
+  fish
+  flex
+  fontconfig
+  fontconfig.dev
+  fontconfig.lib
+  gnumake
+  grpc-tools
+  libelf
+  nasm
+  openssl
+  openssl.dev
+  pkg-config
+  protobuf
+  python313Full
+  udev
+  zsh
+  zstd
+#+end_src
+
+****** end
+#+begin_src nix :tangle ./shell.nix
+  ] ;
+#+end_src
+
+**** end
+#+begin_src nix :tangle ./shell.nix
+  in
+#+end_src
+
+*** Function outputs for regular shell
+
+**** Header
+#+begin_src nix :tangle ./shell.nix
+  (pkgs.mkShell {
+#+end_src
+
+***** Name
+#+begin_src nix :tangle ./shell.nix
+  name = "good_rust_env";
+#+end_src
+
+***** Packages
+#+begin_src nix :tangle ./shell.nix
+  packages = mylist;
+#+end_src
+
+***** Main shell command
+#+begin_src nix :tangle ./shell.nix
+  runScript = "fish";
+#+end_src
+
+**** Trailer
+#+begin_src nix :tangle ./shell.nix
+  })
+#+end_src
+
+* COMMENT SAMPLE
 
 ** Dockerfile
 #+begin_src conf :tangle ./Dockerfile
@@ -141,11 +237,7 @@ For running the inference on both CPU and GPU.
 #+begin_src rust :tangle ./infer.proto
 #+end_src
 
-** COMMENT Format the nix code and rust
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
-  'cargo' 'fmt'
-#+end_src
+* Tosort
 
 ** Add files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
@@ -162,7 +254,6 @@ For running the inference on both CPU and GPU.
   GITADD 'infer.proto'
   GITADD 'infer.sh'
   GITADD 'README.org'
-  GITADD 'shell.nix'
   GITADD 'start.sh'
   GITADD 'TRUE_QUEUE.org'
 #+end_src
@@ -288,6 +379,7 @@ For running the inference on both CPU and GPU.
 * Basic configs
 Define important environment variables and working dir for apt and rust.
 #+begin_src conf :tangle ./Dockerfile
+  USER root
   ENV HOME='/root'
   ENV DEBIAN_FRONTEND='noninteractive'
   WORKDIR '/root'
@@ -302,7 +394,6 @@ Define important environment variables and working dir for apt and rust.
 ** Important apt install stuff
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
-  USER root
   RUN \
       --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
       --mount=target=/var/cache/apt,type=cache,sharing=locked \
@@ -354,7 +445,6 @@ Build the main image
 ** Important apt install stuff
 Install the remaining apt packages
 #+begin_src conf :tangle ./Dockerfile
-  USER root
   RUN \
       --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
       --mount=target=/var/cache/apt,type=cache,sharing=locked \
@@ -516,95 +606,6 @@ Port on which the rest api listens to
   buildah build -t "$('cat' './image_name.txt')" .
 #+end_src
 
-* Main nix shell code
-
-** Main nix code
-
-*** Function inputs
-#+begin_src nix :tangle ./shell.nix
-  {pkgs ? import <nixpkgs> {}} :
-#+end_src
-
-*** Start convenience definitions
-
-**** begin
-#+begin_src nix :tangle ./shell.nix
-  let
-#+end_src
-
-***** Package list
-
-****** begin
-#+begin_src nix :tangle ./shell.nix
-  mylist = with pkgs; [
-#+end_src
-
-****** main
-
-******* generic packages
-#+begin_src nix :tangle ./shell.nix
-  bc
-  bison
-  blend2d
-  cargo
-  cargo-info
-  ffmpeg
-  ffmpeg.dev
-  fish
-  flex
-  fontconfig
-  fontconfig.dev
-  fontconfig.lib
-  gnumake
-  grpc-tools
-  libelf
-  nasm
-  openssl
-  openssl.dev
-  pkg-config
-  protobuf
-  python313Full
-  udev
-  zsh
-  zstd
-#+end_src
-
-****** end
-#+begin_src nix :tangle ./shell.nix
-  ] ;
-#+end_src
-
-**** end
-#+begin_src nix :tangle ./shell.nix
-  in
-#+end_src
-
-*** Function outputs for regular shell
-
-**** Header
-#+begin_src nix :tangle ./shell.nix
-  (pkgs.mkShell {
-#+end_src
-
-***** Name
-#+begin_src nix :tangle ./shell.nix
-  name = "good_rust_env";
-#+end_src
-
-***** Packages
-#+begin_src nix :tangle ./shell.nix
-  packages = mylist;
-#+end_src
-
-***** Main shell command
-#+begin_src nix :tangle ./shell.nix
-  runScript = "fish";
-#+end_src
-
-**** Trailer
-#+begin_src nix :tangle ./shell.nix
-  })
-#+end_src
 
 * Script to start server
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
@@ -1247,7 +1248,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Doc cleanups'
+  GITCOMMIT 'More doc cleanups'
 #+end_src
 
 ** Run the work script

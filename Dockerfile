@@ -1,7 +1,6 @@
-
-
 FROM openvino/ubuntu24_dev:latest AS rust
 
+USER root
 ENV HOME='/root'
 ENV DEBIAN_FRONTEND='noninteractive'
 WORKDIR '/root'
@@ -10,7 +9,6 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH \
     RUST_VERSION=1.88.0
 
-USER root
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
@@ -48,7 +46,6 @@ RUN set -eux; \
 
 FROM rust
 
-USER root
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
