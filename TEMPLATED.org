@@ -1039,6 +1039,17 @@ Port on which the rest api listens to
                 return Err("Send error".to_string());
               },
           }
+      }
+
+      async fn do_infer_data(&self, data: Vec<u8>) -> Result<prediction_probabilities, String> {
+          match decode_and_preprocess(data) {
+              Ok(img) => {
+                  return self.do_infer(img);
+              } ,
+              Err(e) => {
+                  return Err("Failed to decode and pre-process the image".to_string());
+              } ,
+          }
 
       }
   }
@@ -1337,7 +1348,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Started templated work'
+  GITCOMMIT 'Added implementation to struct'
 #+end_src
 
 ** Run the work script
