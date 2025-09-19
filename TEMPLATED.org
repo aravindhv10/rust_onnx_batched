@@ -1,0 +1,1326 @@
+* Introduction
+The main goal of this code base is to deploy an onnx model for inference on a Rest API while implementing automatic batching.
+This README file contains code for:
+- Cargo.toml
+- Dockerfile
+- Scripts for building and running the docker image.
+For running the inference on both CPU and GPU.
+
+* Main functions for processing the files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN(){
+      rm -vf -- "./${1}"
+  }
+
+  GITCOMMIT () {
+      git commit -m "${1}"
+  }
+
+  GITADD () {
+      git add "./${1}"
+  }
+
+  SETFILE () {
+      D="$('dirname' '--' "./${2}")"
+      'mkdir' '-pv' '--' "${D}"
+      'mv' '-vf' '--' "${1}" "${2}"
+      'cargo' 'fmt'
+      GITADD "${2}"
+  }
+#+end_src
+
+* Add main org files to git
+
+** True queue based
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'TRUE_QUEUE.org'
+#+end_src
+
+** File based
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'FILE_BASED.org'
+#+end_src
+
+** symbolic link
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'README.org'
+#+end_src
+
+** With templates
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'TEMPLATED.org'
+#+end_src
+
+* Clean files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN '#Cargo.toml#'
+  CLEAN '.git.sh'
+  CLEAN 'indent.log'
+  CLEAN 'README.org~'
+  CLEAN '#shell.nix#'
+  CLEAN 'shell.nix~'
+  CLEAN 'src/#main.rs#'
+  CLEAN 'src/.#main.rs'
+  CLEAN 'tmp.sh'
+  CLEAN 'TRUE_QUEUE.org~'
+#+end_src
+
+* Main rust code
+
+** For server
+
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,main.rs' 'src/main.rs'
+#+end_src
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,main.rs
+#+end_src
+
+** For client
+
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,client.rs' 'src/client.rs'
+#+end_src
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,client.rs
+#+end_src
+
+** Common lib
+
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,mylib.rs' 'src/mylib.rs'
+#+end_src
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,mylib.rs
+#+end_src
+
+* Main cargo code
+
+** Unify the file, clean temporaries and add it to git
+
+*** Prepare the cargo file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  echo 'Start unifying cargo files' \
+      && cat \
+              './Cargo.package.toml' \
+              './Cargo.dependencies.toml' \
+              './Cargo.build-dependencies.toml' \
+          > './Cargo.toml' \
+  && echo 'Done unifying cargo files' ;
+#+end_src
+
+*** Clean temp files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  CLEAN 'Cargo.build-dependencies.toml'
+  CLEAN 'Cargo.dependencies.toml'
+  CLEAN 'Cargo.package.toml'
+#+end_src
+
+*** Add the files to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'Cargo.toml'
+  GITADD 'Cargo.lock'
+#+end_src
+
+** The cargo files
+
+*** package
+#+begin_src conf :tangle ./Cargo.package.toml
+#+end_src
+
+*** build-dependencies
+#+begin_src conf :tangle ./Cargo.build-dependencies.toml
+#+end_src
+
+*** dependencies
+#+begin_src conf :tangle ./Cargo.dependencies.toml
+#+end_src
+
+* Main nix code
+
+** Format the nix code
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  'fd' '\.nix$' '.' '-t' 'f' '-x' 'alejandra' '{}'
+#+end_src
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'shell.nix'
+#+end_src
+
+** Main nix code
+
+*** Function inputs
+#+begin_src nix :tangle ./shell.nix
+  {pkgs ? import <nixpkgs> {}} :
+#+end_src
+
+*** Start convenience definitions
+
+**** begin
+#+begin_src nix :tangle ./shell.nix
+  let
+#+end_src
+
+***** Package list
+
+****** begin
+#+begin_src nix :tangle ./shell.nix
+  mylist = with pkgs; [
+#+end_src
+
+****** main
+
+******* generic packages
+#+begin_src nix :tangle ./shell.nix
+  bc
+  bison
+  blend2d
+  cargo
+  cargo-info
+  ffmpeg
+  ffmpeg.dev
+  fish
+  flex
+  fontconfig
+  fontconfig.dev
+  fontconfig.lib
+  gnumake
+  grpc-tools
+  libelf
+  nasm
+  openssl
+  openssl.dev
+  pkg-config
+  protobuf
+  python313Full
+  udev
+  zsh
+  zstd
+#+end_src
+
+****** end
+#+begin_src nix :tangle ./shell.nix
+  ] ;
+#+end_src
+
+**** end
+#+begin_src nix :tangle ./shell.nix
+  in
+#+end_src
+
+*** Function outputs for regular shell
+
+**** Header
+#+begin_src nix :tangle ./shell.nix
+  (pkgs.mkShell {
+#+end_src
+
+***** Name
+#+begin_src nix :tangle ./shell.nix
+  name = "good_rust_env";
+#+end_src
+
+***** Packages
+#+begin_src nix :tangle ./shell.nix
+  packages = mylist;
+#+end_src
+
+***** Main shell command
+#+begin_src nix :tangle ./shell.nix
+  runScript = "fish";
+#+end_src
+
+**** Trailer
+#+begin_src nix :tangle ./shell.nix
+  })
+#+end_src
+
+* Build file
+
+** Add to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'build.rs'
+#+end_src
+
+** Actual file
+#+begin_src rust :tangle ./build.rs
+  fn main() -> Result<(), Box<dyn std::error::Error>> {
+      tonic_prost_build::compile_protos("./infer.proto")?;
+      Ok(())
+  }
+#+end_src
+
+* Define the image name
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'image_name.txt'
+#+end_src
+
+** Actual file having the name
+#+begin_src conf :tangle ./image_name.txt
+  onnxrust
+#+end_src
+
+* GIT Ignore stuff
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD '.gitignore'
+#+end_src
+
+** Actual file
+#+begin_src conf :tangle ./.gitignore
+  /image.jpg
+  /image.png
+  /IMAGES/
+  /infer2.sh
+  /model.onnx
+  /target/
+  /tmp/
+  /proto/
+#+end_src
+
+* proto file
+
+** Add the file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'infer.proto'
+#+end_src
+
+** Actual file
+#+begin_src rust :tangle ./infer.proto
+  syntax = "proto3";
+
+  package infer;
+
+  message Image {
+      bytes image_data = 1;
+  }
+
+  message Prediction {
+      float ps1 = 1;
+      float ps2 = 2;
+      float ps3 = 3;
+  }
+
+  service Infer {
+    rpc doInfer(Image) returns (Prediction) {}
+  }
+#+end_src
+
+* Prepare the docker build script
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'host.docker_build.sh'
+#+end_src
+
+** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+#+end_src
+
+* Prepare the Dockerfile
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'Dockerfile'
+#+end_src
+
+** Create the file
+#+begin_src conf :tangle ./Dockerfile
+#+end_src
+
+* Script to start server
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'start.sh'
+#+end_src
+
+** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+  cd "$(dirname -- "${0}")"
+  export RUSTFLAGS="-C target-cpu=native"
+  cargo run --release --bin 'infer-server' &
+  sleep 20 ; echo running inference ; cargo run --release --bin 'infer-client'
+  echo done inference
+  exit '0'
+#+end_src
+
+* Script to infer
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'infer.sh'
+#+end_src
+
+** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./infer.sh
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.png"
+  curl -X POST "http://127.0.0.1:8000/infer" -F "file=@./image.jpg"
+#+end_src
+
+* General dependencies
+
+** Cargo
+
+*** package
+
+**** Details
+#+begin_src conf :tangle ./Cargo.package.toml
+  [package]
+  name = "onnxdeploy"
+  version = "0.1.0"
+  edition = "2024"
+#+end_src
+
+**** binary files
+#+begin_src conf :tangle ./Cargo.package.toml
+  [[bin]]
+  name = "infer-server"
+  path = "src/main.rs"
+
+  [[bin]]
+  name = "infer-client"
+  path = "src/client.rs"
+#+end_src
+
+*** build-dependencies
+#+begin_src conf :tangle ./Cargo.build-dependencies.toml
+  [build-dependencies]
+  tonic-prost-build = "0.14.2"
+#+end_src
+
+*** dependencies
+#+begin_src conf :tangle ./Cargo.dependencies.toml
+  [dependencies]
+  actix-multipart = "0.7.2"
+  actix-web = "4.11.0"
+  bincode = { version = "2.0.1", features = ["serde"] }
+  env_logger = "0.11.8"
+  futures = "0.3.31"
+  futures-util = "0.3.31"
+  gxhash = "3.5.0"
+  image = { version = "0.25.6", features = ["serde", "nasm"] }
+  lockfree = "0.5.1"
+  log = "0.4.27"
+  ndarray = { version = "0.16.1", features = ["blas", "matrixmultiply-threading", "rayon", "serde"] }
+  prost = "0.14"
+  serde = { version = "1.0.219", features = ["derive"] }
+  thiserror = "2.0.15"
+  tokio = { version = "1.47.1", features = ["full"] }
+  tonic-prost = "*"
+  tonic = { version = "0.14.2", features = ["zstd"] }
+#+end_src
+
+* ORT Related
+- Define ORT dependencies and features for GPU (CUDA) or CPU (OpenVino).
+- Define docker base image for GPU or CPU.
+- Definne nvidia gpu capabilities if using CUDA.
+
+** COMMENT CUDA
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.dependencies.toml
+  ort = { version = "2.0.0-rc.10", features = ["cuda"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04 AS rust
+#+end_src
+
+*** env
+#+begin_src conf :tangle ./Dockerfile
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+#+end_src
+
+** COMMENT WebGPU
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.dependencies.toml
+  ort = { version = "2.0.0-rc.10", features = ["webgpu"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM ubuntu:24.04 AS rust
+#+end_src
+
+** OpenVino
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.dependencies.toml
+  ort = { version = "2.0.0-rc.10", features = ["openvino"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM openvino/ubuntu24_dev:latest AS rust
+#+end_src
+
+* Basic configs
+
+** User and working dir
+#+begin_src conf :tangle ./Dockerfile
+  USER root
+  WORKDIR '/root'
+#+end_src
+
+** Define important environment variables and working dir for apt
+#+begin_src conf :tangle ./Dockerfile
+  ENV HOME='/root'
+  ENV DEBIAN_FRONTEND='noninteractive'
+  ENV RUSTUP_HOME='/usr/local/rustup'
+  ENV CARGO_HOME='/usr/local/cargo'
+  ENV RUST_VERSION='1.90.0'
+  ENV PATH="/usr/local/cargo/bin:${PATH}"
+#+end_src
+
+** COMMENT Prepare rust stuff
+#+begin_src conf :tangle ./Dockerfile
+  ENV RUSTUP_HOME=/usr/local/rustup \
+      CARGO_HOME=/usr/local/cargo \
+      PATH=/usr/local/cargo/bin:$PATH \
+      RUST_VERSION=1.88.0
+#+end_src
+
+* Prepare basic packages
+
+** Important apt install stuff
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'aria2' \
+          'build-essential' \
+          'cmake' \
+          'curl' \
+          'git' \
+          'git-lfs' \
+          'libfontconfig-dev' \
+          'libssl-dev' \
+          'make' \
+          'nasm' \
+          'pkg-config' \
+          'wget' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+** Download rust 
+Downloaad and install rust. Code taken from https://github.com/rust-lang/docker-rust
+#+begin_src conf :tangle ./Dockerfile
+  RUN set -eux; \
+      dpkgArch="$(dpkg --print-architecture)"; \
+      case "${dpkgArch##*-}" in \
+          amd64) rustArch='x86_64-unknown-linux-gnu'; rustupSha256='20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c' ;; \
+          armhf) rustArch='armv7-unknown-linux-gnueabihf'; rustupSha256='3b8daab6cc3135f2cd4b12919559e6adaee73a2fbefb830fadf0405c20231d61' ;; \
+          arm64) rustArch='aarch64-unknown-linux-gnu'; rustupSha256='e3853c5a252fca15252d07cb23a1bdd9377a8c6f3efa01531109281ae47f841c' ;; \
+          i386) rustArch='i686-unknown-linux-gnu'; rustupSha256='a5db2c4b29d23e9b318b955dd0337d6b52e93933608469085c924e0d05b1df1f' ;; \
+          ppc64el) rustArch='powerpc64le-unknown-linux-gnu'; rustupSha256='acd89c42b47c93bd4266163a7b05d3f26287d5148413c0d47b2e8a7aa67c9dc0' ;; \
+          s390x) rustArch='s390x-unknown-linux-gnu'; rustupSha256='726b7fd5d8805e73eab4a024a2889f8859d5a44e36041abac0a2436a52d42572' ;; \
+          riscv64) rustArch='riscv64gc-unknown-linux-gnu'; rustupSha256='09e64cc1b7a3e99adaa15dd2d46a3aad9d44d71041e2a96100d165c98a8fd7a7' ;; \
+          ,*) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
+      esac; \
+      url="https://static.rust-lang.org/rustup/archive/1.28.2/${rustArch}/rustup-init"; \
+      wget "$url"; \
+      echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
+      chmod +x rustup-init; \
+      ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host ${rustArch}; \
+      rm rustup-init; \
+      chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+      rustup --version; \
+      cargo --version; \
+      rustc --version;
+#+end_src
+
+* Prepare with base system packages for rust
+Build the main image
+
+** Base image
+#+begin_src conf :tangle ./Dockerfile
+  FROM rust
+#+end_src
+
+** Important apt install stuff
+Install the remaining apt packages
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'aria2' \
+          'build-essential' \
+          'cmake' \
+          'curl' \
+          'ffmpeg' \
+          'fish' \
+          'git' \
+          'git-lfs' \
+          'ipython3' \
+          'libcairo2-dev' \
+          'libfontconfig-dev' \
+          'libopenblas64-dev' \
+          'libopenblas-dev' \
+          'libprotobuf-dev' \
+          'libssl-dev' \
+          'make' \
+          'nasm' \
+          'neovim' \
+          'ninja-build' \
+          'pkg-config' \
+          'protobuf-compiler' \
+          'python3-cairo-dev' \
+          'python3-dev' \
+          'python3-opencv' \
+          'python3-pip' \
+          'python3-setuptools' \
+          'unzip' \
+          'wget' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+* Expose a network port
+Port on which the rest api listens to
+#+begin_src conf :tangle ./Dockerfile
+  EXPOSE 8000/tcp
+#+end_src
+
+* Script to run the docker image
+
+** Main template
+
+*** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD host.docker_run.txt
+#+end_src
+
+*** Change dir
+#+begin_src conf :tangle ./host.docker_run.txt
+  cd "$('dirname' -- "${0}")" ;
+#+end_src
+
+*** Main command
+
+**** COMMENT docker
+#+begin_src conf :tangle ./host.docker_run.txt
+  sudo -A
+  docker
+#+end_src
+
+**** podman
+#+begin_src conf :tangle ./host.docker_run.txt
+  podman
+#+end_src
+
+*** run
+#+begin_src conf :tangle ./host.docker_run.txt
+  run
+#+end_src
+
+*** Interactive
+#+begin_src conf :tangle ./host.docker_run.txt
+  --tty
+  --interactive
+  --rm
+#+end_src
+
+*** COMMENT CUDA
+#+begin_src conf :tangle ./host.docker_run.txt
+  --gpus 'all,"capabilities=compute,utility,video"'
+#+end_src
+
+*** IPC and shm sizes
+
+**** IPC
+#+begin_src conf :tangle ./host.docker_run.txt
+  --ipc host
+#+end_src
+
+**** COMMENT shm size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --shm-size 107374182400
+#+end_src
+
+*** MOUNTS
+#+begin_src conf :tangle ./host.docker_run.txt
+  --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
+  -v "$(realpath .):/data/input"
+  -v "CACHE:/usr/local/cargo/registry"
+  -v "CACHE:/root/.cache"
+#+end_src
+
+*** Network port
+#+begin_src conf :tangle ./host.docker_run.txt
+  -p '0.0.0.0:8000:8000/tcp'
+#+end_src
+
+*** memory size
+#+begin_src conf :tangle ./host.docker_run.txt
+  --ulimit memlock=-1
+  --ulimit stack=67108864
+#+end_src
+
+*** Image name and command
+#+begin_src conf :tangle ./host.docker_run.txt
+  "$('cat' './image_name.txt')"
+#+end_src
+
+*** Final command
+
+**** start the server
+#+begin_src conf :tangle ./host.docker_run.txt
+  '/data/input/start.sh' ;
+#+end_src
+
+**** COMMENT fish
+#+begin_src conf :tangle ./host.docker_run.txt
+  'fish' ;
+#+end_src
+
+** Prepare the main script from the template
+
+*** Add the file to git 
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD host.docker_run.txt
+#+end_src
+
+*** Actual file
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_run.sh
+  cd "$('dirname' -- "${0}")"
+  cat './host.docker_run.txt' | tr '\n' ' ' > './host.docker_run_main.sh'
+  sh './host.docker_run_main.sh'
+#+end_src
+
+* Script to build
+
+** Change directory
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  cd "$('dirname' '--' "${0}")"
+  IMAGE_NAME="$(cat './image_name.txt')"
+#+end_src
+
+** Actual build command
+
+*** COMMENT using docker
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  sudo -A docker build -t "${IMAGE_NAME}" .
+#+end_src
+
+*** COMMENT using podman
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  podman build -t "${IMAGE_NAME}" .
+#+end_src
+
+*** using buildah
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
+  buildah build -t "${IMAGE_NAME}" .
+#+end_src
+
+* COMMENT Common parts
+#+begin_src rust :tangle ./src,mylib.rs
+#+end_src
+
+* Main code
+
+** Importing external libraries
+
+*** COMMENT Disabled parts
+#+begin_src rust :tangle ./src,main.rs
+  use bincode::Decode;
+  use bincode::Encode;
+  use bincode::config;
+  use futures::future::join_all;
+  use gxhash;
+  use std::fs;
+  use std::path::Path;
+  use std::time::SystemTime;
+  use tokio::fs::create_dir_all;
+  use tokio::fs::read;
+  use tokio::fs::read_dir;
+  use tokio::fs::remove_file;
+  use tokio::fs::write;
+  use tokio::sync::Mutex;
+#+end_src
+
+*** Main parts
+
+**** actix parts
+#+begin_src rust :tangle ./src,main.rs
+  use actix_multipart::Multipart;
+  use actix_web::App;
+  use actix_web::Error;
+  use actix_web::HttpResponse;
+  use actix_web::HttpServer;
+  use actix_web::web;
+#+end_src
+
+**** ort parts
+#+begin_src rust :tangle ./src,main.rs
+  use ort::execution_providers::CUDAExecutionProvider;
+  use ort::execution_providers::OpenVINOExecutionProvider;
+  use ort::execution_providers::WebGPUExecutionProvider;
+  use ort::inputs;
+  use ort::session::builder::GraphOptimizationLevel;
+  use ort::session::Session;
+  use ort::value::TensorRef;
+#+end_src
+
+**** tokio parts
+#+begin_src rust :tangle ./src,main.rs
+  use tokio;
+  use tokio::sync::mpsc;
+  use tokio::sync::oneshot;
+#+end_src
+
+**** generic parts
+#+begin_src rust :tangle ./src,main.rs
+  use futures_util::TryStreamExt;
+  use image::DynamicImage;
+  use image::imageops;
+  use ndarray::Array;
+  use ndarray::Axis;
+  use ndarray::Ix4;
+  use serde::Deserialize;
+  use serde::Serialize;
+#+end_src
+
+**** std parts
+#+begin_src rust :tangle ./src,main.rs
+  use std::net::IpAddr;
+  use std::net::Ipv4Addr;
+  use std::net::SocketAddr;
+  use std::ops::Index;
+  use std::sync::Arc;
+  use std::time::Duration;
+#+end_src
+
+**** Tonic parts
+
+***** Main library
+#+begin_src rust :tangle ./src,main.rs
+  use tonic::Request;
+  use tonic::Response;
+  use tonic::Status;
+  use tonic::transport::Server;
+#+end_src
+
+***** proto parts
+#+begin_src rust :tangle ./src,main.rs
+  pub mod infer {
+      tonic::include_proto!("infer"); // The string specified here must match the proto package name
+  }
+#+end_src
+
+***** For client
+#+begin_src rust :tangle ./src,client.rs
+  pub mod infer {
+      tonic::include_proto!("infer"); // The string specified here must match the proto package name
+  }
+#+end_src
+
+*** Important parameters
+
+**** Generic
+#+begin_src rust :tangle ./src,main.rs
+  const MAX_BATCH: usize = 16;
+  const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
+  const MODEL_PATH: &str = "./model.onnx";
+#+end_src
+
+**** Model specific
+#+begin_src rust :tangle ./src,main.rs
+  const IMAGE_RESOLUTION: u32 = 448;
+  const num_features: usize = 3;
+  const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
+#+end_src
+
+**** Main output type
+#+begin_src rust :tangle ./src,main.rs
+  type outtype = f32;
+#+end_src
+
+** Main struct for holding inference results
+
+*** Main struct
+#+begin_src rust :tangle ./src,main.rs
+  struct prediction_probabilities {
+      ps: [outtype; num_features],
+  }
+#+end_src
+
+*** Method implementation
+#+begin_src rust :tangle ./src,main.rs
+  impl prediction_probabilities {
+      fn new() -> Self {
+          prediction_probabilities {
+              ps: [0.0; num_features],
+          }
+      }
+
+      fn from<T: Index<usize, Output = outtype>>(input: T) -> Self {
+          let mut ret = prediction_probabilities::new();
+          for i in 0..num_features {
+              ret.ps[i] = input[i];
+          }
+          ret
+      }
+  }
+#+end_src
+
+** Structure to construct the reply from server
+
+*** Actual structure
+#+begin_src rust :tangle ./src,main.rs
+  #[derive(Serialize)]
+  struct prediction_probabilities_reply {
+      ps: [String; num_features],
+      mj: String,
+  }
+#+end_src
+
+*** Method implementation
+#+begin_src rust :tangle ./src,main.rs
+  impl prediction_probabilities_reply {
+      fn new() -> Self {
+          prediction_probabilities_reply {
+              ps: std::array::from_fn(|_| String::new()),
+              mj: String::new(),
+          }
+      }
+
+      fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
+          let mut max_index: usize = 0;
+          let mut ret = prediction_probabilities_reply::new();
+          for i in 1..num_features {
+              ret.ps[i] = input.ps[i].to_string();
+              if input.ps[i] > input.ps[max_index] {
+                  max_index = i;
+              }
+          }
+          ret.mj = CLASS_LABELS[max_index].to_string() ;
+          ret
+      }
+  }
+#+end_src
+
+** Struct for sending the inference request to the inferring thread
+#+begin_src rust :tangle ./src,main.rs
+  struct InferRequest {
+      img: image::RgbaImage,
+      resp_tx: oneshot::Sender<Result<prediction_probabilities, String>>,
+  }
+#+end_src
+
+** Main function to run the inference loops
+#+begin_src rust :tangle ./src,main.rs
+  async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
+      while let Some(first) = rx.recv().await {
+          let mut batch = vec![first];
+          let start = tokio::time::Instant::now();
+          while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
+              match rx.try_recv() {
+                  Ok(req) => batch.push(req),
+                  Err(_) => break,
+              }
+          }
+
+          let batch_size = batch.len();
+          let mut input = Array::<u8, Ix4>::zeros((
+              batch_size,
+              IMAGE_RESOLUTION as usize,
+              IMAGE_RESOLUTION as usize,
+              3,
+          ));
+
+          for (i, req) in batch.iter().enumerate() {
+              for (x, y, pixel) in req.img.enumerate_pixels() {
+                  let [r, g, b, _] = pixel.0;
+                  input[[i, y as usize, x as usize, 0]] = r;
+                  input[[i, y as usize, x as usize, 1]] = g;
+                  input[[i, y as usize, x as usize, 2]] = b;
+              }
+          }
+
+          let outputs =
+              match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
+                  Ok(o) => o,
+                  Err(e) => {
+                      for req in batch {
+                          let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
+                      }
+                      continue;
+                  }
+              };
+
+          let output = outputs["output"]
+              .try_extract_array::<outtype>()
+              .unwrap()
+              .t()
+              .into_owned();
+
+          for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
+              let result = prediction_probabilities::from(row);
+              let _ = req.resp_tx.send(Ok(result));
+          }
+      }
+  }
+#+end_src
+
+** Function to preprocess the image (center cropping, resizing, ...)
+#+begin_src rust :tangle ./src,main.rs
+  fn preprocess(img: DynamicImage) -> image::RgbaImage {
+      let (width, height) = (img.width(), img.height());
+      let size = width.min(height);
+      let x = (width - size) / 2;
+      let y = (height - size) / 2;
+      let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
+      imageops::resize(
+          &cropped_img,
+          IMAGE_RESOLUTION,
+          IMAGE_RESOLUTION,
+          imageops::FilterType::CatmullRom,
+      )
+  }
+#+end_src
+
+** Function to decode and pre-process
+#+begin_src rust :tangle ./src,main.rs
+  fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
+      match image::load_from_memory(&data) {
+          Ok(img) => {
+              return Ok(preprocess(img));
+          } ,
+          Err(e) => {
+              return Err(actix_web::error::ErrorBadRequest(format!("decode error: {}", e)));
+          }
+      } ;
+  }
+#+end_src
+
+** New struct based inference
+#+begin_src rust :tangle ./src,main.rs
+  struct model_client {
+      tx: mpsc::Sender<InferRequest>
+  }
+#+end_src
+
+** Main function which gets run by actix for inference
+#+begin_src rust :tangle ./src,main.rs
+  async fn infer_handler(
+      mut payload: Multipart,
+      tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
+  ) -> Result<HttpResponse, Error> {
+      let mut data = Vec::new();
+      while let Some(mut field) = payload.try_next().await? {
+          while let Some(chunk) = field.try_next().await? {
+              data.extend_from_slice(&chunk);
+          }
+      }
+      if data.is_empty() {
+          return Ok(HttpResponse::BadRequest().body("No image data"));
+      }
+
+      let img = decode_and_preprocess(data)?;
+
+      let (resp_tx, resp_rx) = oneshot::channel();
+      tx.send(InferRequest { img, resp_tx })
+          .await
+          .map_err(|_| actix_web::error::ErrorInternalServerError("inference queue closed"))?;
+
+      match resp_rx.await {
+          Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
+          Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
+          Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
+      }
+  }
+#+end_src
+
+** Implementation for gRPC
+
+*** Declare the structure
+#+begin_src rust :tangle ./src,main.rs
+  pub struct MyInferer {
+      tx: Arc<mpsc::Sender<InferRequest>>
+  }
+#+end_src
+
+#+begin_src rust :tangle ./src,main.rs
+  #[tonic::async_trait]
+  impl infer::infer_server::Infer for MyInferer {
+      async fn do_infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
+          println!("Received gRPC request");
+          let image_data = request.into_inner().image_data;
+
+          // Load the image from the received bytes.
+          let img = decode_and_preprocess(image_data).map_err(|e| {
+              Status::invalid_argument(format!("Failed to decode image: {}", e))
+          })?;
+
+          // Create a channel for the inference response.
+          let (resp_tx, resp_rx) = oneshot::channel();
+          let req = InferRequest {
+              img,
+              resp_tx,
+          };
+
+          // Send the request to the inference loop.
+          self.tx.send(req).await.map_err(|_| {
+              Status::internal("Inference queue is closed")
+          })?;
+
+          // Wait for the inference result.
+          match resp_rx.await {
+              Ok(Ok(pred)) => {
+                  let reply = infer::Prediction {
+                      ps1: pred.ps[0],
+                      ps2: pred.ps[1],
+                      ps3: pred.ps[2],
+                  };
+
+                  Ok(Response::new(reply))
+              },
+
+              Ok(Err(e)) => Err(Status::internal(e)),
+
+              Err(_) => Err(Status::internal("Inference request dropped")),
+          }
+      }
+  }
+#+end_src
+
+** Function to construct the models
+
+*** Main function to get the models for various execution providers
+
+**** cuda
+#+begin_src rust :tangle ./src,main.rs
+  fn get_cuda_model() -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([CUDAExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+              println!("Constructed onnx with CUDA support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with CUDA support");
+              return Err("Failed to construct model with CUDA support".to_string());
+          }
+      }
+  }
+#+end_src
+
+**** webgpu
+#+begin_src rust :tangle ./src,main.rs
+  fn get_webgpu_model() -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([WebGPUExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+              println!("Constructed onnx with CUDA support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with WebGPU support");
+              return Err("Failed to construct model with WebGPU support".to_string());
+          }
+      }
+  }
+#+end_src
+
+**** openvino
+#+begin_src rust :tangle ./src,main.rs
+  fn get_openvino_model() -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([OpenVINOExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
+              println!("Constructed onnx with openvino support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with openvino support");
+              return Err("Failed to construct model with openvino support".to_string());
+          }
+      }
+  }
+#+end_src
+
+*** Wrapper function to get the model
+#+begin_src rust :tangle ./src,main.rs
+  fn get_model() -> Session {
+      match get_cuda_model() {
+          Ok(model) => {
+              return model;
+          }
+          Err(_) => {
+              return get_openvino_model().unwrap();
+          }
+      }
+  }
+#+end_src
+
+** The main function
+
+*** Client
+#+begin_src rust :tangle ./src,client.rs
+  use std::fs;
+  use std::error::Error;
+
+  #[actix_web::main]
+  async fn main() -> Result<(), Box<dyn std::error::Error>> {
+      let  data =  fs::read("./image.png").expect("Failed reading image file");
+      let img = infer::Image{
+          image_data: data
+      };
+      let mut client = infer::infer_client::InferClient::connect("http://127.0.0.1:8001").await?;
+      let res = client.do_infer(img).await?;
+      println!("{:?}",res);
+      return Ok(());
+  }
+#+end_src
+
+*** Server
+#+begin_src rust :tangle ./src,main.rs
+  #[actix_web::main]
+  async fn main() -> std::io::Result<()> {
+      let model = get_model();
+      let (tx, rx) = mpsc::channel::<InferRequest>(512);
+
+      let tx_p = Arc::new(tx);
+      let tx_q = Arc::clone(&tx_p);
+
+      let future1 = infer_loop(rx, model);
+
+      match HttpServer::new(move || {
+          App::new()
+              .app_data(web::Data::new(Arc::clone(&tx_p)))
+              .route("/infer", web::post().to(infer_handler))
+      })
+      .bind(("0.0.0.0", 8000))
+      {
+          Ok(ret) => {
+              let future2 = ret.run();
+
+              let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+              let addr = SocketAddr::new(ip_v4, 8001);
+              // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
+              let inferer_service = MyInferer{tx: Arc::clone(&tx_q) };
+              let future3 = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
+
+              let (_, second, third) = tokio::join!(future1, future2, future3);
+
+              match second {
+                  Ok(_) => {
+                      println!("REST server executed and stopped successfully");
+                  }
+                  Err(e) => {
+                      println!("Encountered error in starting the server due to {}.", e);
+                  }
+              }
+
+              match third {
+                  Ok(_) => {
+                      println!("GRPC server executed and stopped successfully");
+                  }
+                  Err(e) => {
+                      println!("Encountered error in starting the server due to {}.", e);
+                  }
+              }
+          }
+          Err(e) => {
+              eprintln!("Failed to bind to port");
+              return Err(e.into());
+          }
+      }
+
+      Ok(())
+  }
+#+end_src
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let model = get_model();
+    let (tx, rx) = mpsc::channel::<InferRequest>(512);
+
+    // Start the inference loop in a separate task.
+    tokio::spawn(infer_loop(rx, model));
+
+    // Create the gRPC service and start the server.
+    let inferer_service = MyInferer { tx };
+    println!("gRPC server listening on {}", addr);
+
+    tonic::transport::Server::builder()
+        .add_service(InfererServer::new(inferer_service))
+        .serve(addr)
+        .await?;
+
+    Ok(())
+}
+
+* COMMENT Pushing
+
+** Just push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
+      git push
+  " "log" "err")
+#+end_src
+
+** Prepare ssh key and push
+#+begin_src emacs-lisp :results silent
+  (async-shell-command "
+      ~/SSH/KEYS/PERSONAL_LAPTOP_PERSONAL_GITHUB/setup.sh
+      git push
+  " "log" "err")
+#+end_src
+
+* Commit the changes
+
+** Configure Message
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITCOMMIT 'WORKING: Updated rust version'
+#+end_src
+
+** Run the work script
+#+begin_src emacs-lisp :results silent
+  (save-buffer)
+  (org-babel-tangle)
+  (async-shell-command "
+          './.git.sh'
+          git status
+      " "log" "err")
+#+end_src

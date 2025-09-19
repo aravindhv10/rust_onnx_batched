@@ -185,6 +185,10 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     };
 }
 
+struct model_client {
+    tx: mpsc::Sender<InferRequest>,
+}
+
 async fn infer_handler(
     mut payload: Multipart,
     tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
