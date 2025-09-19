@@ -190,7 +190,7 @@ struct model_client {
 }
 
 impl model_client {
-    fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
+    async fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
         let (resp_tx, resp_rx) = oneshot::channel();
         match self.tx.send(InferRequest { img, resp_tx }).await {
             Ok(_) => {
