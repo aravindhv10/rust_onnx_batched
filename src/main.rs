@@ -185,6 +185,67 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     };
 }
 
+struct model_server {
+    rx: mpsc::Receiver<InferRequest>,
+    session: Session,
+}
+
+impl model_server {
+    async fn infer_loop(&mut self) {
+        while let Some(first) = self.rx.recv().await {
+            let mut batch = vec![first];
+            let start = tokio::time::Instant::now();
+            while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
+                match rx.try_recv() {
+                    Ok(req) => batch.push(req),
+                    Err(_) => break,
+                }
+            }
+
+            let batch_size = batch.len();
+            let mut input = Array::<u8, Ix4>::zeros((
+                batch_size,
+                IMAGE_RESOLUTION as usize,
+                IMAGE_RESOLUTION as usize,
+                3,
+            ));
+
+            for (i, req) in batch.iter().enumerate() {
+                for (x, y, pixel) in req.img.enumerate_pixels() {
+                    let [r, g, b, _] = pixel.0;
+                    input[[i, y as usize, x as usize, 0]] = r;
+                    input[[i, y as usize, x as usize, 1]] = g;
+                    input[[i, y as usize, x as usize, 2]] = b;
+                }
+            }
+
+            let outputs = match self
+                .session
+                .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
+            {
+                Ok(o) => o,
+                Err(e) => {
+                    for req in batch {
+                        let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
+                    }
+                    continue;
+                }
+            };
+
+            let output = outputs["output"]
+                .try_extract_array::<outtype>()
+                .unwrap()
+                .t()
+                .into_owned();
+
+            for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
+                let result = prediction_probabilities::from(row);
+                let _ = req.resp_tx.send(Ok(result));
+            }
+        }
+    }
+}
+
 struct model_client {
     tx: mpsc::Sender<InferRequest>,
 }
