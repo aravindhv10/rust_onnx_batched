@@ -201,13 +201,13 @@ impl model_client {
                     Ok(Err(e)) => {
                         return Err(e);
                     } // Ok(HttpResponse::InternalServerError().body(e)),
-                    Err(_) => {
-                        return Err("inference dropped");
+                    Err(e) => {
+                        return Err("Recv Error".to_string());
                     } // Ok(HttpResponse::InternalServerError().body("inference dropped")),
                 }
             }
             Err(e) => {
-                return Err("Failed to send to queue");
+                return Err("Send error".to_string());
             }
         }
     }
