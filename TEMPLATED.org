@@ -1013,12 +1013,18 @@ Port on which the rest api listens to
 #+end_src
 
 ** New struct based inference
+
+*** The struct
 #+begin_src rust :tangle ./src,main.rs
   struct model_client {
       tx: mpsc::Sender<InferRequest>,
   }
+#+end_src
 
+*** The functions
+#+begin_src rust :tangle ./src,main.rs
   impl model_client {
+
       async fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
           let (resp_tx, resp_rx) = oneshot::channel();
           match self.tx.send(InferRequest { img, resp_tx }).await {
@@ -1026,13 +1032,13 @@ Port on which the rest api listens to
                   match resp_rx.await {
                       Ok(Ok(pred)) => {
                           return Ok(pred);
-                      },  // Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
+                      },
                       Ok(Err(e)) => {
                           return Err(e);
-                      }, // Ok(HttpResponse::InternalServerError().body(e)),
+                      },
                       Err(e) => {
                         return Err("Recv Error".to_string());
-                      }, // Ok(HttpResponse::InternalServerError().body("inference dropped")),
+                      },
                   }
               },
               Err(e) => {
@@ -1050,8 +1056,8 @@ Port on which the rest api listens to
                   return Err("Failed to decode and pre-process the image".to_string());
               } ,
           }
-
       }
+
   }
 #+end_src
 
@@ -1348,7 +1354,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Added implementation to struct'
+  GITCOMMIT 'WORKING: fully implemented model_client struct along with methods'
 #+end_src
 
 ** Run the work script

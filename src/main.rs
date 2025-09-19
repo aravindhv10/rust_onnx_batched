@@ -193,19 +193,17 @@ impl model_client {
     async fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
         let (resp_tx, resp_rx) = oneshot::channel();
         match self.tx.send(InferRequest { img, resp_tx }).await {
-            Ok(_) => {
-                match resp_rx.await {
-                    Ok(Ok(pred)) => {
-                        return Ok(pred);
-                    } // Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
-                    Ok(Err(e)) => {
-                        return Err(e);
-                    } // Ok(HttpResponse::InternalServerError().body(e)),
-                    Err(e) => {
-                        return Err("Recv Error".to_string());
-                    } // Ok(HttpResponse::InternalServerError().body("inference dropped")),
+            Ok(_) => match resp_rx.await {
+                Ok(Ok(pred)) => {
+                    return Ok(pred);
                 }
-            }
+                Ok(Err(e)) => {
+                    return Err(e);
+                }
+                Err(e) => {
+                    return Err("Recv Error".to_string());
+                }
+            },
             Err(e) => {
                 return Err("Send error".to_string());
             }
