@@ -215,7 +215,7 @@ impl model_client {
     async fn do_infer_data(&self, data: Vec<u8>) -> Result<prediction_probabilities, String> {
         match decode_and_preprocess(data) {
             Ok(img) => {
-                return self.do_infer(img);
+                return self.do_infer(img).await;
             }
             Err(e) => {
                 return Err("Failed to decode and pre-process the image".to_string());
