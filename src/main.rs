@@ -199,7 +199,7 @@ impl model_client {
                         return Ok(pred);
                     } // Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
                     Ok(Err(e)) => {
-                        return Err(e.to_string());
+                        return Err(e);
                     } // Ok(HttpResponse::InternalServerError().body(e)),
                     Err(_) => {
                         return Err("inference dropped");
