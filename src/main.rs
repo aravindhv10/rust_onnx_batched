@@ -196,7 +196,7 @@ impl model_server {
             let mut batch = vec![first];
             let start = tokio::time::Instant::now();
             while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
-                match rx.try_recv() {
+                match self.rx.try_recv() {
                     Ok(req) => batch.push(req),
                     Err(_) => break,
                 }
