@@ -189,6 +189,19 @@ struct model_client {
     tx: mpsc::Sender<InferRequest>,
 }
 
+impl model_client {
+    fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
+        let (resp_tx, resp_rx) = oneshot::channel();
+        let res = self.tx.send(InferRequest { img, resp_tx }).await;
+
+        // match resp_rx.await {
+        //     Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
+        //     Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
+        //     Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
+        // }
+    }
+}
+
 async fn infer_handler(
     mut payload: Multipart,
     tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
