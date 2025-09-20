@@ -1181,32 +1181,30 @@ Port on which the rest api listens to
       async fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
           let (resp_tx, resp_rx) = oneshot::channel();
           match self.tx.send(InferRequest { img, resp_tx }).await {
-              Ok(_) => {
-                  match resp_rx.await {
-                      Ok(Ok(pred)) => {
-                          return Ok(pred);
-                      },
-                      Ok(Err(e)) => {
-                          return Err(e);
-                      },
-                      Err(e) => {
-                        return Err("Recv Error".to_string());
-                      },
+              Ok(_) => match resp_rx.await {
+                  Ok(Ok(pred)) => {
+                      return Ok(pred);
+                  }
+                  Ok(Err(e)) => {
+                      return Err(e);
+                  }
+                  Err(e) => {
+                      return Err("Recv Error".to_string());
                   }
               },
               Err(e) => {
-                return Err("Send error".to_string());
-              },
+                  return Err("Send error".to_string());
+              }
           }
       }
       async fn do_infer_data(&self, data: Vec<u8>) -> Result<prediction_probabilities, String> {
           match decode_and_preprocess(data) {
               Ok(img) => {
                   return self.do_infer(img).await;
-              } ,
+              }
               Err(e) => {
                   return Err("Failed to decode and pre-process the image".to_string());
-              } ,
+              }
           }
       }
   }
@@ -1214,20 +1212,17 @@ Port on which the rest api listens to
 
 *** Function to construct the inference server and client
 #+begin_src rust :tangle ./src,main.rs
-  fn get_inference_tuple() -> (model_server,model_client) {
+  fn get_inference_tuple() -> (model_server, model_client) {
+      let (tx, rx) = mpsc::channel::<InferRequest>(512);
 
-    let (tx, rx) = mpsc::channel::<InferRequest>(512);
+      let ret_server = model_server {
+          rx: rx,
+          session: get_model(),
+      };
 
-    let ret_server = model_server {
-        rx: rx,
-        session: get_model()
-    };
+      let ret_client = model_client { tx: tx };
 
-      let ret_client = model_client {
-        tx: tx
-    };
-
-      return (ret_server, ret_client) ;
+      return (ret_server, ret_client);
   }
 #+end_src
 
