@@ -380,7 +380,7 @@ async fn infer_handler(
 
     match tx.do_infer_data(data).await {
         Ok(pred) => {
-            return HttpResponse::Ok().json(prediction_probabilities_reply::from(pred));
+            return Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred)));
         }
         Err(e) => {
             return Ok(HttpResponse::InternalServerError().body(e));
