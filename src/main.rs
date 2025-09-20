@@ -439,60 +439,7 @@ impl infer::infer_server::Infer for MyInferer {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let model = get_model();
-    let (tx, rx) = mpsc::channel::<InferRequest>(512);
-
-    let tx_p = Arc::new(tx);
-    let tx_q = Arc::clone(&tx_p);
-
-    let future1 = infer_loop(rx, model);
-
-    match HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(Arc::clone(&tx_p)))
-            .route("/infer", web::post().to(infer_handler))
-    })
-    .bind(("0.0.0.0", 8000))
-    {
-        Ok(ret) => {
-            let future2 = ret.run();
-
-            let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
-            let addr = SocketAddr::new(ip_v4, 8001);
-            // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
-            let inferer_service = MyInferer {
-                tx: Arc::clone(&tx_q),
-            };
-            let future3 = tonic::transport::Server::builder()
-                .add_service(infer::infer_server::InferServer::new(inferer_service))
-                .serve(addr);
-
-            let (_, second, third) = tokio::join!(future1, future2, future3);
-
-            match second {
-                Ok(_) => {
-                    println!("REST server executed and stopped successfully");
-                }
-                Err(e) => {
-                    println!("Encountered error in starting the server due to {}.", e);
-                }
-            }
-
-            match third {
-                Ok(_) => {
-                    println!("GRPC server executed and stopped successfully");
-                }
-                Err(e) => {
-                    println!("Encountered error in starting the server due to {}.", e);
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Failed to bind to port");
-            return Err(e.into());
-        }
-    }
-
-    Ok(())
+async fn main() -> i32 {
+    (model_server, model_client) = get_inference_tuple();
+    return 0;
 }

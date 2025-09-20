@@ -1332,6 +1332,17 @@ Port on which the rest api listens to
 #+end_src
 
 *** Server
+
+**** NEW
+#+begin_src rust :tangle ./src,main.rs
+  #[actix_web::main]
+  async fn main() -> i32 {
+      (model_server, model_client) = get_inference_tuple();
+      return 0;
+  }
+#+end_src
+
+**** COMMENT OLD
 #+begin_src rust :tangle ./src,main.rs
   #[actix_web::main]
   async fn main() -> std::io::Result<()> {
@@ -1389,26 +1400,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let model = get_model();
-    let (tx, rx) = mpsc::channel::<InferRequest>(512);
-
-    // Start the inference loop in a separate task.
-    tokio::spawn(infer_loop(rx, model));
-
-    // Create the gRPC service and start the server.
-    let inferer_service = MyInferer { tx };
-    println!("gRPC server listening on {}", addr);
-
-    tonic::transport::Server::builder()
-        .add_service(InfererServer::new(inferer_service))
-        .serve(addr)
-        .await?;
-
-    Ok(())
-}
-
 * COMMENT Pushing
 
 ** Just push
@@ -1430,7 +1421,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: More work on inference struct tuples'
+  GITCOMMIT 'Started rewriting main function'
 #+end_src
 
 ** Run the work script
