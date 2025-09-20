@@ -143,7 +143,7 @@ impl prediction_probabilities {
             ret.ps[i] = input[i];
             println!("DEBUG: {}", ret.ps[i]);
         }
-        ret
+        return ret;
     }
 }
 
@@ -164,6 +164,7 @@ impl prediction_probabilities_reply {
     fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
         let mut max_index: usize = 0;
         let mut ret = prediction_probabilities_reply::new();
+        ret.ps[0] = input.ps[0].to_string();
         for i in 1..num_features {
             ret.ps[i] = input.ps[i].to_string();
             if input.ps[i] > input.ps[max_index] {
@@ -171,7 +172,7 @@ impl prediction_probabilities_reply {
             }
         }
         ret.mj = CLASS_LABELS[max_index].to_string();
-        ret
+        return ret;
     }
 }
 
