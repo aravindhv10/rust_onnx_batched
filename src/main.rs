@@ -414,12 +414,13 @@ impl infer::infer_server::Infer for MyInferer {
 async fn main() -> () {
     let (mut slave_server, slave_client) = get_inference_tuple();
 
-    let slave_client = Arc::new(slave_client);
+    let slave_client_1 = Arc::new(slave_client);
+    let slave_client_2 = Arc::clone(&slave_client_1);
     let future_infer = slave_server.infer_loop();
 
     match HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(Arc::clone(&slave_client)))
+            .app_data(web::Data::new(slave_client_1))
             .route("/infer", web::post().to(infer_handler))
     })
     .bind(("0.0.0.0", 8000))
@@ -431,7 +432,7 @@ async fn main() -> () {
             let addr = SocketAddr::new(ip_v4, 8001);
             // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
             let inferer_service = MyInferer {
-                slave_client: Arc::clone(&slave_client),
+                slave_client: slave_client_2,
             };
             let future_grpc = tonic::transport::Server::builder()
                 .add_service(infer::infer_server::InferServer::new(inferer_service))
