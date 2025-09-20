@@ -390,7 +390,7 @@ async fn infer_handler(
 }
 
 pub struct MyInferer {
-    tx: Arc<mpsc::Sender<InferRequest>>,
+    slave_client: Arc<model_client>,
 }
 
 #[tonic::async_trait]
@@ -401,36 +401,17 @@ impl infer::infer_server::Infer for MyInferer {
     ) -> Result<Response<infer::Prediction>, Status> {
         println!("Received gRPC request");
         let image_data = request.into_inner().image_data;
-
-        // Load the image from the received bytes.
-        let img = decode_and_preprocess(image_data)
-            .map_err(|e| Status::invalid_argument(format!("Failed to decode image: {}", e)))?;
-
-        // Create a channel for the inference response.
-        let (resp_tx, resp_rx) = oneshot::channel();
-        let req = InferRequest { img, resp_tx };
-
-        // Send the request to the inference loop.
-        self.tx
-            .send(req)
-            .await
-            .map_err(|_| Status::internal("Inference queue is closed"))?;
-
-        // Wait for the inference result.
-        match resp_rx.await {
-            Ok(Ok(pred)) => {
+        match self.slave_client.do_infer_data(image_data).await {
+            Ok(pred) => {
                 let reply = infer::Prediction {
                     ps1: pred.ps[0],
                     ps2: pred.ps[1],
                     ps3: pred.ps[2],
                 };
 
-                Ok(Response::new(reply))
+                return Ok(Response::new(reply));
             }
-
-            Ok(Err(e)) => Err(Status::internal(e)),
-
-            Err(_) => Err(Status::internal("Inference request dropped")),
+            Err(e) => Err(Status::internal(e)),
         }
     }
 }
