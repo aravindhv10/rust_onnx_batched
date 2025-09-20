@@ -366,7 +366,7 @@ fn get_inference_tuple() -> (model_server, model_client) {
 
 async fn infer_handler(
     mut payload: Multipart,
-    infer_slave: web::Data<model_client>,
+    infer_slave: web::Data<Arc<model_client>>,
 ) -> Result<HttpResponse, Error> {
     let mut data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {

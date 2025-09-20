@@ -1233,7 +1233,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_handler(
       mut payload: Multipart,
-      infer_slave: web::Data<model_client>,
+      infer_slave: web::Data<Arc<model_client>>,
   ) -> Result<HttpResponse, Error> {
       let mut data = Vec::new();
       while let Some(mut field) = payload.try_next().await? {
