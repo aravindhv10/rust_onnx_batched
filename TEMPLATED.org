@@ -1336,7 +1336,7 @@ Port on which the rest api listens to
 **** NEW
 #+begin_src rust :tangle ./src,main.rs
   #[actix_web::main]
-  async fn main() -> i32 {
+  async fn main() -> () {
       (model_server, model_client) = get_inference_tuple();
       return 0;
   }
