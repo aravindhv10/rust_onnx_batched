@@ -431,7 +431,7 @@ async fn main() -> () {
             let addr = SocketAddr::new(ip_v4, 8001);
             // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
             let inferer_service = MyInferer {
-                tx: Arc::clone(&tx_q),
+                slave_client: slave_client.clone(),
             };
             let future_grpc = tonic::transport::Server::builder()
                 .add_service(infer::infer_server::InferServer::new(inferer_service))
