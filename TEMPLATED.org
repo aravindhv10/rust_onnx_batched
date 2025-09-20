@@ -1338,7 +1338,6 @@ Port on which the rest api listens to
   #[actix_web::main]
   async fn main() -> () {
       (model_server, model_client) = get_inference_tuple();
-      return 0;
   }
 #+end_src
 
