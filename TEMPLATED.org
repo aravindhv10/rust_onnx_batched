@@ -1030,7 +1030,6 @@ Port on which the rest api listens to
                   Err(_) => break,
               }
           }
-
           let batch_size = batch.len();
           let mut input = Array::<u8, Ix4>::zeros((
               batch_size,
@@ -1038,7 +1037,6 @@ Port on which the rest api listens to
               IMAGE_RESOLUTION as usize,
               3,
           ));
-
           for (i, req) in batch.iter().enumerate() {
               for (x, y, pixel) in req.img.enumerate_pixels() {
                   let [r, g, b, _] = pixel.0;
@@ -1047,7 +1045,6 @@ Port on which the rest api listens to
                   input[[i, y as usize, x as usize, 2]] = b;
               }
           }
-
           let outputs =
               match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
                   Ok(o) => o,
@@ -1257,37 +1254,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** COMMENT OLD
-#+begin_src rust :tangle ./src,main.rs
-  async fn infer_handler(
-      mut payload: Multipart,
-      tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
-  ) -> Result<HttpResponse, Error> {
-      let mut data = Vec::new();
-      while let Some(mut field) = payload.try_next().await? {
-          while let Some(chunk) = field.try_next().await? {
-              data.extend_from_slice(&chunk);
-          }
-      }
-      if data.is_empty() {
-          return Ok(HttpResponse::BadRequest().body("No image data"));
-      }
-
-      let img = decode_and_preprocess(data)?;
-
-      let (resp_tx, resp_rx) = oneshot::channel();
-      tx.send(InferRequest { img, resp_tx })
-          .await
-          .map_err(|_| actix_web::error::ErrorInternalServerError("inference queue closed"))?;
-
-      match resp_rx.await {
-          Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
-          Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
-          Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
-      }
-  }
-#+end_src
-
 ** Implementation for gRPC
 
 *** Declare the structure
@@ -1319,55 +1285,6 @@ Port on which the rest api listens to
               Err(e) => {
                   Err(Status::internal(e))
               },
-          }
-      }
-  }
-#+end_src
-
-**** COMMENT OLD
-#+begin_src rust :tangle ./src,main.rs
-  #[tonic::async_trait]
-  impl infer::infer_server::Infer for MyInferer {
-      async fn do_infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
-          println!("Received gRPC request");
-          let image_data = request.into_inner().image_data;
-          match self.slave_client.do_infer_data(image_data) {
-              Ok(pred) => {},
-              Err(e) => {},
-          }
-
-          // Load the image from the received bytes.
-          let img = decode_and_preprocess(image_data).map_err(|e| {
-              Status::invalid_argument(format!("Failed to decode image: {}", e))
-          })?;
-
-          // Create a channel for the inference response.
-          let (resp_tx, resp_rx) = oneshot::channel();
-          let req = InferRequest {
-              img,
-              resp_tx,
-          };
-
-          // Send the request to the inference loop.
-          self.tx.send(req).await.map_err(|_| {
-              Status::internal("Inference queue is closed")
-          })?;
-
-          // Wait for the inference result.
-          match resp_rx.await {
-              Ok(Ok(pred)) => {
-                  let reply = infer::Prediction {
-                      ps1: pred.ps[0],
-                      ps2: pred.ps[1],
-                      ps3: pred.ps[2],
-                  };
-
-                  Ok(Response::new(reply))
-              },
-
-              Ok(Err(e)) => Err(Status::internal(e)),
-
-              Err(_) => Err(Status::internal("Inference request dropped")),
           }
       }
   }
@@ -1414,11 +1331,26 @@ Port on which the rest api listens to
           Ok(ret) => {
               let future_rest_server = ret.run();
 
-              let (first, second) = tokio::join!(future_infer, future_rest_server );
+              let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+              let addr = SocketAddr::new(ip_v4, 8001);
+              // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
+              let inferer_service = MyInferer{tx: Arc::clone(&tx_q) };
+              let future_grpc = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
+
+              let (first, second, third) = tokio::join!(future_infer, future_rest_server, future_grpc);
 
               match second {
                   Ok(_) => {
                       println!("REST server executed and stopped successfully");
+                  }
+                  Err(e) => {
+                      println!("Encountered error in starting the server due to {}.", e);
+                  }
+              }
+
+              match third {
+                  Ok(_) => {
+                      println!("GRPC server executed and stopped successfully");
                   }
                   Err(e) => {
                       println!("Encountered error in starting the server due to {}.", e);

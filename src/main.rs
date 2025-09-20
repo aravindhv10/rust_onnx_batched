@@ -190,7 +190,6 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
                 Err(_) => break,
             }
         }
-
         let batch_size = batch.len();
         let mut input = Array::<u8, Ix4>::zeros((
             batch_size,
@@ -198,7 +197,6 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
             IMAGE_RESOLUTION as usize,
             3,
         ));
-
         for (i, req) in batch.iter().enumerate() {
             for (x, y, pixel) in req.img.enumerate_pixels() {
                 let [r, g, b, _] = pixel.0;
@@ -207,7 +205,6 @@ async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) 
                 input[[i, y as usize, x as usize, 2]] = b;
             }
         }
-
         let outputs =
             match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
                 Ok(o) => o,
@@ -430,11 +427,31 @@ async fn main() -> () {
         Ok(ret) => {
             let future_rest_server = ret.run();
 
-            let (first, second) = tokio::join!(future_infer, future_rest_server);
+            let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+            let addr = SocketAddr::new(ip_v4, 8001);
+            // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
+            let inferer_service = MyInferer {
+                tx: Arc::clone(&tx_q),
+            };
+            let future_grpc = tonic::transport::Server::builder()
+                .add_service(infer::infer_server::InferServer::new(inferer_service))
+                .serve(addr);
+
+            let (first, second, third) =
+                tokio::join!(future_infer, future_rest_server, future_grpc);
 
             match second {
                 Ok(_) => {
                     println!("REST server executed and stopped successfully");
+                }
+                Err(e) => {
+                    println!("Encountered error in starting the server due to {}.", e);
+                }
+            }
+
+            match third {
+                Ok(_) => {
+                    println!("GRPC server executed and stopped successfully");
                 }
                 Err(e) => {
                     println!("Encountered error in starting the server due to {}.", e);
