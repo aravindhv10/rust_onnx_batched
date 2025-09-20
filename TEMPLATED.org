@@ -967,7 +967,6 @@ Port on which the rest api listens to
           let mut ret = prediction_probabilities::new();
           for i in 0..num_features {
               ret.ps[i] = input[i];
-              println!("DEBUG: {}",ret.ps[i]);
           }
           return ret;
       }
@@ -1480,7 +1479,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Rewrote REST server to use the struct'
+  GITCOMMIT 'WORKING: Rewrote REST server to use the struct'
 #+end_src
 
 ** Run the work script
