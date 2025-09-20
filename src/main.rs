@@ -315,7 +315,6 @@ impl model_server {
     }
 }
 
-#[derive(Clone)]
 struct model_client {
     tx: mpsc::Sender<InferRequest>,
 }
@@ -438,11 +437,13 @@ impl infer::infer_server::Infer for MyInferer {
 #[actix_web::main]
 async fn main() -> () {
     let (mut slave_server, slave_client) = get_inference_tuple();
+
+    let slave_client = Arc::new(slave_client);
     let future_infer = slave_server.infer_loop();
 
     match HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(slave_client))
+            .app_data(web::Data::new(slave_client.clone()))
             .route("/infer", web::post().to(infer_handler))
     })
     .bind(("0.0.0.0", 8000))
