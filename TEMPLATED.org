@@ -29,26 +29,12 @@ For running the inference on both CPU and GPU.
   }
 #+end_src
 
-* Add main org files to git
-
-** True queue based
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'TRUE_QUEUE.org'
-#+end_src
-
-** File based
+* Add all the org files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'FILE_BASED.org'
-#+end_src
-
-** symbolic link
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'README.org'
-#+end_src
-
-** With templates
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'TEMPLATED.org'
+  GITADD 'TRUE_QUEUE.org'
 #+end_src
 
 * Clean files
@@ -346,12 +332,26 @@ For running the inference on both CPU and GPU.
 #+end_src
 
 ** Actual file
+
+*** header
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
   cd "$(dirname -- "${0}")"
   export RUSTFLAGS="-C target-cpu=native"
-  # cargo run --release --bin 'infer-server'
+#+end_src
+
+*** start server and test grpc inference
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
   cargo run --release --bin 'infer-server' &
   sleep 20 ; echo running inference ; cargo run --release --bin 'infer-client'
+#+end_src
+
+*** COMMENT only start server
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
+  cargo run --release --bin 'infer-server'
+#+end_src
+
+*** trailer
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
   echo done inference
   exit '0'
 #+end_src
@@ -1213,14 +1213,11 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   fn get_inference_tuple() -> (model_server, model_client) {
       let (tx, rx) = mpsc::channel::<InferRequest>(512);
-
       let ret_server = model_server {
           rx: rx,
           session: get_model(),
       };
-
       let ret_client = model_client { tx: tx };
-
       return (ret_server, ret_client);
   }
 #+end_src
@@ -1242,7 +1239,6 @@ Port on which the rest api listens to
       if data.is_empty() {
           return Ok(HttpResponse::BadRequest().body("No image data"));
       }
-
       match infer_slave.do_infer_data(data).await {
           Ok(pred) => {
               return Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred)));
@@ -1279,7 +1275,6 @@ Port on which the rest api listens to
                       ps2: pred.ps[1],
                       ps3: pred.ps[2],
                   };
-
                   return Ok(Response::new(reply));
               },
               Err(e) => {
@@ -1383,7 +1378,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Successfully migrated grpc block'
+  GITCOMMIT 'WORKING: Some doc reorg'
 #+end_src
 
 ** Run the work script

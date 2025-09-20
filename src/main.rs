@@ -348,14 +348,11 @@ impl model_client {
 
 fn get_inference_tuple() -> (model_server, model_client) {
     let (tx, rx) = mpsc::channel::<InferRequest>(512);
-
     let ret_server = model_server {
         rx: rx,
         session: get_model(),
     };
-
     let ret_client = model_client { tx: tx };
-
     return (ret_server, ret_client);
 }
 
@@ -372,7 +369,6 @@ async fn infer_handler(
     if data.is_empty() {
         return Ok(HttpResponse::BadRequest().body("No image data"));
     }
-
     match infer_slave.do_infer_data(data).await {
         Ok(pred) => {
             return Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred)));
@@ -402,7 +398,6 @@ impl infer::infer_server::Infer for MyInferer {
                     ps2: pred.ps[1],
                     ps3: pred.ps[2],
                 };
-
                 return Ok(Response::new(reply));
             }
             Err(e) => Err(Status::internal(e)),
