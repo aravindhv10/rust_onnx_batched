@@ -1,5 +1,3 @@
-
-
 use actix_multipart::Multipart;
 use actix_web::App;
 use actix_web::Error;
@@ -11,8 +9,8 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::value::TensorRef;
 
 use tokio;
@@ -171,7 +169,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string() ;
+        ret.mj = CLASS_LABELS[max_index].to_string();
         ret
     }
 }
@@ -251,16 +249,19 @@ fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
     match image::load_from_memory(&data) {
         Ok(img) => {
             return Ok(preprocess(img));
-        } ,
-        Err(e) => {
-            return Err(actix_web::error::ErrorBadRequest(format!("decode error: {}", e)));
         }
-    } ;
+        Err(e) => {
+            return Err(actix_web::error::ErrorBadRequest(format!(
+                "decode error: {}",
+                e
+            )));
+        }
+    };
 }
 
 struct model_server {
     rx: mpsc::Receiver<InferRequest>,
-    session: Session
+    session: Session,
 }
 
 impl model_server {
@@ -289,16 +290,18 @@ impl model_server {
                     input[[i, y as usize, x as usize, 2]] = b;
                 }
             }
-            let outputs =
-                match self.session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
-                    Ok(o) => o,
-                    Err(e) => {
-                        for req in batch {
-                            let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
-                        }
-                        continue;
+            let outputs = match self
+                .session
+                .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
+            {
+                Ok(o) => o,
+                Err(e) => {
+                    for req in batch {
+                        let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
                     }
-                };
+                    continue;
+                }
+            };
             let output = outputs["output"]
                 .try_extract_array::<outtype>()
                 .unwrap()
@@ -390,31 +393,31 @@ async fn infer_handler(
 }
 
 pub struct MyInferer {
-    tx: Arc<mpsc::Sender<InferRequest>>
+    tx: Arc<mpsc::Sender<InferRequest>>,
 }
 
 #[tonic::async_trait]
 impl infer::infer_server::Infer for MyInferer {
-    async fn do_infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
+    async fn do_infer(
+        &self,
+        request: Request<infer::Image>,
+    ) -> Result<Response<infer::Prediction>, Status> {
         println!("Received gRPC request");
         let image_data = request.into_inner().image_data;
 
         // Load the image from the received bytes.
-        let img = decode_and_preprocess(image_data).map_err(|e| {
-            Status::invalid_argument(format!("Failed to decode image: {}", e))
-        })?;
+        let img = decode_and_preprocess(image_data)
+            .map_err(|e| Status::invalid_argument(format!("Failed to decode image: {}", e)))?;
 
         // Create a channel for the inference response.
         let (resp_tx, resp_rx) = oneshot::channel();
-        let req = InferRequest {
-            img,
-            resp_tx,
-        };
+        let req = InferRequest { img, resp_tx };
 
         // Send the request to the inference loop.
-        self.tx.send(req).await.map_err(|_| {
-            Status::internal("Inference queue is closed")
-        })?;
+        self.tx
+            .send(req)
+            .await
+            .map_err(|_| Status::internal("Inference queue is closed"))?;
 
         // Wait for the inference result.
         match resp_rx.await {
@@ -426,7 +429,7 @@ impl infer::infer_server::Infer for MyInferer {
                 };
 
                 Ok(Response::new(reply))
-            },
+            }
 
             Ok(Err(e)) => Err(Status::internal(e)),
 
@@ -437,6 +440,6 @@ impl infer::infer_server::Infer for MyInferer {
 
 #[actix_web::main]
 async fn main() -> () {
-    let mut (slave_server, slave_client) = get_inference_tuple();
+    let (mut slave_server, slave_client) = get_inference_tuple();
     slave_server.infer_loop().await;
 }
