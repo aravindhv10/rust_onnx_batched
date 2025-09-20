@@ -451,18 +451,6 @@ async fn main() -> () {
 
             let (first, second) = tokio::join!(future_infer, future_rest_server);
 
-            match first {
-                Ok(_) => {
-                    println!("inference loop executed and stopped successfully");
-                }
-                Err(e) => {
-                    println!(
-                        "Encountered error in starting the execution loop due to {}.",
-                        e
-                    );
-                }
-            }
-
             match second {
                 Ok(_) => {
                     println!("REST server executed and stopped successfully");
