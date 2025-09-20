@@ -246,16 +246,13 @@ fn preprocess(img: DynamicImage) -> image::RgbaImage {
     )
 }
 
-fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
+fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
     match image::load_from_memory(&data) {
         Ok(img) => {
             return Ok(preprocess(img));
         }
         Err(e) => {
-            return Err(actix_web::error::ErrorBadRequest(format!(
-                "decode error: {}",
-                e
-            )));
+            return Err("decode error".to_string());
         }
     };
 }

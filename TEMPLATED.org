@@ -1092,13 +1092,13 @@ Port on which the rest api listens to
 
 ** Function to decode and pre-process
 #+begin_src rust :tangle ./src,main.rs
-  fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, Error> {
+  fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
       match image::load_from_memory(&data) {
           Ok(img) => {
               return Ok(preprocess(img));
           } ,
           Err(e) => {
-              return Err(actix_web::error::ErrorBadRequest(format!("decode error: {}", e)));
+              return Err("decode error".to_string());
           }
       } ;
   }
