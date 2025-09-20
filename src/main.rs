@@ -366,7 +366,7 @@ fn get_inference_tuple() -> (model_server, model_client) {
 
 async fn infer_handler(
     mut payload: Multipart,
-    tx: web::Data<Arc<mpsc::Sender<InferRequest>>>,
+    tx: web::Data<model_client>,
 ) -> Result<HttpResponse, Error> {
     let mut data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
@@ -378,17 +378,13 @@ async fn infer_handler(
         return Ok(HttpResponse::BadRequest().body("No image data"));
     }
 
-    let img = decode_and_preprocess(data)?;
-
-    let (resp_tx, resp_rx) = oneshot::channel();
-    tx.send(InferRequest { img, resp_tx })
-        .await
-        .map_err(|_| actix_web::error::ErrorInternalServerError("inference queue closed"))?;
-
-    match resp_rx.await {
-        Ok(Ok(pred)) => Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred))),
-        Ok(Err(e)) => Ok(HttpResponse::InternalServerError().body(e)),
-        Err(_) => Ok(HttpResponse::InternalServerError().body("inference dropped")),
+    match tx.do_infer_data(data).await {
+        Ok(pred) => {
+            return HttpResponse::Ok().json(prediction_probabilities_reply::from(pred));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().body(e));
+        }
     }
 }
 
@@ -441,5 +437,5 @@ impl infer::infer_server::Infer for MyInferer {
 #[actix_web::main]
 async fn main() -> () {
     let (mut slave_server, slave_client) = get_inference_tuple();
-    slave_server.infer_loop().await;
+    let future_infer = slave_server.infer_loop();
 }

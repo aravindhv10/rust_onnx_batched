@@ -1227,6 +1227,35 @@ Port on which the rest api listens to
 #+end_src
 
 ** Main function which gets run by actix for inference
+
+*** NEW
+#+begin_src rust :tangle ./src,main.rs
+  async fn infer_handler(
+      mut payload: Multipart,
+      tx: web::Data<model_client>,
+  ) -> Result<HttpResponse, Error> {
+      let mut data = Vec::new();
+      while let Some(mut field) = payload.try_next().await? {
+          while let Some(chunk) = field.try_next().await? {
+              data.extend_from_slice(&chunk);
+          }
+      }
+      if data.is_empty() {
+          return Ok(HttpResponse::BadRequest().body("No image data"));
+      }
+
+      match tx.do_infer_data(data).await {
+          Ok(pred) => {
+              return HttpResponse::Ok().json(prediction_probabilities_reply::from(pred));
+          },
+          Err(e) => {
+              return Ok(HttpResponse::InternalServerError().body(e));
+          },
+      }
+  }
+#+end_src
+
+*** COMMENT OLD
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_handler(
       mut payload: Multipart,
@@ -1310,7 +1339,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-
 ** The main function
 
 *** Client
@@ -1338,7 +1366,7 @@ Port on which the rest api listens to
   #[actix_web::main]
   async fn main() -> () {
       let (mut slave_server, slave_client) = get_inference_tuple();
-      slave_server.infer_loop().await;
+      let future_infer = slave_server.infer_loop();
   }
 #+end_src
 
@@ -1421,7 +1449,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Got mutability working'
+  GITCOMMIT 'Rewrote REST server to use the struct'
 #+end_src
 
 ** Run the work script
