@@ -1,3 +1,4 @@
+mod mylib;
 use mylib::get_model;
 
 use actix_multipart::Multipart;

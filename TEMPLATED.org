@@ -859,6 +859,7 @@ Port on which the rest api listens to
 
 **** use functions from mylib
 #+begin_src rust :tangle ./src,main.rs
+  mod mylib;
   use mylib::get_model;
 #+end_src
 
