@@ -1171,6 +1171,7 @@ Port on which the rest api listens to
 
 **** The struct
 #+begin_src rust :tangle ./src,main.rs
+  #[derive(Clone)]
   struct model_client {
       tx: mpsc::Sender<InferRequest>,
   }

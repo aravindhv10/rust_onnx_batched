@@ -315,6 +315,7 @@ impl model_server {
     }
 }
 
+#[derive(Clone)]
 struct model_client {
     tx: mpsc::Sender<InferRequest>,
 }
