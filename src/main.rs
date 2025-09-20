@@ -366,7 +366,7 @@ fn get_inference_tuple() -> (model_server, model_client) {
 
 async fn infer_handler(
     mut payload: Multipart,
-    tx: web::Data<model_client>,
+    infer_slave: web::Data<model_client>,
 ) -> Result<HttpResponse, Error> {
     let mut data = Vec::new();
     while let Some(mut field) = payload.try_next().await? {
@@ -378,7 +378,7 @@ async fn infer_handler(
         return Ok(HttpResponse::BadRequest().body("No image data"));
     }
 
-    match tx.do_infer_data(data).await {
+    match infer_slave.do_infer_data(data).await {
         Ok(pred) => {
             return Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred)));
         }
@@ -438,4 +438,42 @@ impl infer::infer_server::Infer for MyInferer {
 async fn main() -> () {
     let (mut slave_server, slave_client) = get_inference_tuple();
     let future_infer = slave_server.infer_loop();
+
+    match HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(Arc::clone(&tx_p)))
+            .route("/infer", web::post().to(infer_handler))
+    })
+    .bind(("0.0.0.0", 8000))
+    {
+        Ok(ret) => {
+            let future_rest_server = ret.run();
+
+            let (first, second) = tokio::join!(future_infer, future_rest_server);
+
+            match first {
+                Ok(_) => {
+                    println!("inference loop executed and stopped successfully");
+                }
+                Err(e) => {
+                    println!(
+                        "Encountered error in starting the execution loop due to {}.",
+                        e
+                    );
+                }
+            }
+
+            match second {
+                Ok(_) => {
+                    println!("REST server executed and stopped successfully");
+                }
+                Err(e) => {
+                    println!("Encountered error in starting the server due to {}.", e);
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to bind to port");
+        }
+    }
 }
