@@ -732,8 +732,105 @@ Port on which the rest api listens to
   buildah build -t "${IMAGE_NAME}" .
 #+end_src
 
-* COMMENT Common parts
+* Code for creating the onnx session
+
+** Import ort libraries
 #+begin_src rust :tangle ./src,mylib.rs
+  use ort::execution_providers::CUDAExecutionProvider;
+  use ort::execution_providers::OpenVINOExecutionProvider;
+  use ort::execution_providers::WebGPUExecutionProvider;
+  use ort::inputs;
+  use ort::session::builder::GraphOptimizationLevel;
+  use ort::session::Session;
+  use ort::value::TensorRef;
+#+end_src
+
+** Functions to construct models
+
+*** Construct cuda model
+#+begin_src rust :tangle ./src,mylib.rs
+  pub fn get_cuda_model(model_path: &str) -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([CUDAExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(model_path).unwrap();
+              println!("Constructed onnx with CUDA support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with CUDA support");
+              return Err("Failed to construct model with CUDA support".to_string());
+          }
+      }
+  }
+#+end_src
+
+*** Construct webgpu model
+#+begin_src rust :tangle ./src,mylib.rs
+  pub fn get_webgpu_model(model_path: &str) -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([WebGPUExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(model_path).unwrap();
+              println!("Constructed onnx with CUDA support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with WebGPU support");
+              return Err("Failed to construct model with WebGPU support".to_string());
+          }
+      }
+  }
+#+end_src
+
+*** Construct openvino model
+#+begin_src rust :tangle ./src,mylib.rs
+  pub fn get_openvino_model(model_path: &str) -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([OpenVINOExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(model_path).unwrap();
+              println!("Constructed onnx with openvino support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with openvino support");
+              return Err("Failed to construct model with openvino support".to_string());
+          }
+      }
+  }
+#+end_src
+
+** Wrapper function to construct the model
+#+begin_src rust :tangle ./src,mylib.rs
+  pub fn get_model(model_path: &str) -> Session {
+      match get_cuda_model(model_path) {
+          Ok(model) => {
+              return model;
+          }
+          Err(_) => {
+              return get_openvino_model(model_path).unwrap();
+          }
+      }
+  }
 #+end_src
 
 * Main code
@@ -759,6 +856,11 @@ Port on which the rest api listens to
 #+end_src
 
 *** Main parts
+
+**** use functions from mylib
+#+begin_src rust :tangle ./src,main.rs
+  use mylib::get_model;
+#+end_src
 
 **** actix parts
 #+begin_src rust :tangle ./src,main.rs
@@ -855,7 +957,7 @@ Port on which the rest api listens to
   type outtype = f32;
 #+end_src
 
-** Function to construct the models
+** COMMENT Function to construct the models
 
 *** Main function to get the models for various execution providers
 

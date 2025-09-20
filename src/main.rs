@@ -1,3 +1,5 @@
+use mylib::get_model;
+
 use actix_multipart::Multipart;
 use actix_web::App;
 use actix_web::Error;
@@ -51,80 +53,6 @@ const num_features: usize = 3;
 const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 
 type outtype = f32;
-
-fn get_cuda_model() -> Result<Session, String> {
-    let res1 = Session::builder()
-        .unwrap()
-        .with_optimization_level(GraphOptimizationLevel::Level3)
-        .unwrap();
-
-    let res2 = res1.with_execution_providers([CUDAExecutionProvider::default().build()]);
-
-    match res2 {
-        Ok(res3) => {
-            let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
-            println!("Constructed onnx with CUDA support");
-            return Ok(res4);
-        }
-        Err(_) => {
-            println!("Failed to construct model with CUDA support");
-            return Err("Failed to construct model with CUDA support".to_string());
-        }
-    }
-}
-
-fn get_webgpu_model() -> Result<Session, String> {
-    let res1 = Session::builder()
-        .unwrap()
-        .with_optimization_level(GraphOptimizationLevel::Level3)
-        .unwrap();
-
-    let res2 = res1.with_execution_providers([WebGPUExecutionProvider::default().build()]);
-
-    match res2 {
-        Ok(res3) => {
-            let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
-            println!("Constructed onnx with CUDA support");
-            return Ok(res4);
-        }
-        Err(_) => {
-            println!("Failed to construct model with WebGPU support");
-            return Err("Failed to construct model with WebGPU support".to_string());
-        }
-    }
-}
-
-fn get_openvino_model() -> Result<Session, String> {
-    let res1 = Session::builder()
-        .unwrap()
-        .with_optimization_level(GraphOptimizationLevel::Level3)
-        .unwrap();
-
-    let res2 = res1.with_execution_providers([OpenVINOExecutionProvider::default().build()]);
-
-    match res2 {
-        Ok(res3) => {
-            let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
-            println!("Constructed onnx with openvino support");
-            return Ok(res4);
-        }
-        Err(_) => {
-            println!("Failed to construct model with openvino support");
-            return Err("Failed to construct model with openvino support".to_string());
-        }
-    }
-}
-
-fn get_model() -> Session {
-    match get_cuda_model() {
-        Ok(model) => {
-            return model;
-        }
-        Err(_) => {
-            return get_openvino_model().unwrap();
-        }
-    }
-}
 
 struct prediction_probabilities {
     ps: [outtype; num_features],
