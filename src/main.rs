@@ -141,6 +141,7 @@ impl prediction_probabilities {
         let mut ret = prediction_probabilities::new();
         for i in 0..num_features {
             ret.ps[i] = input[i];
+            println!("DEBUG: {}", ret.ps[i]);
         }
         ret
     }
