@@ -441,7 +441,7 @@ async fn main() -> () {
 
     match HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(Arc::clone(&tx_p)))
+            .app_data(web::Data::new(slave_client))
             .route("/infer", web::post().to(infer_handler))
     })
     .bind(("0.0.0.0", 8000))
