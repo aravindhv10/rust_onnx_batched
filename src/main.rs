@@ -440,5 +440,5 @@ impl infer::infer_server::Infer for MyInferer {
 
 #[actix_web::main]
 async fn main() -> () {
-    (model_server, model_client) = get_inference_tuple();
+    (slave_server, slave_client) = get_inference_tuple();
 }
