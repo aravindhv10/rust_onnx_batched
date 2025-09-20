@@ -279,7 +279,7 @@ fn get_inference_tuple() -> (model_server, model_client) {
     let (tx, rx) = mpsc::channel::<InferRequest>(512);
     let ret_server = model_server {
         rx: rx,
-        session: get_model(),
+        session: get_model(MODEL_PATH),
     };
     let ret_client = model_client { tx: tx };
     return (ret_server, ret_client);
