@@ -1332,7 +1332,6 @@ Port on which the rest api listens to
 
               let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
               let addr = SocketAddr::new(ip_v4, 8001);
-              // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
               let inferer_service = MyInferer{slave_client: slave_client_2};
               let future_grpc = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
 
@@ -1384,7 +1383,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Started rewriting grpc'
+  GITCOMMIT 'WORKING: Successfully migrated grpc block'
 #+end_src
 
 ** Run the work script

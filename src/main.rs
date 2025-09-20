@@ -430,7 +430,6 @@ async fn main() -> () {
 
             let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
             let addr = SocketAddr::new(ip_v4, 8001);
-            // let addr = "0.0.0.0:8001".parse().map_err(|e| e.into())?;
             let inferer_service = MyInferer {
                 slave_client: slave_client_2,
             };
