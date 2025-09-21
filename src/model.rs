@@ -1,5 +1,5 @@
-use mylib::get_model;
-use mylib::image_processor;
+use crate::mylib::get_model;
+use crate::mylib::image_processor;
 
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
