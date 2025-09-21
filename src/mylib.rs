@@ -16,9 +16,9 @@ impl Default for image_processor {
 }
 
 impl image_processor {
-    fn new() -> Self {
+    pub fn new(val: u32) -> Self {
         return image_processor {
-            image_resolution: 448,
+            image_resolution: val,
         };
     }
 

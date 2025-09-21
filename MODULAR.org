@@ -773,8 +773,8 @@ Port on which the rest api listens to
 **** Methods
 #+begin_src rust :tangle ./src,mylib.rs
   impl image_processor {
-      fn new() -> Self {
-          return image_processor {image_resolution: 448};
+      pub fn new(val: u32) -> Self {
+          return image_processor {image_resolution: val};
       }
 
       fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
