@@ -1,29 +1,51 @@
 use image::DynamicImage;
 use image::imageops;
 
-pub fn preprocess(img: DynamicImage) -> image::RgbaImage {
-    let (width, height) = (img.width(), img.height());
-    let size = width.min(height);
-    let x = (width - size) / 2;
-    let y = (height - size) / 2;
-    let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
-    imageops::resize(
-        &cropped_img,
-        IMAGE_RESOLUTION,
-        IMAGE_RESOLUTION,
-        imageops::FilterType::CatmullRom,
-    )
+use std::Default;
+
+pub struct image_processor {
+    image_resolution: u32,
 }
 
-pub fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
-    match image::load_from_memory(&data) {
-        Ok(img) => {
-            return Ok(preprocess(img));
-        }
-        Err(e) => {
-            return Err("decode error".to_string());
-        }
-    };
+impl Default for image_processor {
+    fn default() -> Self {
+        return image_processor {
+            image_resolution: 448,
+        };
+    }
+}
+
+impl image_processor {
+    fn new() -> Self {
+        return image_processor {
+            image_resolution: 448,
+        };
+    }
+
+    fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
+        let (width, height) = (img.width(), img.height());
+        let size = width.min(height);
+        let x = (width - size) / 2;
+        let y = (height - size) / 2;
+        let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
+        imageops::resize(
+            &cropped_img,
+            self.image_resolution,
+            self.image_resolution,
+            imageops::FilterType::CatmullRom,
+        )
+    }
+
+    fn decode_and_preprocess(&self, data: Vec<u8>) -> Result<image::RgbaImage, String> {
+        match image::load_from_memory(&data) {
+            Ok(img) => {
+                return Ok(self.preprocess(img));
+            }
+            Err(e) => {
+                return Err("decode error".to_string());
+            }
+        };
+    }
 }
 
 use ort::execution_providers::CUDAExecutionProvider;

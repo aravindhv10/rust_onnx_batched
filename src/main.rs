@@ -1,6 +1,6 @@
 mod mylib;
-use mylib::decode_and_preprocess;
 use mylib::get_model;
+use mylib::image_processor;
 
 use actix_multipart::Multipart;
 use actix_web::App;
@@ -168,6 +168,7 @@ impl model_server {
 
 struct model_client {
     tx: mpsc::Sender<InferRequest>,
+    preprocess: image_processor,
 }
 
 impl model_client {
@@ -191,7 +192,7 @@ impl model_client {
         }
     }
     async fn do_infer_data(&self, data: Vec<u8>) -> Result<prediction_probabilities, String> {
-        match decode_and_preprocess(data) {
+        match self.preprocess.decode_and_preprocess(data) {
             Ok(img) => {
                 return self.do_infer(img).await;
             }
@@ -208,7 +209,10 @@ fn get_inference_tuple() -> (model_server, model_client) {
         rx: rx,
         session: get_model(MODEL_PATH),
     };
-    let ret_client = model_client { tx: tx };
+    let ret_client = model_client {
+        tx: tx,
+        preprocess: image_processor::default(),
+    };
     return (ret_server, ret_client);
 }
 

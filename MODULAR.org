@@ -740,41 +740,67 @@ Port on which the rest api listens to
 ** Image processing
 
 *** Import modules
+
+**** Image processing related
 #+begin_src rust :tangle ./src,mylib.rs
   use image::DynamicImage;
   use image::imageops;
 #+end_src
 
+**** Default trait from std
+#+begin_src rust :tangle ./src,mylib.rs
+  use std::Default;
+#+end_src
+
 *** Struct for image processing
 
-**** Function to center crop and rescale
+**** Data
 #+begin_src rust :tangle ./src,mylib.rs
-  pub fn preprocess(img: DynamicImage) -> image::RgbaImage {
-      let (width, height) = (img.width(), img.height());
-      let size = width.min(height);
-      let x = (width - size) / 2;
-      let y = (height - size) / 2;
-      let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
-      imageops::resize(
-          &cropped_img,
-          IMAGE_RESOLUTION,
-          IMAGE_RESOLUTION,
-          imageops::FilterType::CatmullRom,
-      )
+  pub struct image_processor {
+      image_resolution: u32
   }
 #+end_src
 
-**** Decode binary data to image array
+**** Default trait
 #+begin_src rust :tangle ./src,mylib.rs
-  pub fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
-      match image::load_from_memory(&data) {
-          Ok(img) => {
-              return Ok(preprocess(img));
-          } ,
-          Err(e) => {
-              return Err("decode error".to_string());
-          }
-      } ;
+  impl Default for image_processor {
+      fn default() -> Self {
+          return image_processor {image_resolution: 448};
+      }
+  }
+#+end_src
+
+**** Methods
+#+begin_src rust :tangle ./src,mylib.rs
+  impl image_processor {
+      fn new() -> Self {
+          return image_processor {image_resolution: 448};
+      }
+
+      fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
+          let (width, height) = (img.width(), img.height());
+          let size = width.min(height);
+          let x = (width - size) / 2;
+          let y = (height - size) / 2;
+          let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
+          imageops::resize(
+              &cropped_img,
+              self.image_resolution,
+              self.image_resolution,
+              imageops::FilterType::CatmullRom,
+          )
+      }
+
+      fn decode_and_preprocess(&self, data: Vec<u8>) -> Result<image::RgbaImage, String> {
+          match image::load_from_memory(&data) {
+              Ok(img) => {
+                  return Ok(self.preprocess(img));
+              } ,
+              Err(e) => {
+                  return Err("decode error".to_string());
+              }
+          } ;
+      }
   }
 #+end_src
 
@@ -909,7 +935,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   mod mylib;
   use mylib::get_model;
-  use mylib::decode_and_preprocess;
+  use mylib::image_processor;
 #+end_src
 
 **** actix parts
@@ -1089,7 +1115,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   struct model_server {
       rx: mpsc::Receiver<InferRequest>,
-      session: Session
+      session: Session,
   }
 #+end_src
 
@@ -1151,8 +1177,10 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   struct model_client {
       tx: mpsc::Sender<InferRequest>,
+      preprocess: image_processor
   }
 #+end_src
+
 
 **** The functions
 #+begin_src rust :tangle ./src,main.rs
@@ -1177,7 +1205,7 @@ Port on which the rest api listens to
           }
       }
       async fn do_infer_data(&self, data: Vec<u8>) -> Result<prediction_probabilities, String> {
-          match decode_and_preprocess(data) {
+          match self.preprocess.decode_and_preprocess(data) {
               Ok(img) => {
                   return self.do_infer(img).await;
               }
@@ -1197,7 +1225,7 @@ Port on which the rest api listens to
           rx: rx,
           session: get_model(MODEL_PATH),
       };
-      let ret_client = model_client { tx: tx };
+      let ret_client = model_client {tx: tx, preprocess: image_processor::default()};
       return (ret_server, ret_client);
   }
 #+end_src
@@ -1370,3 +1398,6 @@ Port on which the rest api listens to
           git status
       " "log" "err")
 #+end_src
+
+
+image_processor::default()
