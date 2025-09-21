@@ -1037,7 +1037,6 @@ Port on which the rest api listens to
 **** Model specific
 #+begin_src rust :tangle ./src,main.rs
   const IMAGE_RESOLUTION: u32 = 448;
-  const num_features: usize = 3;
   const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 #+end_src
 

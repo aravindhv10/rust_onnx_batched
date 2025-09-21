@@ -49,7 +49,6 @@ const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
 const MODEL_PATH: &str = "./model.onnx";
 
 const IMAGE_RESOLUTION: u32 = 448;
-const num_features: usize = 3;
 const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 
 type outtype = f32;
