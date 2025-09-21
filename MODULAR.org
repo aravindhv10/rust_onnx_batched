@@ -750,17 +750,10 @@ Port on which the rest api listens to
 
 ** Image processing
 
-*** Import modules
-
-**** Image processing related
+*** Import Image processing related modules
 #+begin_src rust :tangle ./src,mylib.rs
   use image::DynamicImage;
   use image::imageops;
-#+end_src
-
-**** COMMENT Default trait from std
-#+begin_src rust :tangle ./src,mylib.rs
-  use std::default;
 #+end_src
 
 *** Struct for image processing
@@ -822,10 +815,8 @@ Port on which the rest api listens to
   use ort::execution_providers::CUDAExecutionProvider;
   use ort::execution_providers::OpenVINOExecutionProvider;
   use ort::execution_providers::WebGPUExecutionProvider;
-  use ort::inputs;
   use ort::session::builder::GraphOptimizationLevel;
   use ort::session::Session;
-  use ort::value::TensorRef;
 #+end_src
 
 *** Functions to construct models
@@ -924,11 +915,7 @@ Port on which the rest api listens to
 
 *** ort parts
 #+begin_src rust :tangle ./src,model.rs
-  // use ort::execution_providers::CUDAExecutionProvider;
-  // use ort::execution_providers::OpenVINOExecutionProvider;
-  // use ort::execution_providers::WebGPUExecutionProvider;
   use ort::inputs;
-  // use ort::session::builder::GraphOptimizationLevel;
   use ort::session::Session;
   use ort::value::TensorRef;
 #+end_src
@@ -1220,7 +1207,6 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   use model::get_inference_tuple;
   use model::model_client;
-  use model::model_server;
   use model::prediction_probabilities_reply;
 #+end_src
 
@@ -1234,32 +1220,14 @@ Port on which the rest api listens to
   use actix_web::web;
 #+end_src
 
-**** ort parts
-#+begin_src rust :tangle ./src,main.rs
-  use ort::execution_providers::CUDAExecutionProvider;
-  use ort::execution_providers::OpenVINOExecutionProvider;
-  use ort::execution_providers::WebGPUExecutionProvider;
-  use ort::inputs;
-  use ort::session::builder::GraphOptimizationLevel;
-  use ort::session::Session;
-  use ort::value::TensorRef;
-#+end_src
-
 **** tokio parts
 #+begin_src rust :tangle ./src,main.rs
   use tokio;
-  use tokio::sync::mpsc;
-  use tokio::sync::oneshot;
 #+end_src
 
 **** generic parts
 #+begin_src rust :tangle ./src,main.rs
   use futures_util::TryStreamExt;
-  use ndarray::Array;
-  use ndarray::Axis;
-  use ndarray::Ix4;
-  use serde::Deserialize;
-  use serde::Serialize;
 #+end_src
 
 **** std parts
@@ -1267,9 +1235,7 @@ Port on which the rest api listens to
   use std::net::IpAddr;
   use std::net::Ipv4Addr;
   use std::net::SocketAddr;
-  use std::ops::Index;
   use std::sync::Arc;
-  use std::time::Duration;
 #+end_src
 
 **** Tonic parts
@@ -1279,7 +1245,6 @@ Port on which the rest api listens to
   use tonic::Request;
   use tonic::Response;
   use tonic::Status;
-  use tonic::transport::Server;
 #+end_src
 
 ***** proto parts
@@ -1446,7 +1411,7 @@ image_processor::default()
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Separated the model parts.'
+  GITCOMMIT 'WORKING: Some cleanups for unused stuff.'
 #+end_src
 
 ** Run the work script

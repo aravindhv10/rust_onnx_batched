@@ -3,7 +3,6 @@ mod mylib;
 
 use model::get_inference_tuple;
 use model::model_client;
-use model::model_server;
 use model::prediction_probabilities_reply;
 
 use actix_multipart::Multipart;
@@ -13,36 +12,18 @@ use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::web;
 
-use ort::execution_providers::CUDAExecutionProvider;
-use ort::execution_providers::OpenVINOExecutionProvider;
-use ort::execution_providers::WebGPUExecutionProvider;
-use ort::inputs;
-use ort::session::Session;
-use ort::session::builder::GraphOptimizationLevel;
-use ort::value::TensorRef;
-
 use tokio;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
 
 use futures_util::TryStreamExt;
-use ndarray::Array;
-use ndarray::Axis;
-use ndarray::Ix4;
-use serde::Deserialize;
-use serde::Serialize;
 
 use std::net::IpAddr;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
-use std::ops::Index;
 use std::sync::Arc;
-use std::time::Duration;
 
 use tonic::Request;
 use tonic::Response;
 use tonic::Status;
-use tonic::transport::Server;
 
 pub mod infer {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name

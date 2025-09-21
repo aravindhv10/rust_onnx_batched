@@ -1,8 +1,4 @@
-// use ort::execution_providers::CUDAExecutionProvider;
-// use ort::execution_providers::OpenVINOExecutionProvider;
-// use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-// use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
 use ort::value::TensorRef;
 
