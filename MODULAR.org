@@ -946,12 +946,6 @@ Port on which the rest api listens to
 
 *** Main parts
 
-**** use functions from mylib
-#+begin_src rust :tangle ./src,main.rs
-  mod mylib;
-  use mylib::get_model;
-  use mylib::image_processor;
-#+end_src
 
 **** actix parts
 #+begin_src rust :tangle ./src,main.rs
@@ -1026,6 +1020,15 @@ Port on which the rest api listens to
 #+end_src
 
 ** Main model related code
+
+*** Important imports
+
+**** My image processor and onnx model construction
+#+begin_src rust :tangle ./src,main.rs
+  mod mylib;
+  use mylib::get_model;
+  use mylib::image_processor;
+#+end_src
 
 *** Important parameters
 

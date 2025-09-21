@@ -1,7 +1,3 @@
-mod mylib;
-use mylib::get_model;
-use mylib::image_processor;
-
 use actix_multipart::Multipart;
 use actix_web::App;
 use actix_web::Error;
@@ -43,6 +39,10 @@ use tonic::transport::Server;
 pub mod infer {
     tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
+
+mod mylib;
+use mylib::get_model;
+use mylib::image_processor;
 
 const MAX_BATCH: usize = 16;
 const BATCH_TIMEOUT: Duration = Duration::from_millis(200);
