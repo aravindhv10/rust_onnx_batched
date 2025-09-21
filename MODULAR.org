@@ -922,6 +922,17 @@ Port on which the rest api listens to
 
 ** Important imports
 
+*** ort parts
+#+begin_src rust :tangle ./src,main.rs
+  use ort::execution_providers::CUDAExecutionProvider;
+  use ort::execution_providers::OpenVINOExecutionProvider;
+  use ort::execution_providers::WebGPUExecutionProvider;
+  use ort::inputs;
+  use ort::session::builder::GraphOptimizationLevel;
+  use ort::session::Session;
+  use ort::value::TensorRef;
+#+end_src
+
 *** My image processor and onnx model construction
 #+begin_src rust :tangle ./src,model.rs
   use crate::mylib::get_model;
