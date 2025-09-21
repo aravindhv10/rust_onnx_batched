@@ -1,8 +1,6 @@
 use image::DynamicImage;
 use image::imageops;
 
-use std::default;
-
 pub struct image_processor {
     image_resolution: u32,
 }

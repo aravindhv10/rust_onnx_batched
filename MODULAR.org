@@ -758,7 +758,7 @@ Port on which the rest api listens to
   use image::imageops;
 #+end_src
 
-**** Default trait from std
+**** COMMENT Default trait from std
 #+begin_src rust :tangle ./src,mylib.rs
   use std::default;
 #+end_src
@@ -924,11 +924,11 @@ Port on which the rest api listens to
 
 *** ort parts
 #+begin_src rust :tangle ./src,model.rs
-  use ort::execution_providers::CUDAExecutionProvider;
-  use ort::execution_providers::OpenVINOExecutionProvider;
-  use ort::execution_providers::WebGPUExecutionProvider;
+  // use ort::execution_providers::CUDAExecutionProvider;
+  // use ort::execution_providers::OpenVINOExecutionProvider;
+  // use ort::execution_providers::WebGPUExecutionProvider;
   use ort::inputs;
-  use ort::session::builder::GraphOptimizationLevel;
+  // use ort::session::builder::GraphOptimizationLevel;
   use ort::session::Session;
   use ort::value::TensorRef;
 #+end_src
