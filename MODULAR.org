@@ -740,15 +740,15 @@ Port on which the rest api listens to
 ** Image processing
 
 *** Import modules
-#+begin_src rust :tangle ./src,main.rs
+#+begin_src rust :tangle ./src,mylib.rs
   use image::DynamicImage;
   use image::imageops;
 #+end_src
 
-*** Actual functions
+*** Struct for image processing
 
 **** Function to center crop and rescale
-#+begin_src rust :tangle ./src,main.rs
+#+begin_src rust :tangle ./src,mylib.rs
   pub fn preprocess(img: DynamicImage) -> image::RgbaImage {
       let (width, height) = (img.width(), img.height());
       let size = width.min(height);
@@ -765,7 +765,7 @@ Port on which the rest api listens to
 #+end_src
 
 **** Decode binary data to image array
-#+begin_src rust :tangle ./src,main.rs
+#+begin_src rust :tangle ./src,mylib.rs
   pub fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
       match image::load_from_memory(&data) {
           Ok(img) => {

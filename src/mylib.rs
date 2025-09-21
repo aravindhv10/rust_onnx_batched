@@ -1,3 +1,31 @@
+use image::DynamicImage;
+use image::imageops;
+
+pub fn preprocess(img: DynamicImage) -> image::RgbaImage {
+    let (width, height) = (img.width(), img.height());
+    let size = width.min(height);
+    let x = (width - size) / 2;
+    let y = (height - size) / 2;
+    let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
+    imageops::resize(
+        &cropped_img,
+        IMAGE_RESOLUTION,
+        IMAGE_RESOLUTION,
+        imageops::FilterType::CatmullRom,
+    )
+}
+
+pub fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
+    match image::load_from_memory(&data) {
+        Ok(img) => {
+            return Ok(preprocess(img));
+        }
+        Err(e) => {
+            return Err("decode error".to_string());
+        }
+    };
+}
+
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
