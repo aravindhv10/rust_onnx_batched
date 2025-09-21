@@ -996,7 +996,7 @@ Port on which the rest api listens to
 **** Main struct
 #+begin_src rust :tangle ./src,model.rs
   pub struct prediction_probabilities {
-      ps: [outtype; num_features],
+      pub ps: [outtype; num_features],
   }
 #+end_src
 
@@ -1185,7 +1185,6 @@ Port on which the rest api listens to
       return (ret_server, ret_client);
   }
 #+end_src
-
 
 * Main code
 

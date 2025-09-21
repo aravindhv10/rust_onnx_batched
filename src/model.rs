@@ -34,7 +34,7 @@ type outtype = f32;
 const num_features: usize = 3;
 
 pub struct prediction_probabilities {
-    ps: [outtype; num_features],
+    pub ps: [outtype; num_features],
 }
 
 impl prediction_probabilities {
