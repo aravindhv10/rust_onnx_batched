@@ -5,13 +5,6 @@ use model::get_inference_tuple;
 use model::model_client;
 use model::prediction_probabilities_reply;
 
-use actix_multipart::Multipart;
-use actix_web::App;
-use actix_web::Error;
-use actix_web::HttpResponse;
-use actix_web::HttpServer;
-use actix_web::web;
-
 use tokio;
 
 use futures_util::TryStreamExt;
@@ -21,13 +14,12 @@ use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use tonic::Request;
-use tonic::Response;
-use tonic::Status;
-
-pub mod infer {
-    tonic::include_proto!("infer"); // The string specified here must match the proto package name
-}
+use actix_multipart::Multipart;
+use actix_web::App;
+use actix_web::Error;
+use actix_web::HttpResponse;
+use actix_web::HttpServer;
+use actix_web::web;
 
 async fn infer_handler(
     mut payload: Multipart,
@@ -50,6 +42,14 @@ async fn infer_handler(
             return Ok(HttpResponse::InternalServerError().body(e));
         }
     }
+}
+
+use tonic::Request;
+use tonic::Response;
+use tonic::Status;
+
+pub mod infer {
+    tonic::include_proto!("infer"); // The string specified here must match the proto package name
 }
 
 pub struct MyInferer {

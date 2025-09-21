@@ -25,7 +25,6 @@ impl image_processor {
             imageops::FilterType::CatmullRom,
         )
     }
-
     pub fn decode_and_preprocess(&self, data: Vec<u8>) -> Result<image::RgbaImage, String> {
         match image::load_from_memory(&data) {
             Ok(img) => {

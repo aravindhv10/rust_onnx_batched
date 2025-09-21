@@ -785,7 +785,6 @@ Port on which the rest api listens to
               imageops::FilterType::CatmullRom,
           )
       }
-
       pub fn decode_and_preprocess(&self, data: Vec<u8>) -> Result<image::RgbaImage, String> {
           match image::load_from_memory(&data) {
               Ok(img) => {
@@ -986,7 +985,6 @@ Port on which the rest api listens to
               ps: [0.0; num_features],
           }
       }
-
       pub fn from<T: Index<usize, Output = outtype>>(input: T) -> Self {
           let mut ret = prediction_probabilities::new();
           for i in 0..num_features {
@@ -1017,7 +1015,6 @@ Port on which the rest api listens to
               mj: String::new(),
           }
       }
-
       pub fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
           let mut max_index: usize = 0;
           let mut ret = prediction_probabilities_reply::new();
@@ -1183,15 +1180,6 @@ Port on which the rest api listens to
 
 ** Importing external libraries
 
-*** actix parts
-#+begin_src rust :tangle ./src,main.rs
-  use actix_multipart::Multipart;
-  use actix_web::App;
-  use actix_web::Error;
-  use actix_web::HttpResponse;
-  use actix_web::HttpServer;
-  use actix_web::web;
-#+end_src
 
 *** tokio parts
 #+begin_src rust :tangle ./src,main.rs
@@ -1211,30 +1199,19 @@ Port on which the rest api listens to
   use std::sync::Arc;
 #+end_src
 
-*** Tonic parts
+** Main REST parts
 
-**** Main library
+*** import actix
 #+begin_src rust :tangle ./src,main.rs
-  use tonic::Request;
-  use tonic::Response;
-  use tonic::Status;
+  use actix_multipart::Multipart;
+  use actix_web::App;
+  use actix_web::Error;
+  use actix_web::HttpResponse;
+  use actix_web::HttpServer;
+  use actix_web::web;
 #+end_src
 
-**** proto parts
-#+begin_src rust :tangle ./src,main.rs
-  pub mod infer {
-      tonic::include_proto!("infer"); // The string specified here must match the proto package name
-  }
-#+end_src
-
-**** For client
-#+begin_src rust :tangle ./src,client.rs
-  pub mod infer {
-      tonic::include_proto!("infer"); // The string specified here must match the proto package name
-  }
-#+end_src
-
-** Main function which gets run by actix for inference
+*** Actual function called on api request
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_handler(
       mut payload: Multipart,
@@ -1262,16 +1239,41 @@ Port on which the rest api listens to
 
 ** Implementation for gRPC
 
-*** Declare the structure
+*** Import
+
+**** Main library
+#+begin_src rust :tangle ./src,main.rs
+  use tonic::Request;
+  use tonic::Response;
+  use tonic::Status;
+#+end_src
+
+**** proto parts
+
+***** for server
+#+begin_src rust :tangle ./src,main.rs
+  pub mod infer {
+      tonic::include_proto!("infer"); // The string specified here must match the proto package name
+  }
+#+end_src
+
+***** for client
+#+begin_src rust :tangle ./src,client.rs
+  pub mod infer {
+      tonic::include_proto!("infer"); // The string specified here must match the proto package name
+  }
+#+end_src
+
+*** Main structure
+
+**** Declare the structure
 #+begin_src rust :tangle ./src,main.rs
   pub struct MyInferer {
       slave_client: Arc<model_client>
   }
 #+end_src
 
-*** The trait
-
-**** NEW
+**** The trait
 #+begin_src rust :tangle ./src,main.rs
   #[tonic::async_trait]
   impl infer::infer_server::Infer for MyInferer {
@@ -1385,7 +1387,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: More cleanups.'
+  GITCOMMIT 'WORKING: More cleanups and reorg.'
 #+end_src
 
 * Run the work script

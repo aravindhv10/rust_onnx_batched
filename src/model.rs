@@ -39,7 +39,6 @@ impl prediction_probabilities {
             ps: [0.0; num_features],
         }
     }
-
     pub fn from<T: Index<usize, Output = outtype>>(input: T) -> Self {
         let mut ret = prediction_probabilities::new();
         for i in 0..num_features {
@@ -62,7 +61,6 @@ impl prediction_probabilities_reply {
             mj: String::new(),
         }
     }
-
     pub fn from(input: prediction_probabilities) -> prediction_probabilities_reply {
         let mut max_index: usize = 0;
         let mut ret = prediction_probabilities_reply::new();
