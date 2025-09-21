@@ -765,15 +765,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-**** Default trait
-#+begin_src rust :tangle ./src,mylib.rs
-  impl Default for image_processor {
-      fn default() -> Self {
-          return image_processor {image_resolution: 448};
-      }
-  }
-#+end_src
-
 **** Methods
 #+begin_src rust :tangle ./src,mylib.rs
   impl image_processor {

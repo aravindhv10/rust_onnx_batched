@@ -5,14 +5,6 @@ pub struct image_processor {
     image_resolution: u32,
 }
 
-impl Default for image_processor {
-    fn default() -> Self {
-        return image_processor {
-            image_resolution: 448,
-        };
-    }
-}
-
 impl image_processor {
     pub fn new(val: u32) -> Self {
         return image_processor {
