@@ -1,5 +1,6 @@
 
 
+mod mylib;
 mod model;
 use model::get_inference_tuple;
 use model::model_client;

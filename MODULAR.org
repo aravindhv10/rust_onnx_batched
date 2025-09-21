@@ -924,11 +924,9 @@ Port on which the rest api listens to
 
 *** My image processor and onnx model construction
 #+begin_src rust :tangle ./src,model.rs
-  mod ::mylib;
-  use ::mylib::get_model;
-  use ::mylib::image_processor;
+  use mylib::get_model;
+  use mylib::image_processor;
 #+end_src
-
 
 ** Important parameters
 
@@ -1179,6 +1177,7 @@ Port on which the rest api listens to
 
 **** Load structs and funcs from model module
 #+begin_src rust :tangle ./src,main.rs
+  mod mylib;
   mod model;
   use model::get_inference_tuple;
   use model::model_client;
