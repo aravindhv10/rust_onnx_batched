@@ -935,14 +935,16 @@ Port on which the rest api listens to
 
 *** generic parts
 #+begin_src rust :tangle ./src,model.rs
-  // use futures_util::TryStreamExt;
-  // use ndarray::Array;
-  // use ndarray::Axis;
-  // use ndarray::Ix4;
-  // use serde::Deserialize;
   use std::time::Duration;
   use serde::Serialize;
   use std::ops::Index;
+#+end_src
+
+*** tokio part
+#+begin_src rust :tangle ./src,model.rs
+  use tokio;
+  use tokio::sync::mpsc;
+  use tokio::sync::oneshot;
 #+end_src
 
 *** My image processor and onnx model construction
