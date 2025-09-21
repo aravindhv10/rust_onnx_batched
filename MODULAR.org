@@ -935,9 +935,20 @@ Port on which the rest api listens to
 
 *** generic parts
 #+begin_src rust :tangle ./src,model.rs
-  use std::time::Duration;
   use serde::Serialize;
+#+end_src
+
+*** std parts
+#+begin_src rust :tangle ./src,model.rs
+  use std::time::Duration;
   use std::ops::Index;
+#+end_src
+
+*** ndarray parts
+#+begin_src rust :tangle ./src,model.rs
+  use ndarray::Array;
+  use ndarray::Axis;
+  use ndarray::Ix4;
 #+end_src
 
 *** tokio part
