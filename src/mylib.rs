@@ -36,7 +36,7 @@ impl image_processor {
         )
     }
 
-    fn decode_and_preprocess(&self, data: Vec<u8>) -> Result<image::RgbaImage, String> {
+    pub fn decode_and_preprocess(&self, data: Vec<u8>) -> Result<image::RgbaImage, String> {
         match image::load_from_memory(&data) {
             Ok(img) => {
                 return Ok(self.preprocess(img));
