@@ -969,8 +969,6 @@ Port on which the rest api listens to
 **** generic parts
 #+begin_src rust :tangle ./src,main.rs
   use futures_util::TryStreamExt;
-  use image::DynamicImage;
-  use image::imageops;
   use ndarray::Array;
   use ndarray::Axis;
   use ndarray::Ix4;
@@ -1386,7 +1384,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Started separating image pre-processing functions'
+  GITCOMMIT 'WORKING: Mostly separated basic functions'
 #+end_src
 
 ** Run the work script

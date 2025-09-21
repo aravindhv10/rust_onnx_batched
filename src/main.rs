@@ -22,8 +22,6 @@ use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 use futures_util::TryStreamExt;
-use image::DynamicImage;
-use image::imageops;
 use ndarray::Array;
 use ndarray::Axis;
 use ndarray::Ix4;
