@@ -766,7 +766,9 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,mylib.rs
   impl image_processor {
       pub fn new(val: u32) -> Self {
-          return image_processor {image_resolution: val};
+          return image_processor {
+              image_resolution: val,
+          };
       }
       fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
           let (width, height) = (img.width(), img.height());
@@ -785,11 +787,11 @@ Port on which the rest api listens to
           match image::load_from_memory(&data) {
               Ok(img) => {
                   return Ok(self.preprocess(img));
-              },
+              }
               Err(e) => {
                   return Err("decode error".to_string());
               }
-          } ;
+          };
       }
   }
 #+end_src
@@ -1175,7 +1177,6 @@ Port on which the rest api listens to
 #+end_src
 
 ** Importing external libraries
-
 
 *** tokio parts
 #+begin_src rust :tangle ./src,main.rs
