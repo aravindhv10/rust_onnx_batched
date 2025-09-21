@@ -1025,6 +1025,8 @@ Port on which the rest api listens to
   }
 #+end_src
 
+** Main model related code
+
 *** Important parameters
 
 **** Generic
@@ -1040,10 +1042,6 @@ Port on which the rest api listens to
   const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 #+end_src
 
-** Main model related code
-
-*** Structs for holding inference results
-
 **** Main output type
 #+begin_src rust :tangle ./src,main.rs
   type outtype = f32;
@@ -1053,6 +1051,8 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   const num_features: usize = 3;
 #+end_src
+
+*** Structs for holding inference results
 
 **** Main struct for holding inference results
 
@@ -1406,7 +1406,7 @@ image_processor::default()
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Documentation reorg'
+  GITCOMMIT 'WORKING: Documentation reorg'
 #+end_src
 
 ** Run the work script
