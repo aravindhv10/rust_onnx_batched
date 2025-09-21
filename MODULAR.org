@@ -1306,7 +1306,7 @@ Port on which the rest api listens to
 
 **** define the main function
 #+begin_src rust :tangle ./src,client.rs
-  #[actix_web::main]
+  #[tokio::main]
   async fn main() -> Result<(), Box<dyn std::error::Error>> {
       let  data =  fs::read("./image.png").expect("Failed reading image file");
       let img = infer::Image{

@@ -5,7 +5,7 @@ pub mod infer {
 use std::error::Error;
 use std::fs;
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = fs::read("./image.png").expect("Failed reading image file");
     let img = infer::Image { image_data: data };
