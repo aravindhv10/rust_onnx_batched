@@ -737,7 +737,50 @@ Port on which the rest api listens to
 
 * Code for creating the onnx session
 
-** Import ort libraries
+** Image processing
+
+*** Import modules
+#+begin_src rust :tangle ./src,main.rs
+  use image::DynamicImage;
+  use image::imageops;
+#+end_src
+
+*** Actual functions
+
+**** Function to center crop and rescale
+#+begin_src rust :tangle ./src,main.rs
+  pub fn preprocess(img: DynamicImage) -> image::RgbaImage {
+      let (width, height) = (img.width(), img.height());
+      let size = width.min(height);
+      let x = (width - size) / 2;
+      let y = (height - size) / 2;
+      let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
+      imageops::resize(
+          &cropped_img,
+          IMAGE_RESOLUTION,
+          IMAGE_RESOLUTION,
+          imageops::FilterType::CatmullRom,
+      )
+  }
+#+end_src
+
+**** Decode binary data to image array
+#+begin_src rust :tangle ./src,main.rs
+  pub fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
+      match image::load_from_memory(&data) {
+          Ok(img) => {
+              return Ok(preprocess(img));
+          } ,
+          Err(e) => {
+              return Err("decode error".to_string());
+          }
+      } ;
+  }
+#+end_src
+
+** Onnx session related
+
+*** Import ort libraries
 #+begin_src rust :tangle ./src,mylib.rs
   use ort::execution_providers::CUDAExecutionProvider;
   use ort::execution_providers::OpenVINOExecutionProvider;
@@ -748,9 +791,11 @@ Port on which the rest api listens to
   use ort::value::TensorRef;
 #+end_src
 
-** Functions to construct models
+*** Functions to construct models
 
-*** Construct cuda model
+**** Main functions
+
+***** Construct cuda model
 #+begin_src rust :tangle ./src,mylib.rs
   pub fn get_cuda_model(model_path: &str) -> Result<Session, String> {
       let res1 = Session::builder()
@@ -774,7 +819,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** Construct webgpu model
+***** Construct webgpu model
 #+begin_src rust :tangle ./src,mylib.rs
   pub fn get_webgpu_model(model_path: &str) -> Result<Session, String> {
       let res1 = Session::builder()
@@ -798,7 +843,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** Construct openvino model
+***** Construct openvino model
 #+begin_src rust :tangle ./src,mylib.rs
   pub fn get_openvino_model(model_path: &str) -> Result<Session, String> {
       let res1 = Session::builder()
@@ -822,7 +867,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-** Wrapper function to construct the model
+**** Wrapper function to construct the model
 #+begin_src rust :tangle ./src,mylib.rs
   pub fn get_model(model_path: &str) -> Session {
       match get_cuda_model(model_path) {
@@ -864,6 +909,7 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,main.rs
   mod mylib;
   use mylib::get_model;
+  use mylib::decode_and_preprocess;
 #+end_src
 
 **** actix parts
@@ -961,96 +1007,6 @@ Port on which the rest api listens to
   type outtype = f32;
 #+end_src
 
-** COMMENT Function to construct the models
-
-*** Main function to get the models for various execution providers
-
-**** cuda
-#+begin_src rust :tangle ./src,main.rs
-  fn get_cuda_model() -> Result<Session, String> {
-      let res1 = Session::builder()
-          .unwrap()
-          .with_optimization_level(GraphOptimizationLevel::Level3)
-          .unwrap();
-
-      let res2 = res1.with_execution_providers([CUDAExecutionProvider::default().build()]);
-
-      match res2 {
-          Ok(res3) => {
-              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
-              println!("Constructed onnx with CUDA support");
-              return Ok(res4);
-          }
-          Err(_) => {
-              println!("Failed to construct model with CUDA support");
-              return Err("Failed to construct model with CUDA support".to_string());
-          }
-      }
-  }
-#+end_src
-
-**** webgpu
-#+begin_src rust :tangle ./src,main.rs
-  fn get_webgpu_model() -> Result<Session, String> {
-      let res1 = Session::builder()
-          .unwrap()
-          .with_optimization_level(GraphOptimizationLevel::Level3)
-          .unwrap();
-
-      let res2 = res1.with_execution_providers([WebGPUExecutionProvider::default().build()]);
-
-      match res2 {
-          Ok(res3) => {
-              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
-              println!("Constructed onnx with CUDA support");
-              return Ok(res4);
-          }
-          Err(_) => {
-              println!("Failed to construct model with WebGPU support");
-              return Err("Failed to construct model with WebGPU support".to_string());
-          }
-      }
-  }
-#+end_src
-
-**** openvino
-#+begin_src rust :tangle ./src,main.rs
-  fn get_openvino_model() -> Result<Session, String> {
-      let res1 = Session::builder()
-          .unwrap()
-          .with_optimization_level(GraphOptimizationLevel::Level3)
-          .unwrap();
-
-      let res2 = res1.with_execution_providers([OpenVINOExecutionProvider::default().build()]);
-
-      match res2 {
-          Ok(res3) => {
-              let res4 = res3.commit_from_file(MODEL_PATH).unwrap();
-              println!("Constructed onnx with openvino support");
-              return Ok(res4);
-          }
-          Err(_) => {
-              println!("Failed to construct model with openvino support");
-              return Err("Failed to construct model with openvino support".to_string());
-          }
-      }
-  }
-#+end_src
-
-*** Wrapper function to get the model
-#+begin_src rust :tangle ./src,main.rs
-  fn get_model() -> Session {
-      match get_cuda_model() {
-          Ok(model) => {
-              return model;
-          }
-          Err(_) => {
-              return get_openvino_model().unwrap();
-          }
-      }
-  }
-#+end_src
-
 ** Main struct for holding inference results
 
 *** Main struct
@@ -1124,88 +1080,6 @@ Port on which the rest api listens to
   }
 #+end_src
 
-** Main function to run the inference loops
-#+begin_src rust :tangle ./src,main.rs
-  async fn infer_loop(mut rx: mpsc::Receiver<InferRequest>, mut session: Session) {
-      while let Some(first) = rx.recv().await {
-          let mut batch = vec![first];
-          let start = tokio::time::Instant::now();
-          while batch.len() < MAX_BATCH && start.elapsed() < BATCH_TIMEOUT {
-              match rx.try_recv() {
-                  Ok(req) => batch.push(req),
-                  Err(_) => break,
-              }
-          }
-          let batch_size = batch.len();
-          let mut input = Array::<u8, Ix4>::zeros((
-              batch_size,
-              IMAGE_RESOLUTION as usize,
-              IMAGE_RESOLUTION as usize,
-              3,
-          ));
-          for (i, req) in batch.iter().enumerate() {
-              for (x, y, pixel) in req.img.enumerate_pixels() {
-                  let [r, g, b, _] = pixel.0;
-                  input[[i, y as usize, x as usize, 0]] = r;
-                  input[[i, y as usize, x as usize, 1]] = g;
-                  input[[i, y as usize, x as usize, 2]] = b;
-              }
-          }
-          let outputs =
-              match session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
-                  Ok(o) => o,
-                  Err(e) => {
-                      for req in batch {
-                          let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
-                      }
-                      continue;
-                  }
-              };
-
-          let output = outputs["output"]
-              .try_extract_array::<outtype>()
-              .unwrap()
-              .t()
-              .into_owned();
-
-          for (row, req) in output.axis_iter(Axis(1)).zip(batch.into_iter()) {
-              let result = prediction_probabilities::from(row);
-              let _ = req.resp_tx.send(Ok(result));
-          }
-      }
-  }
-#+end_src
-
-** Function to preprocess the image (center cropping, resizing, ...)
-#+begin_src rust :tangle ./src,main.rs
-  fn preprocess(img: DynamicImage) -> image::RgbaImage {
-      let (width, height) = (img.width(), img.height());
-      let size = width.min(height);
-      let x = (width - size) / 2;
-      let y = (height - size) / 2;
-      let cropped_img = imageops::crop_imm(&img, x, y, size, size).to_image();
-      imageops::resize(
-          &cropped_img,
-          IMAGE_RESOLUTION,
-          IMAGE_RESOLUTION,
-          imageops::FilterType::CatmullRom,
-      )
-  }
-#+end_src
-
-** Function to decode and pre-process
-#+begin_src rust :tangle ./src,main.rs
-  fn decode_and_preprocess(data: Vec<u8>) -> Result<image::RgbaImage, String> {
-      match image::load_from_memory(&data) {
-          Ok(img) => {
-              return Ok(preprocess(img));
-          } ,
-          Err(e) => {
-              return Err("decode error".to_string());
-          }
-      } ;
-  }
-#+end_src
 
 ** implementing the inference with automatic batching
 
@@ -1484,7 +1358,7 @@ Port on which the rest api listens to
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Wrote some clean up blocks'
+  GITCOMMIT 'Started separating image pre-processing functions'
 #+end_src
 
 ** Run the work script
