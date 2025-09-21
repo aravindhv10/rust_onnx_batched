@@ -1,25 +1,23 @@
+
+
 use image::DynamicImage;
 use image::imageops;
 
 use std::default;
 
 pub struct image_processor {
-    image_resolution: u32,
+    image_resolution: u32
 }
 
 impl Default for image_processor {
     fn default() -> Self {
-        return image_processor {
-            image_resolution: 448,
-        };
+        return image_processor {image_resolution: 448};
     }
 }
 
 impl image_processor {
     pub fn new(val: u32) -> Self {
-        return image_processor {
-            image_resolution: val,
-        };
+        return image_processor {image_resolution: val};
     }
 
     fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
@@ -40,11 +38,11 @@ impl image_processor {
         match image::load_from_memory(&data) {
             Ok(img) => {
                 return Ok(self.preprocess(img));
-            }
+            } ,
             Err(e) => {
                 return Err("decode error".to_string());
             }
-        };
+        } ;
     }
 }
 
@@ -52,8 +50,8 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::Session;
 use ort::session::builder::GraphOptimizationLevel;
+use ort::session::Session;
 use ort::value::TensorRef;
 
 pub fn get_cuda_model(model_path: &str) -> Result<Session, String> {

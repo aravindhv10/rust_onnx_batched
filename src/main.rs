@@ -1,3 +1,5 @@
+
+
 mod model;
 use model::get_inference_tuple;
 use model::model_client;
@@ -14,8 +16,8 @@ use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::inputs;
-use ort::session::Session;
 use ort::session::builder::GraphOptimizationLevel;
+use ort::session::Session;
 use ort::value::TensorRef;
 
 use tokio;
@@ -61,23 +63,20 @@ async fn infer_handler(
     match infer_slave.do_infer_data(data).await {
         Ok(pred) => {
             return Ok(HttpResponse::Ok().json(prediction_probabilities_reply::from(pred)));
-        }
+        },
         Err(e) => {
             return Ok(HttpResponse::InternalServerError().body(e));
-        }
+        },
     }
 }
 
 pub struct MyInferer {
-    slave_client: Arc<model_client>,
+    slave_client: Arc<model_client>
 }
 
 #[tonic::async_trait]
 impl infer::infer_server::Infer for MyInferer {
-    async fn do_infer(
-        &self,
-        request: Request<infer::Image>,
-    ) -> Result<Response<infer::Prediction>, Status> {
+    async fn do_infer(&self, request: Request<infer::Image>) -> Result<Response<infer::Prediction>, Status> {
         println!("Received gRPC request");
         let image_data = request.into_inner().image_data;
         match self.slave_client.do_infer_data(image_data).await {
@@ -88,8 +87,10 @@ impl infer::infer_server::Infer for MyInferer {
                     ps3: pred.ps[2],
                 };
                 return Ok(Response::new(reply));
-            }
-            Err(e) => Err(Status::internal(e)),
+            },
+            Err(e) => {
+                Err(Status::internal(e))
+            },
         }
     }
 }
@@ -111,14 +112,9 @@ async fn main() -> () {
             let future_rest_server = ret.run();
             let ip_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
             let addr = SocketAddr::new(ip_v4, 8001);
-            let inferer_service = MyInferer {
-                slave_client: slave_client_2,
-            };
-            let future_grpc = tonic::transport::Server::builder()
-                .add_service(infer::infer_server::InferServer::new(inferer_service))
-                .serve(addr);
-            let (first, second, third) =
-                tokio::join!(future_infer, future_rest_server, future_grpc);
+            let inferer_service = MyInferer{slave_client: slave_client_2};
+            let future_grpc = tonic::transport::Server::builder().add_service(infer::infer_server::InferServer::new(inferer_service)).serve(addr);
+            let (first, second, third) = tokio::join!(future_infer, future_rest_server, future_grpc);
             match second {
                 Ok(_) => {
                     println!("REST server executed and stopped successfully");
