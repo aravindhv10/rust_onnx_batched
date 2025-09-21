@@ -11,7 +11,6 @@ impl image_processor {
             image_resolution: val,
         };
     }
-
     fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
         let (width, height) = (img.width(), img.height());
         let size = width.min(height);

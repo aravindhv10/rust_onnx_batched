@@ -398,11 +398,16 @@ For running the inference on both CPU and GPU.
 #+end_src
 
 **** binary files
+
+***** infer-server
 #+begin_src conf :tangle ./Cargo.package.toml
   [[bin]]
   name = "infer-server"
   path = "src/main.rs"
+#+end_src
 
+***** infer-client
+#+begin_src conf :tangle ./Cargo.package.toml
   [[bin]]
   name = "infer-client"
   path = "src/client.rs"
@@ -498,14 +503,6 @@ For running the inference on both CPU and GPU.
   ENV CARGO_HOME='/usr/local/cargo'
   ENV RUST_VERSION='1.90.0'
   ENV PATH="/usr/local/cargo/bin:${PATH}"
-#+end_src
-
-** COMMENT Prepare rust stuff
-#+begin_src conf :tangle ./Dockerfile
-  ENV RUSTUP_HOME=/usr/local/rustup \
-      CARGO_HOME=/usr/local/cargo \
-      PATH=/usr/local/cargo/bin:$PATH \
-      RUST_VERSION=1.88.0
 #+end_src
 
 * Prepare basic packages
@@ -771,7 +768,6 @@ Port on which the rest api listens to
       pub fn new(val: u32) -> Self {
           return image_processor {image_resolution: val};
       }
-
       fn preprocess(&self, img: DynamicImage) -> image::RgbaImage {
           let (width, height) = (img.width(), img.height());
           let size = width.min(height);
@@ -789,7 +785,7 @@ Port on which the rest api listens to
           match image::load_from_memory(&data) {
               Ok(img) => {
                   return Ok(self.preprocess(img));
-              } ,
+              },
               Err(e) => {
                   return Err("decode error".to_string());
               }
