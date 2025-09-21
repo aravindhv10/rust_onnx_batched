@@ -29,15 +29,6 @@ For running the inference on both CPU and GPU.
   }
 #+end_src
 
-* Add all the org files
-#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITADD 'FILE_BASED.org'
-  GITADD 'MODULAR.org'
-  GITADD 'README.org'
-  GITADD 'TEMPLATED.org'
-  GITADD 'TRUE_QUEUE.org'
-#+end_src
-
 * Clean files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   CLEAN '#Cargo.toml#'
@@ -52,6 +43,15 @@ For running the inference on both CPU and GPU.
   CLEAN 'TEMPLATED.org~'
   CLEAN 'tmp.sh'
   CLEAN 'TRUE_QUEUE.org~'
+#+end_src
+
+* Add all the org files
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  GITADD 'FILE_BASED.org'
+  GITADD 'MODULAR.org'
+  GITADD 'README.org'
+  GITADD 'TEMPLATED.org'
+  GITADD 'TRUE_QUEUE.org'
 #+end_src
 
 * Main rust code
@@ -87,6 +87,17 @@ For running the inference on both CPU and GPU.
 
 *** Create the temporary file
 #+begin_src rust :tangle ./src,mylib.rs
+#+end_src
+
+** Nodel execution parts
+
+*** Move the temporary file and add it to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+  SETFILE 'src,model.rs' 'src/model.rs'
+#+end_src
+
+*** Create the temporary file
+#+begin_src rust :tangle ./src,model.rs
 #+end_src
 
 * Main cargo code
@@ -735,7 +746,7 @@ Port on which the rest api listens to
   buildah build -t "${IMAGE_NAME}" .
 #+end_src
 
-* Code for creating the onnx session
+* Code for creating the onnx session and image preprocessor
 
 ** Image processing
 
@@ -907,6 +918,10 @@ Port on which the rest api listens to
   }
 #+end_src
 
+* Code for model related executions
+#+begin_src rust :tangle ./src,model.rs
+#+end_src
+
 * Main code
 
 ** Importing external libraries
@@ -1026,21 +1041,30 @@ Port on which the rest api listens to
   const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 #+end_src
 
+** Main model related code
+
+*** Structs for holding inference results
+
 **** Main output type
 #+begin_src rust :tangle ./src,main.rs
   type outtype = f32;
 #+end_src
 
-** Main struct for holding inference results
+**** Number of features in inferred results
+#+begin_src rust :tangle ./src,main.rs
+  const num_features: usize = 3;
+#+end_src
 
-*** Main struct
+**** Main struct for holding inference results
+
+***** Main struct
 #+begin_src rust :tangle ./src,main.rs
   struct prediction_probabilities {
       ps: [outtype; num_features],
   }
 #+end_src
 
-*** Method implementation
+***** Method implementation
 #+begin_src rust :tangle ./src,main.rs
   impl prediction_probabilities {
       fn new() -> Self {
@@ -1059,9 +1083,9 @@ Port on which the rest api listens to
   }
 #+end_src
 
-** Structure to construct the reply from server
+**** Structure to construct the reply from server
 
-*** Actual structure
+***** Actual structure
 #+begin_src rust :tangle ./src,main.rs
   #[derive(Serialize)]
   struct prediction_probabilities_reply {
@@ -1070,7 +1094,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** Method implementation
+***** Method implementation
 #+begin_src rust :tangle ./src,main.rs
   impl prediction_probabilities_reply {
       fn new() -> Self {
@@ -1096,7 +1120,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-** Struct for sending the inference request to the inferring thread
+*** Struct for sending the inference request to the inferring thread
 #+begin_src rust :tangle ./src,main.rs
   struct InferRequest {
       img: image::RgbaImage,
@@ -1104,12 +1128,11 @@ Port on which the rest api listens to
   }
 #+end_src
 
+*** implementing the inference with automatic batching
 
-** implementing the inference with automatic batching
+**** New struct based inference server
 
-*** New struct based inference server
-
-**** The struct
+***** The struct
 #+begin_src rust :tangle ./src,main.rs
   struct model_server {
       rx: mpsc::Receiver<InferRequest>,
@@ -1117,7 +1140,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-**** The functions
+***** The functions
 #+begin_src rust :tangle ./src,main.rs
   impl model_server {
       async fn infer_loop(&mut self) {
@@ -1169,9 +1192,9 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** New struct based inference client
+**** New struct based inference client
 
-**** The struct
+***** The struct
 #+begin_src rust :tangle ./src,main.rs
   struct model_client {
       tx: mpsc::Sender<InferRequest>,
@@ -1180,7 +1203,7 @@ Port on which the rest api listens to
 #+end_src
 
 
-**** The functions
+***** The functions
 #+begin_src rust :tangle ./src,main.rs
   impl model_client {
       async fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
@@ -1215,7 +1238,7 @@ Port on which the rest api listens to
   }
 #+end_src
 
-*** Function to construct the inference server and client
+**** Function to construct the inference server and client
 #+begin_src rust :tangle ./src,main.rs
   fn get_inference_tuple() -> (model_server, model_client) {
       let (tx, rx) = mpsc::channel::<InferRequest>(512);
@@ -1229,8 +1252,6 @@ Port on which the rest api listens to
 #+end_src
 
 ** Main function which gets run by actix for inference
-
-*** NEW
 #+begin_src rust :tangle ./src,main.rs
   async fn infer_handler(
       mut payload: Multipart,
@@ -1382,9 +1403,11 @@ Port on which the rest api listens to
 
 * Commit the changes
 
+image_processor::default()
+
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Mostly separated basic functions'
+  GITCOMMIT 'Documentation reorg'
 #+end_src
 
 ** Run the work script
@@ -1397,5 +1420,3 @@ Port on which the rest api listens to
       " "log" "err")
 #+end_src
 
-
-image_processor::default()

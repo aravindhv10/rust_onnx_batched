@@ -54,6 +54,8 @@ const CLASS_LABELS: [&str; num_features] = ["empty", "occupied", "other"];
 
 type outtype = f32;
 
+const num_features: usize = 3;
+
 struct prediction_probabilities {
     ps: [outtype; num_features],
 }
