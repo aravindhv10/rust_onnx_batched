@@ -923,7 +923,7 @@ Port on which the rest api listens to
 ** Important imports
 
 *** ort parts
-#+begin_src rust :tangle ./src,main.rs
+#+begin_src rust :tangle ./src,model.rs
   use ort::execution_providers::CUDAExecutionProvider;
   use ort::execution_providers::OpenVINOExecutionProvider;
   use ort::execution_providers::WebGPUExecutionProvider;

@@ -1,3 +1,11 @@
+use ort::execution_providers::CUDAExecutionProvider;
+use ort::execution_providers::OpenVINOExecutionProvider;
+use ort::execution_providers::WebGPUExecutionProvider;
+use ort::inputs;
+use ort::session::Session;
+use ort::session::builder::GraphOptimizationLevel;
+use ort::value::TensorRef;
+
 use crate::mylib::get_model;
 use crate::mylib::image_processor;
 
