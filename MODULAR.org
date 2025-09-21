@@ -927,8 +927,8 @@ Port on which the rest api listens to
 
 *** std parts
 #+begin_src rust :tangle ./src,model.rs
-  use std::time::Duration;
   use std::ops::Index;
+  use std::time::Duration;
 #+end_src
 
 *** ndarray parts
@@ -1168,7 +1168,7 @@ Port on which the rest api listens to
           rx: rx,
           session: get_model(MODEL_PATH),
       };
-      let ret_client = model_client {tx: tx, preprocess: image_processor::default()};
+      let ret_client = model_client {tx: tx, preprocess: image_processor::new(IMAGE_RESOLUTION)};
       return (ret_server, ret_client);
   }
 #+end_src
@@ -1307,10 +1307,15 @@ Port on which the rest api listens to
 ** The main function
 
 *** Client
+
+**** get important libraries
 #+begin_src rust :tangle ./src,client.rs
   use std::fs;
   use std::error::Error;
+#+end_src
 
+**** define the main function
+#+begin_src rust :tangle ./src,client.rs
   #[actix_web::main]
   async fn main() -> Result<(), Box<dyn std::error::Error>> {
       let  data =  fs::read("./image.png").expect("Failed reading image file");
@@ -1388,15 +1393,11 @@ Port on which the rest api listens to
 #+end_src
 
 * Commit the changes
-
-image_processor::default()
-
-** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Some cleanups for unused stuff.'
+  GITCOMMIT 'More cleanups'
 #+end_src
 
-** Run the work script
+* Run the work script
 #+begin_src emacs-lisp :results silent
   (save-buffer)
   (org-babel-tangle)
@@ -1405,4 +1406,3 @@ image_processor::default()
           git status
       " "log" "err")
 #+end_src
-

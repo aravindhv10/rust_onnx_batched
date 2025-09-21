@@ -187,7 +187,7 @@ pub fn get_inference_tuple() -> (model_server, model_client) {
     };
     let ret_client = model_client {
         tx: tx,
-        preprocess: image_processor::default(),
+        preprocess: image_processor::new(IMAGE_RESOLUTION),
     };
     return (ret_server, ret_client);
 }
