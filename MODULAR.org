@@ -1207,7 +1207,7 @@ Port on which the rest api listens to
   use tokio;
 #+end_src
 
-*** COMMENT generic parts
+*** generic parts
 #+begin_src rust :tangle ./src,main.rs
   use futures_util::TryStreamExt;
 #+end_src
