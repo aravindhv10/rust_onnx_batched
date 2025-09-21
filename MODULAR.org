@@ -749,7 +749,7 @@ Port on which the rest api listens to
 
 **** Default trait from std
 #+begin_src rust :tangle ./src,mylib.rs
-  use std::Default;
+  use std::default;
 #+end_src
 
 *** Struct for image processing
