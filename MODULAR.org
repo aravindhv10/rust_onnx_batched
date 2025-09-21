@@ -942,6 +942,7 @@ Port on which the rest api listens to
   // use serde::Deserialize;
   use std::time::Duration;
   use serde::Serialize;
+  use std::ops::Index;
 #+end_src
 
 *** My image processor and onnx model construction
