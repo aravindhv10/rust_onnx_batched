@@ -933,6 +933,16 @@ Port on which the rest api listens to
   use ort::value::TensorRef;
 #+end_src
 
+*** generic parts
+#+begin_src rust :tangle ./src,model.rs
+  // use futures_util::TryStreamExt;
+  // use ndarray::Array;
+  // use ndarray::Axis;
+  // use ndarray::Ix4;
+  // use serde::Deserialize;
+  use serde::Serialize;
+#+end_src
+
 *** My image processor and onnx model construction
 #+begin_src rust :tangle ./src,model.rs
   use crate::mylib::get_model;
