@@ -1175,42 +1175,24 @@ Port on which the rest api listens to
 
 * Main code
 
-** Importing external libraries
+** my modules
 
-*** COMMENT Disabled parts
-#+begin_src rust :tangle ./src,main.rs
-  use bincode::Decode;
-  use bincode::Encode;
-  use bincode::config;
-  use futures::future::join_all;
-  use gxhash;
-  use std::fs;
-  use std::path::Path;
-  use std::time::SystemTime;
-  use tokio::fs::create_dir_all;
-  use tokio::fs::read;
-  use tokio::fs::read_dir;
-  use tokio::fs::remove_file;
-  use tokio::fs::write;
-  use tokio::sync::Mutex;
-#+end_src
-
-*** Main parts
-
-**** Declare mods
+*** Declare mods
 #+begin_src rust :tangle ./src,main.rs
   mod mylib;
   mod model;
 #+end_src
 
-**** Load structs and funcs from model module
+*** Load structs and funcs from model module
 #+begin_src rust :tangle ./src,main.rs
   use model::get_inference_tuple;
   use model::model_client;
   use model::prediction_probabilities_reply;
 #+end_src
 
-**** actix parts
+** Importing external libraries
+
+*** actix parts
 #+begin_src rust :tangle ./src,main.rs
   use actix_multipart::Multipart;
   use actix_web::App;
@@ -1220,17 +1202,17 @@ Port on which the rest api listens to
   use actix_web::web;
 #+end_src
 
-**** tokio parts
+*** tokio parts
 #+begin_src rust :tangle ./src,main.rs
   use tokio;
 #+end_src
 
-**** generic parts
+*** COMMENT generic parts
 #+begin_src rust :tangle ./src,main.rs
   use futures_util::TryStreamExt;
 #+end_src
 
-**** std parts
+*** std parts
 #+begin_src rust :tangle ./src,main.rs
   use std::net::IpAddr;
   use std::net::Ipv4Addr;
@@ -1238,23 +1220,23 @@ Port on which the rest api listens to
   use std::sync::Arc;
 #+end_src
 
-**** Tonic parts
+*** Tonic parts
 
-***** Main library
+**** Main library
 #+begin_src rust :tangle ./src,main.rs
   use tonic::Request;
   use tonic::Response;
   use tonic::Status;
 #+end_src
 
-***** proto parts
+**** proto parts
 #+begin_src rust :tangle ./src,main.rs
   pub mod infer {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
   }
 #+end_src
 
-***** For client
+**** For client
 #+begin_src rust :tangle ./src,client.rs
   pub mod infer {
       tonic::include_proto!("infer"); // The string specified here must match the proto package name
