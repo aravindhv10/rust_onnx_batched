@@ -32,6 +32,7 @@ For running the inference on both CPU and GPU.
 * Add all the org files
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
   GITADD 'FILE_BASED.org'
+  GITADD 'MODULAR.org'
   GITADD 'README.org'
   GITADD 'TEMPLATED.org'
   GITADD 'TRUE_QUEUE.org'
@@ -1479,9 +1480,9 @@ Port on which the rest api listens to
 
 * Commit the changes
 
-** COMMENT Configure Message
+** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: Managed to isolate stuff into new src file.'
+  GITCOMMIT 'WORKING: Started a new org file for making things modular.'
 #+end_src
 
 ** Run the work script
