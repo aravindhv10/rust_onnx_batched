@@ -1446,7 +1446,7 @@ image_processor::default()
 
 ** Configure Message
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Separated model related code'
+  GITCOMMIT 'WORKING: Separated the model parts.'
 #+end_src
 
 ** Run the work script
