@@ -1,8 +1,10 @@
 mod model;
 mod mylib;
+
 use model::get_inference_tuple;
 use model::model_client;
 use model::model_server;
+use model::prediction_probabilities_reply;
 
 use actix_multipart::Multipart;
 use actix_web::App;

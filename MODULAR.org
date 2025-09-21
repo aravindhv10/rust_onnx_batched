@@ -1211,13 +1211,18 @@ Port on which the rest api listens to
 
 *** Main parts
 
-**** Load structs and funcs from model module
+**** Declare mods
 #+begin_src rust :tangle ./src,main.rs
   mod mylib;
   mod model;
+#+end_src
+
+**** Load structs and funcs from model module
+#+begin_src rust :tangle ./src,main.rs
   use model::get_inference_tuple;
   use model::model_client;
   use model::model_server;
+  use model::prediction_probabilities_reply;
 #+end_src
 
 **** actix parts
