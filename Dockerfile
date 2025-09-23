@@ -11,6 +11,7 @@ RUN \
     && apt-get -y update \
     && apt-get install -y \
         'build-essential' \
+        'cmake' \
         'git' \
         'half' \
         'migraphx' \
