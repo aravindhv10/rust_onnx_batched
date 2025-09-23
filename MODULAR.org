@@ -579,8 +579,25 @@ Install basic apt packages.
 #+end_src
 
 *** Build onnxruntime
+
+**** 2
 /opt/rocm/lib/migraphx
 Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+    RUN \
+        echo 'START build and install onnxruntime' \
+        && . '/opt/venv/bin/activate' \
+        && cd / \
+        && /bin/sh '/onnxruntime/dockerfiles/scripts/install_common_deps.sh' \
+        && cd '/onnxruntime' \
+        && ./build.sh --config Release --build_wheel --parallel --use_migraphx --migraphx_home /opt/rocm \
+        && echo 'DONE build and install onnxruntime' ;
+#+end_src
+
+**** COMMENT 1
+/opt/rocm/lib/migraphx
+Install basic apt packages.
+./build.sh --config Release --build_wheel --parallel --use_migraphx --migraphx_home /opt/rocm
 #+begin_src conf :tangle ./Dockerfile
   RUN \
       echo 'START build and install onnxruntime' \

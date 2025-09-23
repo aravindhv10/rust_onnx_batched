@@ -76,15 +76,7 @@ RUN \
     && cd / \
     && /bin/sh '/onnxruntime/dockerfiles/scripts/install_common_deps.sh' \
     && cd '/onnxruntime' \
-    && /bin/sh ./build.sh \
-        --allow_running_as_root \
-        --config Release \
-        --build_wheel --update --build --parallel --use_migraphx \
-        --migraphx_home /opt/rocm \
-        --cmake_extra_defines ONNXRUNTIME_VERSION="$(cat ./VERSION_NUMBER)" \
-        --use_rocm \
-        --rocm_home=/opt/rocm \
-    && pip install /onnxruntime/build/Linux/Release/dist/*.whl \
+    && ./build.sh --config Release --build_wheel --parallel --use_migraphx --migraphx_home /opt/rocm \
     && echo 'DONE build and install onnxruntime' ;
 
 USER root
