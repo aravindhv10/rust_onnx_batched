@@ -83,6 +83,9 @@ RUN \
     && ldconfig \
     && echo 'DONE installed libraries' ;
 
+ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
+ENV ORT_STRATEGY='system'
+
 USER root
 WORKDIR '/root'
 

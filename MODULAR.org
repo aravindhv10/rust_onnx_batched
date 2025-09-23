@@ -447,6 +447,9 @@ For running the inference on both CPU and GPU.
 - Definne nvidia gpu capabilities if using CUDA.
 - Set env =export ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'=
 
+export ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
+export ORT_STRATEGY='system'
+
 ** ROCM
 
 *** Cargo
@@ -576,6 +579,12 @@ Install basic apt packages.
       && ls | grep 'lib.*\.so' | sed 's@^@("cp" "-vf" "--" "@g;s@$@" "/lib/");@g' | sh \
       && ldconfig \
       && echo 'DONE installed libraries' ;
+#+end_src
+
+*** Set up env
+#+begin_src conf :tangle ./Dockerfile
+  ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
+  ENV ORT_STRATEGY='system'
 #+end_src
 
 ** COMMENT CUDA
