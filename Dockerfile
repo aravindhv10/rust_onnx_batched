@@ -53,6 +53,13 @@ RUN \
     && './tools/build_and_test_onnxrt.sh' \
     && echo 'DONE build and install onnxruntime' ;
 
+RUN \
+    echo 'START installed libraries' \
+    && cd '/onnxruntime/build/Linux/Release' \
+    && ls | grep 'lib.*\.so' | sed 's@^@("cp" "-vf" "--" "@g;s@$@" "/lib/");@g' | sh \
+    && ldconfig \
+    && echo 'DONE installed libraries' ;
+
 USER root
 WORKDIR '/root'
 

@@ -536,6 +536,16 @@ Install basic apt packages.
       && echo 'DONE build and install onnxruntime' ;
 #+end_src
 
+*** Copy the installed libraries
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START installed libraries' \
+      && cd '/onnxruntime/build/Linux/Release' \
+      && ls | grep 'lib.*\.so' | sed 's@^@("cp" "-vf" "--" "@g;s@$@" "/lib/");@g' | sh \
+      && ldconfig \
+      && echo 'DONE installed libraries' ;
+#+end_src
+
 ** COMMENT CUDA
 
 *** Cargo
