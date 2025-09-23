@@ -455,7 +455,13 @@ For running the inference on both CPU and GPU.
 
 *** Base docker image
 #+begin_src conf :tangle ./Dockerfile
-  FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+  # FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+  FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
+#+end_src
+
+*** env
+#+begin_src conf :tangle ./Dockerfile
+  ENV ORT_DYLIB_PATH='/opt/venv/lib/python3.12/site-packages/onnxruntime/capi/libonnxruntime.so.1.22.1'
 #+end_src
 
 ** COMMENT CUDA

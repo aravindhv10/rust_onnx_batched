@@ -1,6 +1,9 @@
 
 
-FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+# FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
+
+ENV ORT_DYLIB_PATH='/opt/venv/lib/python3.12/site-packages/onnxruntime/capi/libonnxruntime.so.1.22.1'
 
 USER root
 WORKDIR '/root'
