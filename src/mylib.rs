@@ -39,6 +39,7 @@ impl image_processor {
 }
 
 use ort::execution_providers::CUDAExecutionProvider;
+use ort::execution_providers::MIGraphXExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
 use ort::execution_providers::ROCmExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
@@ -114,7 +115,7 @@ pub fn get_rocm_model(model_path: &str) -> Result<Session, String> {
         .with_optimization_level(GraphOptimizationLevel::Level3)
         .unwrap();
 
-    let res2 = res1.with_execution_providers([ROCmExecutionProvider::default().build()]);
+    let res2 = res1.with_execution_providers([MIGraphXExecutionProvider::default().build()]);
 
     match res2 {
         Ok(res3) => {
