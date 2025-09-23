@@ -1,8 +1,10 @@
+
+
 use image::DynamicImage;
 use image::imageops;
 
 pub struct image_processor {
-    image_resolution: u32,
+    image_resolution: u32
 }
 
 impl image_processor {
@@ -38,6 +40,7 @@ impl image_processor {
 
 use ort::execution_providers::CUDAExecutionProvider;
 use ort::execution_providers::OpenVINOExecutionProvider;
+use ort::execution_providers::ROCmExecutionProvider;
 use ort::execution_providers::WebGPUExecutionProvider;
 use ort::session::Session;
 use ort::session::builder::GraphOptimizationLevel;
@@ -105,13 +108,27 @@ pub fn get_openvino_model(model_path: &str) -> Result<Session, String> {
     }
 }
 
-pub fn get_model(model_path: &str) -> Session {
-    match get_cuda_model(model_path) {
-        Ok(model) => {
-            return model;
+pub fn get_rocm_model(model_path: &str) -> Result<Session, String> {
+    let res1 = Session::builder()
+        .unwrap()
+        .with_optimization_level(GraphOptimizationLevel::Level3)
+        .unwrap();
+
+    let res2 = res1.with_execution_providers([ROCmExecutionProvider::default().build()]);
+
+    match res2 {
+        Ok(res3) => {
+            let res4 = res3.commit_from_file(model_path).unwrap();
+            println!("Constructed onnx with openvino support");
+            return Ok(res4);
         }
         Err(_) => {
-            return get_openvino_model(model_path).unwrap();
+            println!("Failed to construct model with openvino support");
+            return Err("Failed to construct model with openvino support".to_string());
         }
     }
+}
+
+pub fn get_model(model_path: &str) -> Session {
+    return get_rocm_model(model_path).unwrap();
 }

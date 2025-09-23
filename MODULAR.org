@@ -446,6 +446,23 @@ For running the inference on both CPU and GPU.
 - Define docker base image for GPU or CPU.
 - Definne nvidia gpu capabilities if using CUDA.
 
+** ROCM
+
+*** Cargo
+#+begin_src conf :tangle ./Cargo.dependencies.toml
+  ort = { version = "2.0.0-rc.10", features = ["rocm"] }
+#+end_src
+
+*** Base docker image
+#+begin_src conf :tangle ./Dockerfile
+  FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+#+end_src
+
+*** env
+#+begin_src conf :tangle ./Dockerfile
+  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
+#+end_src
+
 ** COMMENT CUDA
 
 *** Cargo
@@ -475,7 +492,7 @@ For running the inference on both CPU and GPU.
   FROM ubuntu:24.04 AS rust
 #+end_src
 
-** OpenVino
+** COMMENT OpenVino
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.dependencies.toml
@@ -802,9 +819,10 @@ Port on which the rest api listens to
 #+begin_src rust :tangle ./src,mylib.rs
   use ort::execution_providers::CUDAExecutionProvider;
   use ort::execution_providers::OpenVINOExecutionProvider;
+  use ort::execution_providers::ROCmExecutionProvider;
   use ort::execution_providers::WebGPUExecutionProvider;
-  use ort::session::builder::GraphOptimizationLevel;
   use ort::session::Session;
+  use ort::session::builder::GraphOptimizationLevel;
 #+end_src
 
 *** Functions to construct models
@@ -883,17 +901,34 @@ Port on which the rest api listens to
   }
 #+end_src
 
+***** Construct rocm model
+#+begin_src rust :tangle ./src,mylib.rs
+  pub fn get_rocm_model(model_path: &str) -> Result<Session, String> {
+      let res1 = Session::builder()
+          .unwrap()
+          .with_optimization_level(GraphOptimizationLevel::Level3)
+          .unwrap();
+
+      let res2 = res1.with_execution_providers([ROCmExecutionProvider::default().build()]);
+
+      match res2 {
+          Ok(res3) => {
+              let res4 = res3.commit_from_file(model_path).unwrap();
+              println!("Constructed onnx with openvino support");
+              return Ok(res4);
+          }
+          Err(_) => {
+              println!("Failed to construct model with openvino support");
+              return Err("Failed to construct model with openvino support".to_string());
+          }
+      }
+  }
+#+end_src
+
 **** Wrapper function to construct the model
 #+begin_src rust :tangle ./src,mylib.rs
   pub fn get_model(model_path: &str) -> Session {
-      match get_cuda_model(model_path) {
-          Ok(model) => {
-              return model;
-          }
-          Err(_) => {
-              return get_openvino_model(model_path).unwrap();
-          }
-      }
+      return get_rocm_model(model_path).unwrap();
   }
 #+end_src
 
@@ -1384,7 +1419,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'WORKING: More cleanups and reorg.'
+  GITCOMMIT 'Started work with rocm'
 #+end_src
 
 * Run the work script

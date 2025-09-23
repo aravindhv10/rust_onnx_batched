@@ -1,6 +1,8 @@
 
 
-FROM openvino/ubuntu24_dev:latest AS rust
+FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+
+ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
 
 USER root
 WORKDIR '/root'
