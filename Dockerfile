@@ -62,6 +62,7 @@ RUN \
 
 RUN \
     echo 'START build and install onnxruntime' \
+    && . '/opt/venv/bin/activate' \
     && cd / \
     && /bin/sh '/onnxruntime/dockerfiles/scripts/install_common_deps.sh' \
     && cd '/onnxruntime' \
