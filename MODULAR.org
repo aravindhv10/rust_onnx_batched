@@ -586,10 +586,12 @@ Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
   ENV ORT_STRATEGY='system'
-  ENV CC=/opt/rocm/llvm/bin/clang
-  ENV CXX=/opt/rocm/llvm/bin/clang++
-  ENV CMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
-  ENV HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+  ENV CC='/opt/rocm/llvm/bin/clang'
+  ENV CXX='/opt/rocm/llvm/bin/clang++'
+  ENV CMAKE_HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
+  ENV HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
+  ENV ORT_MIGRAPHX_SAVE_COMPILED_PATH='/COMPILED'
+  RUN mkdir -pv -- "${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
 #+end_src
 
 ** COMMENT CUDA
