@@ -36,15 +36,8 @@ RUN \
     && echo 'DONE uv download' ;
 
 RUN \
-    echo 'START build and install onnxruntime' \
-    && uv venv "${HOME}/venv" \
-    && . "${HOME}/bin/activate" \
-    && uv pip install -U pip \
-    && echo 'DONE build and install onnxruntime' ;
-
-RUN \
     echo 'START Get onnx rt requirements' \
-    && . "${HOME}/bin/activate" \
+    && . '/opt/venv/bin/activate' \
     && cd '/onnxruntime' \
     && uv pip install -r 'requirements-dev.txt' \
     && echo 'DONE Get onnx rt requirements' ;
@@ -52,7 +45,7 @@ RUN \
 RUN \
     echo 'START build and install onnxruntime' \
     && cd "${HOME}/AMDMIGraphX" \
-    && . "${HOME}/bin/activate" \
+    && . '/opt/venv/bin/activate' \
     && './tools/build_and_test_onnxrt.sh' \
     && echo 'DONE build and install onnxruntime' ;
 

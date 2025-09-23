@@ -507,13 +507,13 @@ Install basic apt packages.
       && echo 'DONE uv download' ;
 #+end_src
 
-*** Create env and install basic tools
+*** COMMENT Create env and install basic tools
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
       echo 'START build and install onnxruntime' \
       && uv venv "${HOME}/venv" \
-      && . "${HOME}/bin/activate" \
+      && .  "${HOME}/bin/activate" \
       && uv pip install -U pip \
       && echo 'DONE build and install onnxruntime' ;
 #+end_src
@@ -523,7 +523,7 @@ Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
       echo 'START Get onnx rt requirements' \
-      && . "${HOME}/bin/activate" \
+      && . '/opt/venv/bin/activate' \
       && cd '/onnxruntime' \
       && uv pip install -r 'requirements-dev.txt' \
       && echo 'DONE Get onnx rt requirements' ;
@@ -535,7 +535,7 @@ Install basic apt packages.
   RUN \
       echo 'START build and install onnxruntime' \
       && cd "${HOME}/AMDMIGraphX" \
-      && . "${HOME}/bin/activate" \
+      && . '/opt/venv/bin/activate' \
       && './tools/build_and_test_onnxrt.sh' \
       && echo 'DONE build and install onnxruntime' ;
 #+end_src
