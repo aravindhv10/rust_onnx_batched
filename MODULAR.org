@@ -458,11 +458,6 @@ For running the inference on both CPU and GPU.
   FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
 #+end_src
 
-*** env
-#+begin_src conf :tangle ./Dockerfile
-  ENV NVIDIA_DRIVER_CAPABILITIES='compute,utility,video'
-#+end_src
-
 ** COMMENT CUDA
 
 *** Cargo
@@ -668,31 +663,31 @@ Port on which the rest api listens to
   --rm
 #+end_src
 
-** GPU
+*** GPU
 
-*** COMMENT CUDA
+**** COMMENT CUDA
 
-**** COMMENT for all gpus
+***** COMMENT for all gpus
 #+begin_src conf :tangle ./host.docker_run.txt
   --gpus 'all,"capabilities=compute,utility,video"'
 #+end_src
 
-**** For only 1 gpu
+***** For only 1 gpu
 #+begin_src conf :tangle ./host.docker_run.txt
   --gpus 'device=0,"capabilities=compute,utility,video"'
 #+end_src
 
-**** IPC
+***** IPC
 #+begin_src conf :tangle ./host.docker_run.txt
   --ipc host
 #+end_src
 
-**** shm size
+***** shm size
 #+begin_src conf :tangle ./host.docker_run.txt
   --shm-size 107374182400
 #+end_src
 
-*** ROCM
+**** ROCM
 #+begin_src conf :tangle ./host.docker_run.txt
   --device /dev/kfd
   --device /dev/dri
