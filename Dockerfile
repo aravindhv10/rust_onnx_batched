@@ -76,7 +76,7 @@ RUN \
     && cd / \
     && /bin/sh '/onnxruntime/dockerfiles/scripts/install_common_deps.sh' \
     && cd '/onnxruntime' \
-    && ./build.sh --config Release --build_wheel --parallel --use_migraphx --migraphx_home /opt/rocm \
+    && ./build.sh --allow_running_as_root --config Release --build_wheel --parallel --use_migraphx --migraphx_home /opt/rocm \
     && echo 'DONE build and install onnxruntime' ;
 
 USER root
