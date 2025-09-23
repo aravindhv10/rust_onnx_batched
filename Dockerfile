@@ -36,6 +36,13 @@ RUN \
     && echo 'DONE uv download' ;
 
 RUN \
+    echo 'START build and install onnxruntime' \
+    && uv venv '/opt/venv' \
+    && . '/opt/venv/bin/activate' \
+    && uv pip install -U pip \
+    && echo 'DONE build and install onnxruntime' ;
+
+RUN \
     echo 'START Get onnx rt requirements' \
     && . '/opt/venv/bin/activate' \
     && cd '/onnxruntime' \

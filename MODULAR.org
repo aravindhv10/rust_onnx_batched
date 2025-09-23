@@ -507,13 +507,13 @@ Install basic apt packages.
       && echo 'DONE uv download' ;
 #+end_src
 
-*** COMMENT Create env and install basic tools
+*** Create env and install basic tools
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
       echo 'START build and install onnxruntime' \
-      && uv venv "${HOME}/venv" \
-      && .  "${HOME}/bin/activate" \
+      && uv venv '/opt/venv' \
+      && . '/opt/venv/bin/activate' \
       && uv pip install -U pip \
       && echo 'DONE build and install onnxruntime' ;
 #+end_src
