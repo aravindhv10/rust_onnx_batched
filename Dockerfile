@@ -69,8 +69,9 @@ RUN \
     && /bin/sh ./build.sh \
         --allow_running_as_root \
         --config Release \
-        --build_wheel --update --build --parallel --cmake_extra_defines \
-        ONNXRUNTIME_VERSION="$(cat ./VERSION_NUMBER)" \
+        --build_wheel --update --build --parallel --use_migraphx \
+        --migraphx_home /opt/rocm \
+        --cmake_extra_defines ONNXRUNTIME_VERSION="$(cat ./VERSION_NUMBER)" \
         --use_rocm \
         --rocm_home=/opt/rocm \
     && pip install /onnxruntime/build/Linux/Release/dist/*.whl \
