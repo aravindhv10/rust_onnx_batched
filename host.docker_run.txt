@@ -1,6 +1,7 @@
 cd "$('dirname' -- "${0}")" ;
 
-podman
+sudo -A
+docker
 
 run
 
@@ -8,7 +9,9 @@ run
 --interactive
 --rm
 
---ipc host
+--device /dev/kfd
+--device /dev/dri
+--security-opt seccomp=unconfined
 
 --mount 'type=tmpfs,destination=/data/TMPFS,tmpfs-size=137438953472'
 -v "$(realpath .):/data/input"

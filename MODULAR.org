@@ -645,13 +645,13 @@ Port on which the rest api listens to
 
 *** Main command
 
-**** COMMENT docker
+**** docker
 #+begin_src conf :tangle ./host.docker_run.txt
   sudo -A
   docker
 #+end_src
 
-**** podman
+**** COMMENT podman
 #+begin_src conf :tangle ./host.docker_run.txt
   podman
 #+end_src
@@ -668,21 +668,35 @@ Port on which the rest api listens to
   --rm
 #+end_src
 
+** GPU
+
 *** COMMENT CUDA
+
+**** COMMENT for all gpus
 #+begin_src conf :tangle ./host.docker_run.txt
   --gpus 'all,"capabilities=compute,utility,video"'
 #+end_src
 
-*** IPC and shm sizes
+**** For only 1 gpu
+#+begin_src conf :tangle ./host.docker_run.txt
+  --gpus 'device=0,"capabilities=compute,utility,video"'
+#+end_src
 
 **** IPC
 #+begin_src conf :tangle ./host.docker_run.txt
   --ipc host
 #+end_src
 
-**** COMMENT shm size
+**** shm size
 #+begin_src conf :tangle ./host.docker_run.txt
   --shm-size 107374182400
+#+end_src
+
+*** ROCM
+#+begin_src conf :tangle ./host.docker_run.txt
+  --device /dev/kfd
+  --device /dev/dri
+  --security-opt seccomp=unconfined
 #+end_src
 
 *** MOUNTS
@@ -745,7 +759,7 @@ Port on which the rest api listens to
 
 ** Actual build command
 
-*** COMMENT using docker
+*** using docker
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   sudo -A docker build -t "${IMAGE_NAME}" .
 #+end_src
@@ -755,7 +769,7 @@ Port on which the rest api listens to
   podman build -t "${IMAGE_NAME}" .
 #+end_src
 
-*** using buildah
+*** COMMENT using buildah
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./host.docker_build.sh
   buildah build -t "${IMAGE_NAME}" .
 #+end_src
@@ -1419,7 +1433,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Started work with rocm'
+  GITCOMMIT 'Some work on docker scripts'
 #+end_src
 
 * Run the work script

@@ -4,4 +4,4 @@
 cd "$('dirname' '--' "${0}")"
 IMAGE_NAME="$(cat './image_name.txt')"
 
-buildah build -t "${IMAGE_NAME}" .
+sudo -A docker build -t "${IMAGE_NAME}" .
