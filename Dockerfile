@@ -16,14 +16,12 @@ RUN \
 RUN \
     echo 'START clone onnx runtime' \
     && cd / \
-    && git clone 'https://github.com/microsoft/onnxruntime.git' \
+    && git clone \
+        '--single-branch' \
+        '--branch' 'main' \
+        '--recursive' 'https://github.com/Microsoft/onnxruntime.git' \
+        '/onnxruntime' \
     && echo 'DONE clone onnx runtime' ;
-
-RUN \
-    echo 'START clone migraphx' \
-    && cd "${HOME}" \
-    && git clone 'https://github.com/ROCm/AMDMIGraphX.git' \
-    && echo 'DONE migraphx' ;
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
@@ -48,13 +46,6 @@ RUN \
     && echo 'DONE build and install onnxruntime' ;
 
 RUN \
-    echo 'START Get onnx rt requirements' \
-    && . '/opt/venv/bin/activate' \
-    && cd '/onnxruntime' \
-    && uv pip install -r 'requirements-dev.txt' \
-    && echo 'DONE Get onnx rt requirements' ;
-
-RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
     echo 'START apt-get stuff' \
@@ -71,17 +62,18 @@ RUN \
 
 RUN \
     echo 'START build and install onnxruntime' \
-    && cd "${HOME}/AMDMIGraphX" \
-    && . '/opt/venv/bin/activate' \
-    && './tools/build_and_test_onnxrt.sh' \
-    ; echo 'DONE build and install onnxruntime' ;
-
-RUN \
-    echo 'START installed libraries' \
-    && cd '/onnxruntime/build/Linux/Release' \
-    && ls | grep 'lib.*\.so' | sed 's@^@("cp" "-vf" "--" "@g;s@$@" "/lib/");@g' | sh \
-    && ldconfig \
-    && echo 'DONE installed libraries' ;
+    && cd / \
+    && /bin/sh '/onnxruntime/dockerfiles/scripts/install_common_deps.sh' \
+    && cd '/onnxruntime' \
+    && /bin/sh ./build.sh \
+        --allow_running_as_root \
+        --config Release \
+        --build_wheel --update --build --parallel --cmake_extra_defines \
+        ONNXRUNTIME_VERSION="$(cat ./VERSION_NUMBER)" \
+        --use_rocm \
+        --rocm_home=/opt/rocm \
+    && pip install /onnxruntime/build/Linux/Release/dist/*.whl \
+    && echo 'DONE build and install onnxruntime' ;
 
 ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
 ENV ORT_STRATEGY='system'
