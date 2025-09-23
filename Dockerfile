@@ -85,6 +85,10 @@ RUN \
 
 ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
 ENV ORT_STRATEGY='system'
+ENV CC=/opt/rocm/llvm/bin/clang
+ENV CXX=/opt/rocm/llvm/bin/clang++
+ENV CMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+ENV HIP_COMPILER=/opt/rocm/llvm/bin/clang++
 
 USER root
 WORKDIR '/root'

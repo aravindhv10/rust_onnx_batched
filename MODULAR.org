@@ -359,6 +359,7 @@ For running the inference on both CPU and GPU.
   sleep 20 ; echo running inference ; cargo run --release --bin 'infer-client'
 #+end_src
 
+
 *** only start server
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
   cargo run --release --bin 'infer-server'
@@ -585,6 +586,10 @@ Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
   ENV ORT_STRATEGY='system'
+  ENV CC=/opt/rocm/llvm/bin/clang
+  ENV CXX=/opt/rocm/llvm/bin/clang++
+  ENV CMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+  ENV HIP_COMPILER=/opt/rocm/llvm/bin/clang++
 #+end_src
 
 ** COMMENT CUDA
@@ -1558,7 +1563,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'More amd onnx runtime code'
+  GITCOMMIT 'More migraphx debugging'
 #+end_src
 
 * Run the work script
