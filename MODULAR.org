@@ -459,9 +459,81 @@ For running the inference on both CPU and GPU.
   FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
 #+end_src
 
-*** env
+*** Important apt install stuff
+Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
-  ENV ORT_DYLIB_PATH='/opt/venv/lib/python3.12/site-packages/onnxruntime/capi/libonnxruntime.so.1.22.1'
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'migraphx' \
+          'migraphx-dev' \
+          'half' \
+      && echo 'DONE apt-get stuff' ;
+#+end_src
+
+*** Clone onnx runtime
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START clone onnx runtime' \
+      && cd / \
+      && git clone 'https://github.com/microsoft/onnxruntime.git' \
+      && echo 'DONE clone onnx runtime' ;
+#+end_src
+
+*** Clone MIgraphx
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START clone migraphx' \
+      && cd "${HOME}" \
+      && git clone 'https://github.com/ROCm/AMDMIGraphX.git' \
+      && echo 'DONE migraphx' ;
+#+end_src
+
+*** Install uv
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START uv download' \
+      && curl -LsSf 'https://astral.sh/uv/install.sh' | sh \
+      && cp -vf -- "${HOME}/.local/bin/uv" '/usr/local/bin/' \
+      && echo 'DONE uv download' ;
+#+end_src
+
+*** Create env and install basic tools
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START build and install onnxruntime' \
+      && uv venv "${HOME}/venv" \
+      && . "${HOME}/bin/activate" \
+      && uv pip install -U pip \
+      && echo 'DONE build and install onnxruntime' ;
+#+end_src
+
+*** Get onnx rt requirements
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START Get onnx rt requirements' \
+      && . "${HOME}/bin/activate" \
+      && cd '/onnxruntime' \
+      && uv pip install -r 'requirements-dev.txt' \
+      && echo 'DONE Get onnx rt requirements' ;
+#+end_src
+
+*** build and install onnxruntime
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      echo 'START build and install onnxruntime' \
+      && cd "${HOME}/AMDMIGraphX" \
+      && . "${HOME}/bin/activate" \
+      && './tools/build_and_test_onnxrt.sh' \
+      && echo 'DONE build and install onnxruntime' ;
 #+end_src
 
 ** COMMENT CUDA
@@ -1434,7 +1506,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Added load-dynamic option'
+  GITCOMMIT 'More amd onnx runtime code'
 #+end_src
 
 * Run the work script

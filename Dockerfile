@@ -3,7 +3,55 @@
 # FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
 FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
 
-ENV ORT_DYLIB_PATH='/opt/venv/lib/python3.12/site-packages/onnxruntime/capi/libonnxruntime.so.1.22.1'
+RUN \
+    --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    echo 'START apt-get stuff' \
+    && apt-get -y update \
+    && apt-get install -y \
+        'migraphx' \
+        'migraphx-dev' \
+        'half' \
+    && echo 'DONE apt-get stuff' ;
+
+RUN \
+    echo 'START clone onnx runtime' \
+    && cd / \
+    && git clone 'https://github.com/microsoft/onnxruntime.git' \
+    && echo 'DONE clone onnx runtime' ;
+
+RUN \
+    echo 'START clone migraphx' \
+    && cd "${HOME}" \
+    && git clone 'https://github.com/ROCm/AMDMIGraphX.git' \
+    && echo 'DONE migraphx' ;
+
+RUN \
+    echo 'START uv download' \
+    && curl -LsSf 'https://astral.sh/uv/install.sh' | sh \
+    && cp -vf -- "${HOME}/.local/bin/uv" '/usr/local/bin/' \
+    && echo 'DONE uv download' ;
+
+RUN \
+    echo 'START build and install onnxruntime' \
+    && uv venv "${HOME}/venv" \
+    && . "${HOME}/bin/activate" \
+    && uv pip install -U pip \
+    && echo 'DONE build and install onnxruntime' ;
+
+RUN \
+    echo 'START Get onnx rt requirements' \
+    && . "${HOME}/bin/activate" \
+    && cd '/onnxruntime' \
+    && uv pip install -r 'requirements-dev.txt' \
+    && echo 'DONE Get onnx rt requirements' ;
+
+RUN \
+    echo 'START build and install onnxruntime' \
+    && cd "${HOME}/AMDMIGraphX" \
+    && . "${HOME}/bin/activate" \
+    && './tools/build_and_test_onnxrt.sh' \
+    && echo 'DONE build and install onnxruntime' ;
 
 USER root
 WORKDIR '/root'
