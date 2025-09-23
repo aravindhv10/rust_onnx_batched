@@ -12,6 +12,7 @@ RUN \
     && apt-get install -y \
         'build-essential' \
         'cmake' \
+        'gdb' \
         'git' \
         'half' \
         'migraphx' \
