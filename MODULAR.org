@@ -450,7 +450,7 @@ For running the inference on both CPU and GPU.
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.dependencies.toml
-  ort = { version = "2.0.0-rc.10", features = ["rocm"] }
+  ort = { version = "2.0.0-rc.10", features = ["rocm", "load-dynamic"] }
 #+end_src
 
 *** Base docker image
@@ -1428,7 +1428,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'Some work on docker scripts'
+  GITCOMMIT 'Added load-dynamic option'
 #+end_src
 
 * Run the work script
