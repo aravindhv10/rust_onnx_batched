@@ -1,7 +1,8 @@
 
 
 # FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
-FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
+# FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
+FROM rocm/pytorch:latest AS rust
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
