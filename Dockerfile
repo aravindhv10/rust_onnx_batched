@@ -9,9 +9,11 @@ RUN \
     echo 'START apt-get stuff' \
     && apt-get -y update \
     && apt-get install -y \
+        'build-essential' \
+        'git' \
+        'half' \
         'migraphx' \
         'migraphx-dev' \
-        'half' \
     && echo 'DONE apt-get stuff' ;
 
 RUN \

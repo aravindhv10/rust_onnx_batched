@@ -445,6 +445,7 @@ For running the inference on both CPU and GPU.
 - Define ORT dependencies and features for GPU (CUDA) or CPU (OpenVino).
 - Define docker base image for GPU or CPU.
 - Definne nvidia gpu capabilities if using CUDA.
+- Set env =export ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'=
 
 ** ROCM
 
@@ -468,9 +469,11 @@ Install basic apt packages.
       echo 'START apt-get stuff' \
       && apt-get -y update \
       && apt-get install -y \
+          'build-essential' \
+          'git' \
+          'half' \
           'migraphx' \
           'migraphx-dev' \
-          'half' \
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
