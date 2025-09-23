@@ -74,7 +74,7 @@ RUN \
     && cd "${HOME}/AMDMIGraphX" \
     && . '/opt/venv/bin/activate' \
     && './tools/build_and_test_onnxrt.sh' \
-    && echo 'DONE build and install onnxruntime' ;
+    ; echo 'DONE build and install onnxruntime' ;
 
 RUN \
     echo 'START installed libraries' \

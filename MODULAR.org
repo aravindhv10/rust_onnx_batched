@@ -565,7 +565,7 @@ Install basic apt packages.
       && cd "${HOME}/AMDMIGraphX" \
       && . '/opt/venv/bin/activate' \
       && './tools/build_and_test_onnxrt.sh' \
-      && echo 'DONE build and install onnxruntime' ;
+      ; echo 'DONE build and install onnxruntime' ;
 #+end_src
 
 *** Copy the installed libraries
