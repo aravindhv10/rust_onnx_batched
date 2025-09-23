@@ -119,12 +119,12 @@ pub fn get_rocm_model(model_path: &str) -> Result<Session, String> {
     match res2 {
         Ok(res3) => {
             let res4 = res3.commit_from_file(model_path).unwrap();
-            println!("Constructed onnx with openvino support");
+            println!("Constructed onnx with rocm support");
             return Ok(res4);
         }
         Err(_) => {
-            println!("Failed to construct model with openvino support");
-            return Err("Failed to construct model with openvino support".to_string());
+            println!("Failed to construct model with rocm support");
+            return Err("Failed to construct model with rocm support".to_string());
         }
     }
 }

@@ -359,7 +359,7 @@ For running the inference on both CPU and GPU.
   sleep 20 ; echo running inference ; cargo run --release --bin 'infer-client'
 #+end_src
 
-*** COMMENT only start server
+*** only start server
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./start.sh
   cargo run --release --bin 'infer-server'
 #+end_src
@@ -928,12 +928,12 @@ Port on which the rest api listens to
       match res2 {
           Ok(res3) => {
               let res4 = res3.commit_from_file(model_path).unwrap();
-              println!("Constructed onnx with openvino support");
+              println!("Constructed onnx with rocm support");
               return Ok(res4);
           }
           Err(_) => {
-              println!("Failed to construct model with openvino support");
-              return Err("Failed to construct model with openvino support".to_string());
+              println!("Failed to construct model with rocm support");
+              return Err("Failed to construct model with rocm support".to_string());
           }
       }
   }
