@@ -10,13 +10,7 @@ RUN \
     echo 'START apt-get stuff' \
     && apt-get -y update \
     && apt-get install -y \
-        'build-essential' \
-        'cmake' \
-        'gdb' \
         'git' \
-        'half' \
-        'migraphx' \
-        'migraphx-dev' \
     && echo 'DONE apt-get stuff' ;
 
 RUN \
@@ -30,6 +24,15 @@ RUN \
     && cd "${HOME}" \
     && git clone 'https://github.com/ROCm/AMDMIGraphX.git' \
     && echo 'DONE migraphx' ;
+
+RUN \
+    --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    echo 'START apt-get stuff' \
+    && apt-get -y update \
+    && apt-get install -y \
+        'curl' \
+    && echo 'DONE apt-get stuff' ;
 
 RUN \
     echo 'START uv download' \
@@ -50,6 +53,21 @@ RUN \
     && cd '/onnxruntime' \
     && uv pip install -r 'requirements-dev.txt' \
     && echo 'DONE Get onnx rt requirements' ;
+
+RUN \
+    --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    echo 'START apt-get stuff' \
+    && apt-get -y update \
+    && apt-get install -y \
+        'build-essential' \
+        'cmake' \
+        'gdb' \
+        'git' \
+        'half' \
+        'migraphx' \
+        'migraphx-dev' \
+    && echo 'DONE apt-get stuff' ;
 
 RUN \
     echo 'START build and install onnxruntime' \

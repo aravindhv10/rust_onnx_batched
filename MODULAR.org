@@ -470,13 +470,7 @@ Install basic apt packages.
       echo 'START apt-get stuff' \
       && apt-get -y update \
       && apt-get install -y \
-          'build-essential' \
-          'cmake' \
-          'gdb' \
           'git' \
-          'half' \
-          'migraphx' \
-          'migraphx-dev' \
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
@@ -498,6 +492,19 @@ Install basic apt packages.
       && cd "${HOME}" \
       && git clone 'https://github.com/ROCm/AMDMIGraphX.git' \
       && echo 'DONE migraphx' ;
+#+end_src
+
+*** Important apt install stuff
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'curl' \
+      && echo 'DONE apt-get stuff' ;
 #+end_src
 
 *** Install uv
@@ -529,6 +536,25 @@ Install basic apt packages.
       && cd '/onnxruntime' \
       && uv pip install -r 'requirements-dev.txt' \
       && echo 'DONE Get onnx rt requirements' ;
+#+end_src
+
+*** Important apt install stuff
+Install basic apt packages.
+#+begin_src conf :tangle ./Dockerfile
+  RUN \
+      --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+      --mount=target=/var/cache/apt,type=cache,sharing=locked \
+      echo 'START apt-get stuff' \
+      && apt-get -y update \
+      && apt-get install -y \
+          'build-essential' \
+          'cmake' \
+          'gdb' \
+          'git' \
+          'half' \
+          'migraphx' \
+          'migraphx-dev' \
+      && echo 'DONE apt-get stuff' ;
 #+end_src
 
 *** build and install onnxruntime
