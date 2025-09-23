@@ -60,6 +60,16 @@ RUN \
         'migraphx-dev' \
     && echo 'DONE apt-get stuff' ;
 
+ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
+ENV ORT_STRATEGY='system'
+ENV CC='/opt/rocm/llvm/bin/clang'
+ENV CXX='/opt/rocm/llvm/bin/clang++'
+ENV CMAKE_HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
+ENV HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
+ENV ORT_MIGRAPHX_SAVE_COMPILED_PATH='/COMPILED'
+ENV ORT_MIGRAPHX_LOAD_COMPILED_PATH="${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
+RUN mkdir -pv -- "${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
+
 RUN \
     echo 'START build and install onnxruntime' \
     && . '/opt/venv/bin/activate' \
@@ -76,16 +86,6 @@ RUN \
         --rocm_home=/opt/rocm \
     && pip install /onnxruntime/build/Linux/Release/dist/*.whl \
     && echo 'DONE build and install onnxruntime' ;
-
-ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
-ENV ORT_STRATEGY='system'
-ENV CC='/opt/rocm/llvm/bin/clang'
-ENV CXX='/opt/rocm/llvm/bin/clang++'
-ENV CMAKE_HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
-ENV HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
-ENV ORT_MIGRAPHX_SAVE_COMPILED_PATH='/COMPILED'
-ENV ORT_MIGRAPHX_LOAD_COMPILED_PATH="${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
-RUN mkdir -pv -- "${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
 
 USER root
 WORKDIR '/root'

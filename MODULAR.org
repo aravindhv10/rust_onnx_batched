@@ -565,6 +565,19 @@ Install basic apt packages.
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
+*** Set up env
+#+begin_src conf :tangle ./Dockerfile
+  ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
+  ENV ORT_STRATEGY='system'
+  ENV CC='/opt/rocm/llvm/bin/clang'
+  ENV CXX='/opt/rocm/llvm/bin/clang++'
+  ENV CMAKE_HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
+  ENV HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
+  ENV ORT_MIGRAPHX_SAVE_COMPILED_PATH='/COMPILED'
+  ENV ORT_MIGRAPHX_LOAD_COMPILED_PATH="${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
+  RUN mkdir -pv -- "${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
+#+end_src
+
 *** Build onnxruntime
 /opt/rocm/lib/migraphx
 Install basic apt packages.
@@ -608,18 +621,6 @@ Install basic apt packages.
       && echo 'DONE installed libraries' ;
 #+end_src
 
-*** Set up env
-#+begin_src conf :tangle ./Dockerfile
-  ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
-  ENV ORT_STRATEGY='system'
-  ENV CC='/opt/rocm/llvm/bin/clang'
-  ENV CXX='/opt/rocm/llvm/bin/clang++'
-  ENV CMAKE_HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
-  ENV HIP_COMPILER='/opt/rocm/llvm/bin/clang++'
-  ENV ORT_MIGRAPHX_SAVE_COMPILED_PATH='/COMPILED'
-  ENV ORT_MIGRAPHX_LOAD_COMPILED_PATH="${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
-  RUN mkdir -pv -- "${ORT_MIGRAPHX_SAVE_COMPILED_PATH}"
-#+end_src
 
 ** COMMENT CUDA
 
