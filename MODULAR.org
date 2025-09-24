@@ -460,8 +460,8 @@ export ORT_STRATEGY='system'
 
 *** Base docker image
 #+begin_src conf :tangle ./Dockerfile
-  # FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
-  FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
+  FROM rocm/onnxruntime:rocm7.0_ub24.04_ort1.22_torch2.8.0 AS rust
+  # FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
   # FROM rocm/pytorch:latest AS rust
 #+end_src
 
@@ -478,7 +478,7 @@ Install basic apt packages.
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
-*** Clone onnx runtime
+*** COMMENT Clone onnx runtime
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
@@ -488,7 +488,7 @@ Install basic apt packages.
       && echo 'DONE clone onnx runtime' ;
 #+end_src
 
-*** Clone MIgraphx
+*** COMMENT Clone MIgraphx
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
@@ -498,7 +498,7 @@ Install basic apt packages.
       && echo 'DONE migraphx' ;
 #+end_src
 
-*** Important apt install stuff
+*** COMMENT Important apt install stuff
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
@@ -531,7 +531,7 @@ Install basic apt packages.
       && echo 'DONE build and install onnxruntime' ;
 #+end_src
 
-*** Get onnx rt requirements
+*** COMMENT Get onnx rt requirements
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
@@ -561,7 +561,7 @@ Install basic apt packages.
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
-*** build and install onnxruntime
+*** COMMENT build and install onnxruntime
 Install basic apt packages.
 #+begin_src conf :tangle ./Dockerfile
   RUN \
@@ -572,7 +572,7 @@ Install basic apt packages.
       ; echo 'DONE build and install onnxruntime' ;
 #+end_src
 
-*** Copy the installed libraries
+*** COMMENT Copy the installed libraries
 #+begin_src conf :tangle ./Dockerfile
   RUN \
       echo 'START installed libraries' \
@@ -582,7 +582,7 @@ Install basic apt packages.
       && echo 'DONE installed libraries' ;
 #+end_src
 
-*** Set up env
+*** COMMENT Set up env
 #+begin_src conf :tangle ./Dockerfile
   ENV ORT_DYLIB_PATH='/lib/libonnxruntime.so.1'
   ENV ORT_STRATEGY='system'
@@ -1566,7 +1566,7 @@ Port on which the rest api listens to
 
 * Commit the changes
 #+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
-  GITCOMMIT 'More migraphx debugging'
+  GITCOMMIT 'Trying onnx rocm image again'
 #+end_src
 
 * Run the work script
