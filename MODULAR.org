@@ -473,7 +473,7 @@ export ORT_STRATEGY='system'
 
 *** Cargo
 #+begin_src conf :tangle ./Cargo.dependencies.toml
-  ort = { version = "2.0.0-rc.10", features = ["migraphx", "rocm", "load-dynamic"] }
+  ort = { version = "2.0.0-rc.10", features = ["migraphx", "load-dynamic"] }
 #+end_src
 
 *** Base docker image
