@@ -4,7 +4,8 @@
 # FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
 # FROM rocm/pytorch:latest AS rust
 
-FROM debian:bookworm-backports AS rust
+#FROM debian:bookworm-backports AS rust
+FROM ubuntu:24.04 AS rust
 
 USER root
 WORKDIR '/root'

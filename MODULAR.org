@@ -482,7 +482,9 @@ export ORT_STRATEGY='system'
   # FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
   # FROM rocm/pytorch:latest AS rust
 
-  FROM debian:bookworm-backports AS rust
+  #FROM debian:bookworm-backports AS rust
+  FROM ubuntu:24.04 AS rust
+
 #+end_src
 
 *** User and working dir
