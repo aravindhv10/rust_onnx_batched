@@ -21,7 +21,7 @@ RUN \
         'python3-wheel' \
         'wget' \
     && wget 'https://repo.radeon.com/amdgpu/30.10.1/ubuntu/pool/main/a/amdgpu-insecure-instinct-udev-rules/amdgpu-insecure-instinct-udev-rules_30.10.1.0-2212064.24.04_all.deb' \
-    && apt install './amdgpu-insecure-instinct-udev-rules_30.10.1.0-2212064.24.04_all.deb' \
+    && apt install -y './amdgpu-insecure-instinct-udev-rules_30.10.1.0-2212064.24.04_all.deb' \
     && echo 'DONE apt-get stuff' ;
 
 COPY ./setup_rocm_1.sh /root/setup_rocm_1.sh
