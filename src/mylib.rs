@@ -1,8 +1,10 @@
+
+
 use image::DynamicImage;
 use image::imageops;
 
 pub struct image_processor {
-    image_resolution: u32,
+    image_resolution: u32
 }
 
 impl image_processor {

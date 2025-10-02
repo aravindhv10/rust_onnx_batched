@@ -18,25 +18,11 @@ RUN \
         'wget' \
     && echo 'DONE apt-get stuff' ;
 
-RUN \
-    echo 'START ROCM GPG' \
-    && mkdir \
-        --parents \
-        --mode=0755 \
-        '/etc/apt/keyrings' \
-    && wget 'https://repo.radeon.com/rocm/rocm.gpg.key' -O - \
-        | gpg '--dearmor' \
-        | tee '/etc/apt/keyrings/rocm.gpg' \
-    && echo 'DONE ROCM GPG' ;
+COPY ./setup_rocm_1.sh /root/setup_rocm_1.sh
+RUN /root/setup_rocm_1.sh
 
-RUN \
-    echo 'START Update apt files' \
-    && echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.1 jammy main' > '/etc/apt/sources.list.d/rocm.list' \
-    && echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.0.1/ubuntu jammy main' >> '/etc/apt/sources.list.d/rocm.list' \
-    && echo 'Package: *' > '/etc/apt/preferences.d/rocm-pin-600' \
-    && echo 'Pin: release o=repo.radeon.com' >> '/etc/apt/preferences.d/rocm-pin-600' \
-    && echo 'Pin-Priority: 600' >> '/etc/apt/preferences.d/rocm-pin-600' \
-    && echo 'DONE Update apt files' ;
+COPY ./setup_rocm_2.sh /root/setup_rocm_2.sh
+RUN /root/setup_rocm_2.sh
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \

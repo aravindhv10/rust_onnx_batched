@@ -338,6 +338,24 @@ For running the inference on both CPU and GPU.
 #+begin_src conf :tangle ./Dockerfile
 #+end_src
 
+* Prepare the ROCM setup scripts
+
+** Add the file to git
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./.git.sh
+GITADD 'setup_rocm_2.sh'
+GITADD 'setup_rocm_1.sh'
+#+end_src
+
+** Create the file
+
+*** 1
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./setup_rocm_1.sh
+#+end_src
+
+*** 2
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./setup_rocm_2.sh
+#+end_src
+
 * Script to start server
 
 ** Add the file to git
@@ -483,32 +501,46 @@ Install basic apt packages.
       && echo 'DONE apt-get stuff' ;
 #+end_src
 
-*** Installing rocm gpg
-Install basic apt packages.
-#+begin_src conf :tangle ./Dockerfile
-  RUN \
-      echo 'START ROCM GPG' \
-      && mkdir \
-          --parents \
-          --mode=0755 \
-          '/etc/apt/keyrings' \
-      && wget 'https://repo.radeon.com/rocm/rocm.gpg.key' -O - \
-          | gpg '--dearmor' \
-          | tee '/etc/apt/keyrings/rocm.gpg' \
-      && echo 'DONE ROCM GPG' ;
+*** ROCM Setup scripts
+
+**** 1
+
+***** Actual script
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./setup_rocm_1.sh
+  echo 'START ROCM GPG' \
+  && mkdir \
+      --parents \
+      --mode=0755 \
+      '/etc/apt/keyrings' \
+  && wget 'https://repo.radeon.com/rocm/rocm.gpg.key' -O - \
+      | gpg '--dearmor' \
+      | tee '/etc/apt/keyrings/rocm.gpg' \
+  && echo 'DONE ROCM GPG' ;
 #+end_src
 
-*** Update apt files
-Install basic apt packages.
+***** Run the script
 #+begin_src conf :tangle ./Dockerfile
-  RUN \
-      echo 'START Update apt files' \
-      && echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.1 jammy main' > '/etc/apt/sources.list.d/rocm.list' \
-      && echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.0.1/ubuntu jammy main' >> '/etc/apt/sources.list.d/rocm.list' \
-      && echo 'Package: *' > '/etc/apt/preferences.d/rocm-pin-600' \
-      && echo 'Pin: release o=repo.radeon.com' >> '/etc/apt/preferences.d/rocm-pin-600' \
-      && echo 'Pin-Priority: 600' >> '/etc/apt/preferences.d/rocm-pin-600' \
-      && echo 'DONE Update apt files' ;
+  COPY ./setup_rocm_1.sh /root/setup_rocm_1.sh
+  RUN /root/setup_rocm_1.sh
+#+end_src
+
+**** 2
+
+***** Actual script
+#+begin_src sh :shebang #!/bin/sh :results output :tangle ./setup_rocm_2.sh
+  echo 'START Update apt files' \
+  && echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.1 jammy main' > '/etc/apt/sources.list.d/rocm.list' \
+  && echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.0.1/ubuntu jammy main' >> '/etc/apt/sources.list.d/rocm.list' \
+  && echo 'Package: *' > '/etc/apt/preferences.d/rocm-pin-600' \
+  && echo 'Pin: release o=repo.radeon.com' >> '/etc/apt/preferences.d/rocm-pin-600' \
+  && echo 'Pin-Priority: 600' >> '/etc/apt/preferences.d/rocm-pin-600' \
+  && echo 'DONE Update apt files' ;
+#+end_src
+
+***** Run the script
+#+begin_src conf :tangle ./Dockerfile
+  COPY ./setup_rocm_2.sh /root/setup_rocm_2.sh
+  RUN /root/setup_rocm_2.sh
 #+end_src
 
 *** Important apt install stuff

@@ -1,3 +1,5 @@
+
+
 use ort::inputs;
 use ort::session::Session;
 use ort::value::TensorRef;
@@ -71,7 +73,7 @@ impl prediction_probabilities_reply {
                 max_index = i;
             }
         }
-        ret.mj = CLASS_LABELS[max_index].to_string();
+        ret.mj = CLASS_LABELS[max_index].to_string() ;
         return ret;
     }
 }
@@ -112,18 +114,16 @@ impl model_server {
                     input[[i, y as usize, x as usize, 2]] = b;
                 }
             }
-            let outputs = match self
-                .session
-                .run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()])
-            {
-                Ok(o) => o,
-                Err(e) => {
-                    for req in batch {
-                        let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
+            let outputs =
+                match self.session.run(inputs!["input" => TensorRef::from_array_view(&input).unwrap()]) {
+                    Ok(o) => o,
+                    Err(e) => {
+                        for req in batch {
+                            let _ = req.resp_tx.send(Err(format!("inference error: {}", e)));
+                        }
+                        continue;
                     }
-                    continue;
-                }
-            };
+                };
             let output = outputs["output"]
                 .try_extract_array::<outtype>()
                 .unwrap()
@@ -139,14 +139,11 @@ impl model_server {
 
 pub struct model_client {
     tx: mpsc::Sender<InferRequest>,
-    preprocess: image_processor,
+    preprocess: image_processor
 }
 
 impl model_client {
-    pub async fn do_infer(
-        &self,
-        img: image::RgbaImage,
-    ) -> Result<prediction_probabilities, String> {
+    pub async fn do_infer(&self, img: image::RgbaImage) -> Result<prediction_probabilities, String> {
         let (resp_tx, resp_rx) = oneshot::channel();
         match self.tx.send(InferRequest { img, resp_tx }).await {
             Ok(_) => match resp_rx.await {
@@ -183,9 +180,6 @@ pub fn get_inference_tuple() -> (model_server, model_client) {
         rx: rx,
         session: get_model(MODEL_PATH),
     };
-    let ret_client = model_client {
-        tx: tx,
-        preprocess: image_processor::new(IMAGE_RESOLUTION),
-    };
+    let ret_client = model_client {tx: tx, preprocess: image_processor::new(IMAGE_RESOLUTION)};
     return (ret_server, ret_client);
 }
