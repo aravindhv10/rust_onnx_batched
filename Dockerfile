@@ -4,7 +4,7 @@
 # FROM rocm/dev-ubuntu-24.04:7.0-complete AS rust
 # FROM rocm/pytorch:latest AS rust
 
-FROM debian:bookworm-backports
+FROM debian:bookworm-backports AS rust
 
 RUN \
     --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
