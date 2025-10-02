@@ -17,6 +17,7 @@ RUN \
     && apt-get -y update \
     && apt-get install -y \
         'environment-modules' \
+        'gpg' \
         'python3-setuptools' \
         'python3-wheel' \
         'wget' \
