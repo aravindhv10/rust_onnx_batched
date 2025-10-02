@@ -109,7 +109,9 @@ RUN \
     echo 'START build and install onnxruntime' \
     && cd "${HOME}/AMDMIGraphX" \
     && . '/opt/venv/bin/activate' \
+    && git config --global --add safe.directory "*" \
     && './tools/build_and_test_onnxrt.sh' \
+    ; uv pip install /onnxruntime/build/Linux/Release/dist/*.whl \
     ; echo 'DONE build and install onnxruntime' ;
 
 RUN \
