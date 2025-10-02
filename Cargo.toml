@@ -33,7 +33,7 @@ tokio = { version = "1.47.1", features = ["full"] }
 tonic-prost = "*"
 tonic = { version = "0.14.2", features = ["zstd"] }
 
-ort = { version = "2.0.0-rc.10", features = ["rocm", "load-dynamic"] }
+ort = { version = "2.0.0-rc.10", features = ["migraphx", "rocm", "load-dynamic"] }
 
 
 [build-dependencies]
